@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academia App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 40px;
+            background: #121212;
+            color: #fff;
+        }
+        h1 { color: #ff6b00; }
+        .btn {
+            background: #ff6b00;
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .btn:hover { background: #e06000; }
+    </style>
+</head>
+<body>
+    <h1>🏋️ Academia App</h1>
+    <p>App atualizado via GitHub!</p>
+    <button class="btn" onclick="alert('Treino finalizado! 💪')">Finalizar Treino</button>
+    <button class="btn" onclick="document.body.style.background = '#1a1a2e'">Modo Escuro</button>
+    <p id="status">Código carregado do GitHub!</p>
+    <script>
+        console.log("App carregado com sucesso!");
+        document.getElementById('status').innerHTML += ' ✅';
+    </script>
+</body>
+</html>
