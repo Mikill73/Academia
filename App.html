@@ -507,17 +507,22 @@ function saveConfig() {
         const store = getStore('readwrite');
         const req = store.put({ id: 'main', data: configData });
         req.onsuccess = () => {
-
+            if (document.getElementById('subModal').classList.contains('open')) {
+                document.getElementById('subModal').classList.remove('open');
+                document.getElementById('subModalBox').innerHTML = '';
+            }
+            
             if (typeof renderConfig === 'function') {
                 renderConfig();
             }
+            
             if (typeof renderTreinoCard === 'function' && treinoAtual) {
                 renderTreinoCard();
             }
+            
             if (typeof carregarEstadoBotao === 'function') {
                 carregarEstadoBotao();
             }
-
             resolve();
         };
         req.onerror = () => resolve();
@@ -2171,6 +2176,64 @@ function saveConfig() {
 
             btn.textContent = '';
         })();
+
+function salvarDadosAndroid(dados) {
+    if (window.AcademiaBridge) {
+        window.AcademiaBridge.salvarDados(JSON.stringify(dados));
+        return true;
+    }
+    return false;
+}
+
+function carregarDadosAndroid() {
+    if (window.AcademiaBridge) {
+        return JSON.parse(window.AcademiaBridge.carregarDados());
+    }
+    return null;
+}
+
+const originalSaveConfig = saveConfig;
+saveConfig = function() {
+    return new Promise((resolve) => {
+        try {
+            if (window.AcademiaBridge) {
+                window.AcademiaBridge.salvarDados(JSON.stringify(configData));
+                if (typeof renderConfig === 'function') renderConfig();
+                if (typeof renderTreinoCard === 'function' && treinoAtual) renderTreinoCard();
+                if (typeof carregarEstadoBotao === 'function') carregarEstadoBotao();
+                resolve();
+            } else {
+                localStorage.setItem('academia_data', JSON.stringify(configData));
+                resolve();
+            }
+        } catch (e) {
+            resolve();
+        }
+    });
+};
+
+const originalLoadConfig = loadConfig;
+loadConfig = function() {
+    return new Promise((resolve) => {
+        try {
+            if (window.AcademiaBridge) {
+                const data = window.AcademiaBridge.carregarDados();
+                if (data && data !== 'null') {
+                    configData = JSON.parse(data);
+                }
+                resolve();
+            } else {
+                const data = localStorage.getItem('academia_data');
+                if (data) {
+                    configData = JSON.parse(data);
+                }
+                resolve();
+            }
+        } catch (e) {
+            resolve();
+        }
+    });
+};
         
     </script>
 </body>
