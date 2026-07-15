@@ -398,13 +398,28 @@
 
             const DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
+            function usarBridge() {
+                return typeof window.AcademiaBridge !== 'undefined' && window.AcademiaBridge !== null;
+            }
+
             function loadConfig() {
                 return new Promise((resolve) => {
                     try {
-                        const data = localStorage.getItem('academia_data');
-                        if (data) {
-                            const parsed = JSON.parse(data);
-                            configData = parsed;
+                        let dados = null;
+                        if (usarBridge()) {
+                            const bridgeData = window.AcademiaBridge.carregarDados();
+                            if (bridgeData && bridgeData !== 'null' && bridgeData !== '') {
+                                dados = JSON.parse(bridgeData);
+                            }
+                        }
+                        if (!dados) {
+                            const localData = localStorage.getItem('academia_data');
+                            if (localData) {
+                                dados = JSON.parse(localData);
+                            }
+                        }
+                        if (dados) {
+                            configData = dados;
                             if (!configData.academia.peso) {
                                 configData.academia.peso = { atual: null, historico: [], meta: null, intervalo: 7, ultimoRegistro: null };
                             }
@@ -480,7 +495,11 @@
             function saveConfig() {
                 return new Promise((resolve) => {
                     try {
-                        localStorage.setItem('academia_data', JSON.stringify(configData));
+                        const dadosJson = JSON.stringify(configData);
+                        localStorage.setItem('academia_data', dadosJson);
+                        if (usarBridge()) {
+                            window.AcademiaBridge.salvarDados(dadosJson);
+                        }
                         if (document.getElementById('subModal').classList.contains('open')) {
                             document.getElementById('subModal').classList.remove('open');
                             document.getElementById('subModalBox').innerHTML = '';
