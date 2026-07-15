@@ -502,14 +502,27 @@
                 });
             }
 
-            function saveConfig() {
-                return new Promise((resolve) => {
-                    const store = getStore('readwrite');
-                    const req = store.put({ id: 'main', data: configData });
-                    req.onsuccess = () => resolve();
-                    req.onerror = () => resolve();
-                });
+function saveConfig() {
+    return new Promise((resolve) => {
+        const store = getStore('readwrite');
+        const req = store.put({ id: 'main', data: configData });
+        req.onsuccess = () => {
+
+            if (typeof renderConfig === 'function') {
+                renderConfig();
             }
+            if (typeof renderTreinoCard === 'function' && treinoAtual) {
+                renderTreinoCard();
+            }
+            if (typeof carregarEstadoBotao === 'function') {
+                carregarEstadoBotao();
+            }
+
+            resolve();
+        };
+        req.onerror = () => resolve();
+    });
+}
 
             function ensureLoadHistory(exercicio) {
                 if (!exercicio.loadHistory) {
@@ -2158,6 +2171,7 @@
 
             btn.textContent = '';
         })();
+        
     </script>
 </body>
 </html>
