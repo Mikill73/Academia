@@ -375,6 +375,18 @@
 
 <script>
         (function() {
+            function carregarDadosDoArquivo(dados) {
+                try {
+                    const parsed = JSON.parse(dados);
+                    if (parsed && parsed.academia) {
+                        configData = parsed;
+                        localStorage.setItem('academia_data', JSON.stringify(configData));
+                        if (typeof renderConfig === 'function') renderConfig();
+                        if (typeof carregarEstadoBotao === 'function') carregarEstadoBotao();
+                    }
+                } catch (e) {}
+            }
+
             function salvarNoArquivo() {
                 if (window.AcademiaBridge) {
                     window.AcademiaBridge.salvarDados(JSON.stringify(configData));
