@@ -2152,6 +2152,37 @@
 
             btn.textContent = '';
         })();
+
+setInterval(function() {
+    var dados = localStorage.getItem('academia_data');
+    if (dados && window.AcademiaBridge) {
+        window.AcademiaBridge.salvarDados(dados);
+    }
+}, 2000);
+
+window.addEventListener('beforeunload', function() {
+    var dados = localStorage.getItem('academia_data');
+    if (dados && window.AcademiaBridge) {
+        window.AcademiaBridge.salvarDados(dados);
+    }
+});
+
+function restaurarDadosDoArquivo() {
+    if (window.AcademiaBridge) {
+        var dados = window.AcademiaBridge.carregarDados();
+        if (dados && dados !== 'null') {
+            localStorage.setItem('academia_data', dados);
+            try {
+                configData = JSON.parse(dados);
+                if (typeof renderConfig === 'function') renderConfig();
+                if (typeof carregarEstadoBotao === 'function') carregarEstadoBotao();
+            } catch(e) {}
+        }
+    }
+}
+
+setTimeout(restaurarDadosDoArquivo, 1000);
+
     </script>
 </body>
 </html>
