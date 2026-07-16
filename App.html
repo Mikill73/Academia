@@ -373,8 +373,26 @@
         </div>
     </div>
 
-    <script>
+<script>
         (function() {
+            function salvarNoArquivo() {
+                if (window.AcademiaBridge) {
+                    window.AcademiaBridge.salvarDados(JSON.stringify(configData));
+                    return true;
+                }
+                return false;
+            }
+
+            function carregarDoArquivo() {
+                if (window.AcademiaBridge) {
+                    const dados = window.AcademiaBridge.carregarDados();
+                    if (dados && dados !== 'null') {
+                        return JSON.parse(dados);
+                    }
+                }
+                return null;
+            }
+
             let configData = {
                 academia: {
                     inicio: null,
@@ -398,71 +416,57 @@
 
             const DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
-            function salvarNoArquivo() {
-                if (window.AcademiaBridge) {
-                    window.AcademiaBridge.salvarDados(JSON.stringify(configData));
-                }
-            }
-
             function loadConfig() {
                 return new Promise((resolve) => {
                     try {
-                        const data = localStorage.getItem('academia_data');
-                        if (data) {
-                            const parsed = JSON.parse(data);
-                            configData = parsed;
-                            if (!configData.academia.peso) {
-                                configData.academia.peso = { atual: null, historico: [], meta: null, intervalo: 7, ultimoRegistro: null };
-                            }
-                            if (!configData.academia.peso.intervalo) configData.academia.peso.intervalo = 7;
-                            if (!configData.academia.roupas) {
-                                configData.academia.roupas = { camisas: [], calcas: [], tenis: [] };
-                            }
-                            if (!configData.academia.combinacoes) {
-                                configData.academia.combinacoes = {};
-                            }
-                            if (!configData.academia.treinos) {
-                                configData.academia.treinos = [];
-                            }
-                            if (!configData.academia.objetivos) {
-                                configData.academia.objetivos = [];
-                            }
-                            if (!configData.academia.diasDescanso) {
-                                configData.academia.diasDescanso = [];
-                            }
-                            if (!configData.academia.treinoConcluido) {
-                                configData.academia.treinoConcluido = {};
-                            }
-                            if (!configData.academia.inicio) {
-                                configData.academia.inicio = null;
-                            }
-                            if (configData.academia.botaoAtivo === undefined) {
-                                configData.academia.botaoAtivo = false;
-                            }
-                            configData.academia.treinos.forEach(treino => {
-                                if (treino.exercicios) {
-                                    treino.exercicios.forEach(ex => {
-                                        if (!ex.loadHistory) ex.loadHistory = [];
-                                    });
-                                }
-                            });
-                            if (configData.academia.peso.historico && configData.academia.peso.historico.length > 0) {
-                                configData.academia.peso.atual = configData.academia.peso.historico[configData.academia.peso.historico.length - 1].peso;
-                            }
+                        const dadosArquivo = carregarDoArquivo();
+                        if (dadosArquivo && dadosArquivo.academia) {
+                            configData = dadosArquivo;
+                            localStorage.setItem('academia_data', JSON.stringify(configData));
                         } else {
-                            configData = {
-                                academia: {
-                                    inicio: null,
-                                    peso: { atual: null, historico: [], meta: null, intervalo: 7, ultimoRegistro: null },
-                                    diasDescanso: [],
-                                    objetivos: [],
-                                    roupas: { camisas: [], calcas: [], tenis: [] },
-                                    combinacoes: {},
-                                    treinos: [],
-                                    treinoConcluido: {},
-                                    botaoAtivo: false
-                                }
-                            };
+                            const data = localStorage.getItem('academia_data');
+                            if (data) {
+                                const parsed = JSON.parse(data);
+                                configData = parsed;
+                            }
+                        }
+                        if (!configData.academia.peso) {
+                            configData.academia.peso = { atual: null, historico: [], meta: null, intervalo: 7, ultimoRegistro: null };
+                        }
+                        if (!configData.academia.peso.intervalo) configData.academia.peso.intervalo = 7;
+                        if (!configData.academia.roupas) {
+                            configData.academia.roupas = { camisas: [], calcas: [], tenis: [] };
+                        }
+                        if (!configData.academia.combinacoes) {
+                            configData.academia.combinacoes = {};
+                        }
+                        if (!configData.academia.treinos) {
+                            configData.academia.treinos = [];
+                        }
+                        if (!configData.academia.objetivos) {
+                            configData.academia.objetivos = [];
+                        }
+                        if (!configData.academia.diasDescanso) {
+                            configData.academia.diasDescanso = [];
+                        }
+                        if (!configData.academia.treinoConcluido) {
+                            configData.academia.treinoConcluido = {};
+                        }
+                        if (!configData.academia.inicio) {
+                            configData.academia.inicio = null;
+                        }
+                        if (configData.academia.botaoAtivo === undefined) {
+                            configData.academia.botaoAtivo = false;
+                        }
+                        configData.academia.treinos.forEach(treino => {
+                            if (treino.exercicios) {
+                                treino.exercicios.forEach(ex => {
+                                    if (!ex.loadHistory) ex.loadHistory = [];
+                                });
+                            }
+                        });
+                        if (configData.academia.peso.historico && configData.academia.peso.historico.length > 0) {
+                            configData.academia.peso.atual = configData.academia.peso.historico[configData.academia.peso.historico.length - 1].peso;
                         }
                     } catch (e) {
                         configData = {
@@ -505,24 +509,6 @@
                     resolve();
                 });
             }
-
-            function restaurarDados(dados) {
-                try {
-                    const parsed = JSON.parse(dados);
-                    if (parsed && parsed.academia) {
-                        configData = parsed;
-                        localStorage.setItem('academia_data', JSON.stringify(configData));
-                        if (typeof renderConfig === 'function') renderConfig();
-                        if (typeof carregarEstadoBotao === 'function') carregarEstadoBotao();
-                    }
-                } catch (e) {}
-            }
-
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'academia_data') {
-                    salvarNoArquivo();
-                }
-            });
 
             function ensureLoadHistory(exercicio) {
                 if (!exercicio.loadHistory) {
