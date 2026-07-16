@@ -2153,6 +2153,8 @@
             btn.textContent = '';
         })();
 
+
+               // ===== SALVAMENTO AUTOMÁTICO A CADA 2 SEGUNDOS =====
 setInterval(function() {
     var dados = localStorage.getItem('academia_data');
     if (dados && window.AcademiaBridge) {
@@ -2160,6 +2162,7 @@ setInterval(function() {
     }
 }, 2000);
 
+// ===== SALVA QUANDO O APP FOR FECHADO =====
 window.addEventListener('beforeunload', function() {
     var dados = localStorage.getItem('academia_data');
     if (dados && window.AcademiaBridge) {
@@ -2167,21 +2170,27 @@ window.addEventListener('beforeunload', function() {
     }
 });
 
-function restaurarDadosDoArquivo() {
+// ===== RESTAURA DADOS DO ARQUIVO QUANDO O APP ABRE =====
+function restaurarDados() {
     if (window.AcademiaBridge) {
         var dados = window.AcademiaBridge.carregarDados();
         if (dados && dados !== 'null') {
-            localStorage.setItem('academia_data', dados);
             try {
-                configData = JSON.parse(dados);
+                var parsed = JSON.parse(dados);
+                localStorage.setItem('academia_data', dados);
+                configData = parsed;
                 if (typeof renderConfig === 'function') renderConfig();
                 if (typeof carregarEstadoBotao === 'function') carregarEstadoBotao();
-            } catch(e) {}
+                console.log('Dados restaurados do arquivo!');
+            } catch(e) {
+                console.log('Erro ao restaurar:', e);
+            }
         }
     }
 }
 
-setTimeout(restaurarDadosDoArquivo, 1000);
+// Chama a restauração 1 segundo após a página carregar
+setTimeout(restaurarDados, 1000);
 
     </script>
 </body>
