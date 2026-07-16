@@ -323,7 +323,7 @@
 <body>
     <button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button>
     <button class="circle-btn" id="mainBtn"></button>
-
+<button onclick="testarBridge()" style="background:#ff6b00;color:#fff;padding:10px;border:none;border-radius:8px;margin:5px;">🔧 TESTAR BRIDGE</button>
     <div class="today-training-card" id="todayCard">
         <div class="card-title" id="cardTitle">Treino de Hoje</div>
         <div id="exercisesContainer"></div>
@@ -2154,44 +2154,20 @@
         })();
 
 
-               // ===== SALVAMENTO AUTOMÁTICO A CADA 2 SEGUNDOS =====
-setInterval(function() {
-    var dados = localStorage.getItem('academia_data');
-    if (dados && window.AcademiaBridge) {
-        window.AcademiaBridge.salvarDados(dados);
-    }
-}, 2000);
-
-// ===== SALVA QUANDO O APP FOR FECHADO =====
-window.addEventListener('beforeunload', function() {
-    var dados = localStorage.getItem('academia_data');
-    if (dados && window.AcademiaBridge) {
-        window.AcademiaBridge.salvarDados(dados);
-    }
-});
-
-// ===== RESTAURA DADOS DO ARQUIVO QUANDO O APP ABRE =====
-function restaurarDados() {
+             function testarBridge() {
     if (window.AcademiaBridge) {
-        var dados = window.AcademiaBridge.carregarDados();
-        if (dados && dados !== 'null') {
-            try {
-                var parsed = JSON.parse(dados);
-                localStorage.setItem('academia_data', dados);
-                configData = parsed;
-                if (typeof renderConfig === 'function') renderConfig();
-                if (typeof carregarEstadoBotao === 'function') carregarEstadoBotao();
-                console.log('Dados restaurados do arquivo!');
-            } catch(e) {
-                console.log('Erro ao restaurar:', e);
-            }
+        var dados = localStorage.getItem('academia_data');
+        if (!dados) {
+            dados = JSON.stringify({teste: 'funcionando', data: new Date().toISOString()});
+            localStorage.setItem('academia_data', dados);
         }
+        window.AcademiaBridge.salvarDados(dados);
+        alert('Comando enviado! Verifique o Toast.');
+    } else {
+        alert('Bridge NÃO disponível!');
     }
 }
 
-// Chama a restauração 1 segundo após a página carregar
-setTimeout(restaurarDados, 1000);
 
-    </script>
 </body>
 </html>
