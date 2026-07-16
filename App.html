@@ -398,6 +398,12 @@
 
             const DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
+            function salvarNoArquivo() {
+                if (window.AcademiaBridge) {
+                    window.AcademiaBridge.salvarDados(JSON.stringify(configData));
+                }
+            }
+
             function loadConfig() {
                 return new Promise((resolve) => {
                     try {
@@ -481,6 +487,7 @@
                 return new Promise((resolve) => {
                     try {
                         localStorage.setItem('academia_data', JSON.stringify(configData));
+                        salvarNoArquivo();
                         if (document.getElementById('subModal').classList.contains('open')) {
                             document.getElementById('subModal').classList.remove('open');
                             document.getElementById('subModalBox').innerHTML = '';
@@ -498,6 +505,24 @@
                     resolve();
                 });
             }
+
+            function restaurarDados(dados) {
+                try {
+                    const parsed = JSON.parse(dados);
+                    if (parsed && parsed.academia) {
+                        configData = parsed;
+                        localStorage.setItem('academia_data', JSON.stringify(configData));
+                        if (typeof renderConfig === 'function') renderConfig();
+                        if (typeof carregarEstadoBotao === 'function') carregarEstadoBotao();
+                    }
+                } catch (e) {}
+            }
+
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'academia_data') {
+                    salvarNoArquivo();
+                }
+            });
 
             function ensureLoadHistory(exercicio) {
                 if (!exercicio.loadHistory) {
