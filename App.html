@@ -375,10 +375,6 @@
 
     <script>
         (function() {
-            const DB_NAME = 'AcademiaDB';
-            const STORE_NAME = 'academiaStore';
-
-            let db = null;
             let configData = {
                 academia: {
                     inicio: null,
@@ -402,32 +398,13 @@
 
             const DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
-            function openDB() {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(DB_NAME, 13);
-                    request.onupgradeneeded = (e) => {
-                        const db = e.target.result;
-                        if (!db.objectStoreNames.contains(STORE_NAME)) {
-                            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                        }
-                    };
-                    request.onsuccess = (e) => resolve(e.target.result);
-                    request.onerror = (e) => reject(e.target.error);
-                });
-            }
-
-            function getStore(mode) {
-                const tx = db.transaction(STORE_NAME, mode);
-                return tx.objectStore(STORE_NAME);
-            }
-
             function loadConfig() {
                 return new Promise((resolve) => {
-                    const store = getStore('readonly');
-                    const req = store.get('main');
-                    req.onsuccess = () => {
-                        if (req.result && req.result.data) {
-                            configData = req.result.data;
+                    try {
+                        const data = localStorage.getItem('academia_data');
+                        if (data) {
+                            const parsed = JSON.parse(data);
+                            configData = parsed;
                             if (!configData.academia.peso) {
                                 configData.academia.peso = { atual: null, historico: [], meta: null, intervalo: 7, ultimoRegistro: null };
                             }
@@ -481,9 +458,7 @@
                                 }
                             };
                         }
-                        resolve();
-                    };
-                    req.onerror = () => {
+                    } catch (e) {
                         configData = {
                             academia: {
                                 inicio: null,
@@ -497,17 +472,30 @@
                                 botaoAtivo: false
                             }
                         };
-                        resolve();
-                    };
+                    }
+                    resolve();
                 });
             }
 
             function saveConfig() {
                 return new Promise((resolve) => {
-                    const store = getStore('readwrite');
-                    const req = store.put({ id: 'main', data: configData });
-                    req.onsuccess = () => resolve();
-                    req.onerror = () => resolve();
+                    try {
+                        localStorage.setItem('academia_data', JSON.stringify(configData));
+                        if (document.getElementById('subModal').classList.contains('open')) {
+                            document.getElementById('subModal').classList.remove('open');
+                            document.getElementById('subModalBox').innerHTML = '';
+                        }
+                        if (typeof renderConfig === 'function') {
+                            renderConfig();
+                        }
+                        if (typeof renderTreinoCard === 'function' && treinoAtual) {
+                            renderTreinoCard();
+                        }
+                        if (typeof carregarEstadoBotao === 'function') {
+                            carregarEstadoBotao();
+                        }
+                    } catch (e) {}
+                    resolve();
                 });
             }
 
@@ -2135,24 +2123,7 @@
                 openConfig('edit');
             });
 
-            openDB().then(database => {
-                db = database;
-                return loadConfig();
-            }).catch(() => {
-                configData = {
-                    academia: {
-                        inicio: null,
-                        peso: { atual: null, historico: [], meta: null, intervalo: 7, ultimoRegistro: null },
-                        diasDescanso: [],
-                        objetivos: [],
-                        roupas: { camisas: [], calcas: [], tenis: [] },
-                        combinacoes: {},
-                        treinos: [],
-                        treinoConcluido: {},
-                        botaoAtivo: false
-                    }
-                };
-            }).finally(() => {
+            loadConfig().finally(() => {
                 carregarEstadoBotao();
             });
 
