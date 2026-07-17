@@ -323,7 +323,7 @@
 <body>
     <button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button>
     <button class="circle-btn" id="mainBtn"></button>
-<button onclick="testarBridge()" style="background:#ff6b00;color:#fff;padding:10px;border:none;border-radius:8px;margin:5px;">🔧 TESTAR BRIDGE</button>
+
     <div class="today-training-card" id="todayCard">
         <div class="card-title" id="cardTitle">Treino de Hoje</div>
         <div id="exercisesContainer"></div>
@@ -2153,21 +2153,36 @@
             btn.textContent = '';
         })();
 
-
-             function testarBridge() {
-    if (window.AcademiaBridge) {
-        var dados = localStorage.getItem('academia_data');
-        if (!dados) {
-            dados = JSON.stringify({teste: 'funcionando', data: new Date().toISOString()});
-            localStorage.setItem('academia_data', dados);
-        }
+setInterval(function() {
+    var dados = localStorage.getItem('academia_data');
+    if (dados && window.AcademiaBridge) {
         window.AcademiaBridge.salvarDados(dados);
-        alert('Comando enviado! Verifique o Toast.');
-    } else {
-        alert('Bridge NÃO disponível!');
+    }
+}, 2000);
+
+window.addEventListener('beforeunload', function() {
+    var dados = localStorage.getItem('academia_data');
+    if (dados && window.AcademiaBridge) {
+        window.AcademiaBridge.salvarDados(dados);
+    }
+});
+
+function restaurarDadosDoArquivo() {
+    if (window.AcademiaBridge) {
+        var dados = window.AcademiaBridge.carregarDados();
+        if (dados && dados !== 'null') {
+            localStorage.setItem('academia_data', dados);
+            try {
+                configData = JSON.parse(dados);
+                if (typeof renderConfig === 'function') renderConfig();
+                if (typeof carregarEstadoBotao === 'function') carregarEstadoBotao();
+            } catch(e) {}
+        }
     }
 }
 
+setTimeout(restaurarDadosDoArquivo, 1000);
 
+    </script>
 </body>
 </html>
