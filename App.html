@@ -1,2188 +1,1129 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #0d0d0d;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-family: Arial, sans-serif;
-            touch-action: manipulation;
-            position: relative;
-            overflow: hidden;
-        }
-        .hamburger {
-            position: absolute; top: 16px; left: 16px;
-            display: flex; flex-direction: column; gap: 4px;
-            cursor: pointer; padding: 6px;
-            background: transparent; border: none; z-index: 10;
-            touch-action: manipulation;
-        }
-        .hamburger span { display: block; width: 24px; height: 3px; background: #fff; border-radius: 2px; transition: 0.2s; }
-        .circle-btn {
-            width: 130px; height: 130px;
-            border-radius: 50%;
-            background: #ff0000;
-            border: none; color: #fff; font-size: 0;
-            cursor: pointer;
-            box-shadow: 0 0 25px rgba(255,0,0,0.3);
-            transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.3s ease;
-            touch-action: manipulation; user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            z-index: 5; flex-shrink: 0;
-        }
-        .circle-btn.active { background: #00cc00; box-shadow: 0 0 35px rgba(0,204,0,0.4); }
-        .circle-btn:active { transform: scale(0.92); }
-        @media (max-width:480px) { .circle-btn { width: 110px; height: 110px; } }
-        @media (max-width:360px) { .circle-btn { width: 90px; height: 90px; } }
+mkdir -p src/main/java/com/academia/app
+cat > src/main/java/com/academia/app/MainActivity.java << 'ENDOFJAVA'
+package com.academia.app;
 
-        .menu-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 20;
-            display: none; justify-content: flex-start; align-items: stretch; padding: 0;
-        }
-        .menu-overlay.open { display: flex; }
-        .menu-panel {
-            background: #1a1a1a; width: 280px; height: 100%;
-            padding: 20px 16px; display: flex; flex-direction: column; overflow-y: auto;
-        }
-        .menu-panel .close-btn {
-            color: #888; font-size: 1.8rem; text-align: right; padding: 4px 8px;
-            border-bottom: 1px solid #2a2a2a; margin-bottom: 10px; cursor: pointer; flex-shrink: 0;
-        }
-        .menu-panel .close-btn:hover { color: #fff; }
-        .menu-panel button {
-            background: transparent; border: none; color: #ccc; padding: 16px 16px;
-            text-align: left; font-size: 1.2rem; width: 100%; cursor: pointer;
-            border-bottom: 1px solid #2a2a2a; transition: 0.15s; touch-action: manipulation;
-        }
-        .menu-panel button:last-child { border-bottom: none; }
-        .menu-panel button:hover { background: #2a2a2a; color: #fff; }
+import android.app.Activity;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
-        .config-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 30;
-            display: none; justify-content: center; align-items: flex-start;
-            padding: 12px; overflow-y: auto;
-        }
-        .config-modal.open { display: flex; }
-        .config-box {
-            background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px;
-            padding: 16px 14px; max-width: 480px; width: 100%; margin: 10px auto;
-            color: #ddd; box-shadow: 0 8px 40px rgba(0,0,0,0.9);
-        }
-        .config-box .header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #2a2a2a; padding-bottom: 8px; margin-bottom: 12px;
-        }
-        .config-box .header h3 { color: #aaa; font-weight: 400; font-size: 1.1rem; margin: 0; }
-        .config-box .header .back-btn {
-            background: none; border: none; color: #888; font-size: 1.8rem;
-            cursor: pointer; padding: 0 8px; touch-action: manipulation; font-weight: bold;
-            line-height: 1;
-        }
-        .config-box .header .back-btn:hover { color: #fff; }
-        .config-box label { color: #888; font-size: 0.75rem; display: block; margin: 10px 0 3px 0; letter-spacing: 0.3px; }
-        .config-box .value-display {
-            background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 4px;
-            padding: 6px 10px; color: #eee; font-size: 0.95rem; margin-bottom: 3px;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;
-        }
-        .config-box .value-display .action-btn {
-            background: #1a3a1a; border: 1px solid #2a5a2a; color: #8bc34a;
-            padding: 3px 10px; border-radius: 4px; cursor: pointer; touch-action: manipulation; font-size: 0.75rem;
-        }
-        .config-box .value-display .action-btn:hover { background: #1f4a1f; }
-        .config-box .value-display .action-btn.secondary { background: #2a2a2a; border-color: #3a3a3a; color: #ccc; }
-        .config-box .value-display .action-btn.secondary:hover { background: #3a3a3a; }
-        .config-box .value-display .action-btn.danger { background: #3a1a1a; border-color: #5a2a2a; color: #ff8a8a; }
-        .config-box .value-display .action-btn.danger:hover { background: #4a1a1a; }
-        .config-box .small-note { color: #666; font-size: 0.7rem; margin-top: 2px; }
-        .config-box .checkbox-grid { display: flex; flex-wrap: wrap; gap: 3px 10px; margin: 3px 0 6px 0; }
-        .config-box .checkbox-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
-        .config-box .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: #666; margin: 0; flex-shrink: 0; }
-        .config-box .checkbox-row label { margin: 0; color: #aaa; font-size: 0.8rem; }
-        .config-item {
-            background: #0d0d0d; border: 1px solid #2a2a2a; padding: 6px 10px;
-            border-radius: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;
-        }
-        .config-item span { color: #eee; word-break: break-word; font-size: 0.85rem; }
-        .config-item .del-btn { color: #f66; background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0 4px; }
-        .config-item .del-btn:hover { color: #f00; }
-        .config-item .edit-btn { color: #88aaff; background: none; border: none; cursor: pointer; font-size: 0.95rem; padding: 0 4px; }
-        .config-item .edit-btn:hover { color: #aaccff; }
-        .config-item .item-actions { display: flex; gap: 3px; }
-        .add-area { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
-        .add-area button {
-            padding: 5px 12px; background: #1a3a1a; color: #8bc34a;
-            border: 1px solid #2a5a2a; border-radius: 4px; cursor: pointer;
-            touch-action: manipulation; white-space: nowrap; font-size: 0.8rem;
-        }
-        .add-area button:hover { background: #1f4a1f; }
-        .goal-tag {
-            display: inline-block; background: #1a2a1a; color: #8bc34a;
-            padding: 1px 6px; border-radius: 8px; font-size: 0.65rem; border: 1px solid #2a4a2a; margin-left: 4px;
-        }
-        .sub-section { border-top: 1px solid #2a2a2a; padding-top: 10px; margin-top: 10px; }
-        .sub-section h4 { color: #999; font-weight: 400; margin-bottom: 5px; font-size: 0.9rem; }
-        .training-entry {
-            background: #0d0d0d; border-left: 2px solid #3a4a3a; padding: 3px 6px;
-            margin-bottom: 3px; border-radius: 2px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;
-        }
-        .training-entry .training-text { color: #bbb; }
-        .training-entry .training-actions { display: flex; gap: 3px; }
-        .training-entry .training-actions button { background: none; border: none; color: #888; cursor: pointer; font-size: 0.85rem; padding: 0 3px; }
-        .training-entry .training-actions button:hover { color: #ddd; }
-        .clothe-item {
-            background: #0d0d0d; padding: 3px 6px; border-left: 2px solid #2a2a2a;
-            margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;
-        }
-        .clothe-item span { color: #ccc; }
-        .clothe-item .item-actions { display: flex; gap: 3px; }
-        .clothe-item .item-actions button { background: none; border: none; color: #888; cursor: pointer; font-size: 0.85rem; padding: 0 3px; }
-        .clothe-item .item-actions button:hover { color: #ddd; }
-        .combo-item {
-            background: #0d0d0d; padding: 3px 6px; border: 1px solid #1a1a1a;
-            border-radius: 2px; margin: 2px 0; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;
-        }
-        .combo-item .combo-text { color: #ccc; }
-        .combo-item .del-btn { color: #f66; background: none; border: none; cursor: pointer; font-size: 1rem; padding: 0 4px; }
-        .combo-item .del-btn:hover { color: #f00; }
-        .combo-selects { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; margin: 3px 0; }
-        .combo-selects select {
-            background: #0a0a0a; border: 1px solid #2a2a2a; color: #ddd;
-            padding: 3px 5px; border-radius: 2px; font-size: 0.75rem; min-width: 70px; flex: 1;
-        }
-        .history-list { max-height: 200px; overflow-y: auto; margin: 4px 0; }
-        .history-list .history-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 3px 6px; border-bottom: 1px solid #1a1a1a; font-size: 0.8rem;
-        }
-        .history-list .history-item span { color: #bbb; }
-        .history-list .history-item .history-actions { display: flex; gap: 3px; }
-        .history-list .history-item .history-actions button { background: none; border: none; color: #888; cursor: pointer; font-size: 0.75rem; padding: 0 3px; }
-        .history-list .history-item .history-actions button:hover { color: #ddd; }
-        .evolution-area {
-            background: #1a2a0a; border: 1px solid #2a4a2a; border-radius: 4px; padding: 6px 8px; margin-top: 5px;
-        }
-        .evolution-area .evo-title { color: #8bc34a; font-size: 0.75rem; font-weight: bold; margin-bottom: 3px; }
-        .evolution-area .evo-row { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; margin-top: 3px; }
-        .evolution-area .evo-row input { flex: 1; min-width: 50px; background: #0a0a0a; border: 1px solid #2a2a2a; color: #ddd; padding: 4px; border-radius: 4px; font-size: 0.8rem; }
-        .evolution-area .evo-row button { padding: 3px 10px; background: #1a3a1a; color: #8bc34a; border: 1px solid #2a5a2a; border-radius: 4px; cursor: pointer; touch-action: manipulation; font-size: 0.75rem; }
-        .evolution-area .evo-row button:hover { background: #1f4a1f; }
-        .evolution-history { color: #888; font-size: 0.65rem; margin-top: 3px; }
-        .day-select { background: #0a0a0a; border: 1px solid #2a2a2a; color: #ddd; padding: 3px 6px; border-radius: 2px; min-width: 80px; font-size: 0.8rem; }
-        .form-row { display: flex; gap: 6px; flex-wrap: wrap; }
-        .form-row .form-group { flex: 1; min-width: 60px; }
-        .form-group label { color: #888; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.3px; margin: 0 0 2px 0; }
-        .form-group input { background: #0a0a0a; border: 1px solid #2a2a2a; color: #ddd; padding: 4px 6px; border-radius: 4px; width: 100%; font-size: 0.85rem; }
-        .form-group input:focus { outline: 1px solid #555; }
-        .btn-row { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; flex-wrap: wrap; }
-        .btn-row button { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85rem; touch-action: manipulation; }
-        .btn-primary { background: #1a3a1a; color: #8bc34a; border: 1px solid #2a5a2a; }
-        .btn-primary:hover { background: #1f4a1f; }
-        .btn-secondary { background: #2a2a2a; color: #ccc; border: 1px solid #3a3a3a; }
-        .btn-secondary:hover { background: #3a3a3a; }
-        .btn-danger { background: #3a1a1a; color: #ff8a8a; border: 1px solid #5a2a2a; }
-        .btn-danger:hover { background: #4a1a1a; }
+public class MainActivity extends Activity {
 
-        .sub-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 40;
-            display: none; justify-content: center; align-items: center; padding: 16px;
-        }
-        .sub-modal.open { display: flex; }
-        .sub-modal .config-box { max-width: 420px; margin: 0; }
+    private SharedPreferences prefs;
+    private JSONObject configData;
+    private JSONObject treinoAtual;
+    private int exercicioAtualIndex = 0;
+    private boolean isActive = false;
+    private boolean aguardandoTimer = false;
+    private Handler timerHandler;
+    private Runnable timerRunnable;
+    private int timerRestante = 0;
 
-        .today-training-card {
-            background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px;
-            padding: 16px 14px; margin: 6px 10px; width: calc(100% - 20px); max-width: 430px;
-            display: none; z-index: 5; max-height: 62vh; overflow-y: auto;
-        }
-        .today-training-card.active { display: block; }
-        .today-training-card .card-title {
-            color: #aaa; font-size: 0.85rem; text-align: center; margin-bottom: 8px;
-            border-bottom: 1px solid #2a2a2a; padding-bottom: 6px; font-weight: bold;
-        }
-        .today-training-card .exercise-card {
-            background: #0d0d0d; border-radius: 10px; padding: 14px 16px;
-            margin-bottom: 8px; border: 2px solid #2a2a2a; text-align: center;
-        }
-        .today-training-card .exercise-card .ex-name { color: #eee; font-size: 1.2rem; font-weight: bold; margin-bottom: 4px; }
-        .today-training-card .exercise-card .ex-details { color: #aaa; font-size: 0.9rem; margin: 2px 0; }
-        .today-training-card .exercise-card .ex-load { color: #8bc34a; font-size: 0.95rem; margin: 2px 0; }
-        .today-training-card .exercise-card .ex-status { color: #666; font-size: 0.8rem; margin-top: 3px; }
-        .today-training-card .exercise-card .ex-status.done { color: #8bc34a; }
-        .today-training-card .exercise-card .ex-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: center; flex-wrap: wrap; }
-        .today-training-card .exercise-card .ex-actions button {
-            padding: 6px 18px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85rem; touch-action: manipulation;
-        }
-        .today-training-card .exercise-card .ex-actions .btn-done { background: #1a3a1a; color: #8bc34a; border: 1px solid #2a5a2a; }
-        .today-training-card .exercise-card .ex-actions .btn-done:hover { background: #1f4a1f; }
-        .today-training-card .exercise-card .ex-actions .btn-done:disabled { opacity: 0.4; cursor: default; }
-        .today-training-card .progress-bar { background: #0d0d0d; border-radius: 8px; height: 5px; margin: 6px 0; overflow: hidden; }
-        .today-training-card .progress-bar .progress-fill { height: 100%; background: #8bc34a; width: 0%; transition: width 0.3s; }
-        .today-training-card .progress-text { color: #888; font-size: 0.7rem; text-align: center; }
-        .today-training-card .timer-display { background: #0d0d0d; border-radius: 8px; padding: 8px; text-align: center; margin: 6px 0; border: 1px solid #2a4a2a; }
-        .today-training-card .timer-display .timer-text { color: #8bc34a; font-size: 1.4rem; font-weight: bold; font-variant-numeric: tabular-nums; }
-        .today-training-card .timer-display .timer-label { color: #888; font-size: 0.7rem; }
+    private LinearLayout mainLayout;
+    private LinearLayout menuPanel;
+    private FrameLayout menuOverlay;
+    private FrameLayout configModal;
+    private LinearLayout configContent;
+    private FrameLayout pesoAvisoModal;
+    private FrameLayout confirmModal;
+    private LinearLayout todayCard;
+    private LinearLayout exercisesContainer;
+    private LinearLayout timerContainer;
+    private View progressFill;
+    private TextView progressText;
+    private Button mainBtn;
+    private TextView cardTitle;
 
-        .peso-aviso {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 50;
-            display: none; justify-content: center; align-items: center; padding: 16px;
-        }
-        .peso-aviso.open { display: flex; }
-        .peso-aviso .aviso-box {
-            background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px;
-            padding: 20px; max-width: 340px; width: 100%; text-align: center;
-        }
-        .peso-aviso .aviso-box h3 { color: #ff8a8a; font-weight: 400; margin-bottom: 10px; font-size: 1.1rem; }
-        .peso-aviso .aviso-box p { color: #ccc; margin-bottom: 10px; font-size: 0.9rem; }
-        .peso-aviso .aviso-box input { background: #0a0a0a; border: 1px solid #2a2a2a; color: #ddd; padding: 6px; border-radius: 4px; width: 100%; margin: 6px 0; font-size: 1rem; }
-        .peso-aviso .aviso-box .btn-row { justify-content: center; }
+    private static final String[] DIAS_SEMANA = {"Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"};
 
-        .confirm-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 60;
-            display: none; justify-content: center; align-items: center; padding: 20px;
-        }
-        .confirm-modal.open { display: flex; }
-        .confirm-modal .confirm-box {
-            background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px;
-            padding: 20px; max-width: 340px; width: 100%; text-align: center;
-        }
-        .confirm-modal .confirm-box h3 { color: #eee; font-weight: 400; margin-bottom: 10px; }
-        .confirm-modal .confirm-box p { color: #aaa; margin-bottom: 14px; font-size: 0.9rem; }
-        .confirm-modal .confirm-box .btn-row { justify-content: center; }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        prefs = getSharedPreferences("AcademiaPrefs", MODE_PRIVATE);
+        timerHandler = new Handler(Looper.getMainLooper());
+        loadConfig();
 
-        .evolucao-verde { color: #8bc34a; }
-        .evolucao-vermelha { color: #ff6b6b; }
-        .evolucao-neutra { color: #aaa; }
-        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
-        .status-dot.verde { background: #8bc34a; }
-        .status-dot.vermelha { background: #ff6b6b; }
-        .status-dot.neutra { background: #666; }
+        FrameLayout root = new FrameLayout(this);
+        root.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.setBackgroundColor(Color.parseColor("#0d0d0d"));
 
-        .graph-container { background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 6px; padding: 10px; margin: 6px 0; overflow-x: auto; }
-        .graph-container .graph-bar { display: flex; align-items: flex-end; height: 60px; gap: 4px; min-width: 200px; }
-        .graph-container .graph-bar .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 20px; }
-        .graph-container .graph-bar .bar-item .bar { width: 100%; border-radius: 2px 2px 0 0; min-height: 2px; transition: height 0.3s; background: #8bc34a; }
-        .graph-container .graph-bar .bar-item .bar-label { color: #666; font-size: 0.55rem; margin-top: 2px; text-align: center; }
-        .graph-container .graph-bar .bar-item .bar-value { color: #aaa; font-size: 0.6rem; margin-bottom: 2px; }
-        .graph-container .graph-title { color: #888; font-size: 0.7rem; margin-bottom: 4px; text-align: center; }
+        mainLayout = new LinearLayout(this);
+        mainLayout.setOrientation(LinearLayout.VERTICAL);
+        mainLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        .evo-table {
-            width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 0.8rem;
-        }
-        .evo-table th { color: #888; text-align: left; padding: 4px 6px; border-bottom: 1px solid #2a2a2a; }
-        .evo-table td { padding: 4px 6px; border-bottom: 1px solid #1a1a1a; color: #ccc; }
-        .evo-table .clickable { cursor: pointer; transition: 0.15s; }
-        .evo-table .clickable:hover { background: #1a1a1a; }
-        .full-btn { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #2a5a2a; background: #1a3a1a; color: #8bc34a; cursor: pointer; touch-action: manipulation; font-size: 0.9rem; margin-top: 6px; }
-        .full-btn:hover { background: #1f4a1f; }
-        .view-mode .config-item .del-btn, .view-mode .config-item .edit-btn,
-        .view-mode .add-area, .view-mode .training-entry .training-actions,
-        .view-mode .clothe-item .item-actions, .view-mode .combo-item .del-btn,
-        .view-mode .history-item .history-actions, .view-mode .value-display .action-btn,
-        .view-mode .checkbox-row input[type="checkbox"], .view-mode #addObjetivoBtn,
-        .view-mode #addTreinoBtn, .view-mode [data-action="add-exercicio"],
-        .view-mode [data-action="add-roupa"], .view-mode [data-action="add-combo"],
-        .view-mode #editInicioBtn, .view-mode #addPesoBtn,
-        .view-mode #showPesoHistoryBtn, .view-mode #editIntervaloBtn,
-        .view-mode .full-btn {
-            display: none !important;
-        }
-        .view-mode .config-item span { font-size: 0.9rem; }
-        .view-mode .value-display span { font-size: 1rem; }
-        .view-mode .config-box { max-width: 100%; }
-        .view-mode .evo-table td { font-size: 0.9rem; }
-        .view-mode .evo-table .clickable:hover { background: transparent; }
+        Button hamburger = new Button(this);
+        hamburger.setText("☰");
+        hamburger.setTextColor(Color.WHITE);
+        hamburger.setTextSize(28);
+        hamburger.setBackgroundColor(Color.TRANSPARENT);
+        LinearLayout.LayoutParams hamburgerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        hamburgerParams.setMargins(16, 16, 0, 0);
+        hamburger.setLayoutParams(hamburgerParams);
+        hamburger.setOnClickListener(v -> toggleMenu(true));
+        mainLayout.addView(hamburger);
 
-        .drag-handle { cursor: grab; color: #555; padding: 0 4px; font-size: 1rem; user-select: none; }
-        .drag-handle:active { cursor: grabbing; }
-        .dragging { opacity: 0.5; }
-        .drag-over { border-color: #8bc34a !important; background: #1a2a1a; }
-        .exercicio-lista { margin: 4px 0; }
-        .exercicio-lista .ex-item {
-            background: #0d0d0d; border: 1px solid #2a2a2a; border-radius: 4px;
-            padding: 6px 10px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
-        }
-        .exercicio-lista .ex-item .ex-info { flex: 1; color: #ccc; font-size: 0.85rem; }
-        .exercicio-lista .ex-item .ex-actions { display: flex; gap: 3px; }
-        .exercicio-lista .ex-item .ex-actions button { background: none; border: none; color: #888; cursor: pointer; font-size: 0.85rem; padding: 0 3px; }
-        .exercicio-lista .ex-item .ex-actions button:hover { color: #ddd; }
-    </style>
-</head>
-<body>
-    <button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button>
-    <button class="circle-btn" id="mainBtn"></button>
+        mainBtn = new Button(this);
+        mainBtn.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130), Gravity.CENTER));
+        ((LinearLayout.LayoutParams) mainBtn.getLayoutParams()).topMargin = dpToPx(40);
+        mainBtn.setBackgroundDrawable(new android.graphics.drawable.ShapeDrawable(new android.graphics.drawable.shapes.OvalShape()));
+        mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+        mainBtn.setOnClickListener(v -> handleMainBtnClick());
+        mainLayout.addView(mainBtn);
 
-    <div class="today-training-card" id="todayCard">
-        <div class="card-title" id="cardTitle">Treino de Hoje</div>
-        <div id="exercisesContainer"></div>
-        <div id="timerContainer"></div>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-        <div class="progress-text" id="progressText">0/0 concluídos</div>
-    </div>
+        todayCard = new LinearLayout(this);
+        todayCard.setOrientation(LinearLayout.VERTICAL);
+        todayCard.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        todayCard.setPadding(dpToPx(14), dpToPx(16), dpToPx(14), dpToPx(16));
+        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        cardParams.setMargins(dpToPx(10), dpToPx(20), dpToPx(10), 0);
+        todayCard.setLayoutParams(cardParams);
+        todayCard.setVisibility(View.GONE);
 
-    <div class="menu-overlay" id="menuOverlay">
-        <div class="menu-panel">
-            <div class="close-btn" id="closeMenuBtn">✕</div>
-            <button id="menuAcademiaBtn">Academia</button>
-            <button id="menuConfigBtn">Configurações</button>
-        </div>
-    </div>
+        cardTitle = new TextView(this);
+        cardTitle.setText("Treino de Hoje");
+        cardTitle.setTextColor(Color.parseColor("#aaa"));
+        cardTitle.setTextSize(14);
+        cardTitle.setGravity(Gravity.CENTER);
+        cardTitle.setPadding(0, 0, 0, dpToPx(8));
+        todayCard.addView(cardTitle);
 
-    <div class="config-modal" id="configModal">
-        <div class="config-box" id="configBox">
-            <div class="header">
-                <button class="back-btn" id="backFromConfig">←</button>
-                <h3 id="configTitle">Academia</h3>
-                <div style="width:30px;"></div>
-            </div>
-            <div id="configContent"></div>
-        </div>
-    </div>
+        exercisesContainer = new LinearLayout(this);
+        exercisesContainer.setOrientation(LinearLayout.VERTICAL);
+        todayCard.addView(exercisesContainer);
 
-    <div class="sub-modal" id="subModal"><div class="config-box" id="subModalBox"></div></div>
+        timerContainer = new LinearLayout(this);
+        timerContainer.setOrientation(LinearLayout.VERTICAL);
+        todayCard.addView(timerContainer);
 
-    <div class="peso-aviso" id="pesoAviso">
-        <div class="aviso-box">
-            <h3>Hora de Pesar!</h3>
-            <p id="pesoAvisoText">Registre seu novo peso.</p>
-            <input type="number" step="0.1" id="pesoAvisoInput" placeholder="Peso atual (kg)" />
-            <div class="btn-row"><button class="btn-primary" id="pesoAvisoBtn">Registrar</button></div>
-        </div>
-    </div>
+        LinearLayout progressLayout = new LinearLayout(this);
+        progressLayout.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        progressLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(5)));
+        progressFill = new View(this);
+        progressFill.setBackgroundColor(Color.parseColor("#8bc34a"));
+        progressFill.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 0));
+        progressLayout.addView(progressFill);
+        todayCard.addView(progressLayout);
 
-    <div class="confirm-modal" id="confirmModal">
-        <div class="confirm-box">
-            <h3 id="confirmTitle">Confirmar</h3>
-            <p id="confirmMsg">Tem certeza?</p>
-            <div class="btn-row">
-                <button class="btn-secondary" id="confirmNo">Não</button>
-                <button class="btn-danger" id="confirmYes">Sim</button>
-            </div>
-        </div>
-    </div>
+        progressText = new TextView(this);
+        progressText.setText("0/0 concluídos");
+        progressText.setTextColor(Color.parseColor("#888"));
+        progressText.setTextSize(11);
+        progressText.setGravity(Gravity.CENTER);
+        progressText.setPadding(0, dpToPx(6), 0, 0);
+        todayCard.addView(progressText);
 
-<script>
-        (function() {
-            function carregarDadosDoArquivo(dados) {
+        mainLayout.addView(todayCard);
+
+        menuOverlay = new FrameLayout(this);
+        menuOverlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        menuOverlay.setBackgroundColor(Color.parseColor("#00000000"));
+        menuOverlay.setVisibility(View.GONE);
+        menuOverlay.setOnClickListener(v -> toggleMenu(false));
+
+        menuPanel = new LinearLayout(this);
+        menuPanel.setOrientation(LinearLayout.VERTICAL);
+        menuPanel.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        menuPanel.setLayoutParams(new FrameLayout.LayoutParams(dpToPx(280), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.START));
+        menuPanel.setOnClickListener(v -> {});
+
+        Button closeMenu = new Button(this);
+        closeMenu.setText("✕");
+        closeMenu.setTextColor(Color.parseColor("#888"));
+        closeMenu.setTextSize(28);
+        closeMenu.setBackgroundColor(Color.TRANSPARENT);
+        closeMenu.setGravity(Gravity.END);
+        closeMenu.setOnClickListener(v -> toggleMenu(false));
+        menuPanel.addView(closeMenu);
+
+        Button menuAcademia = new Button(this);
+        menuAcademia.setText("Academia");
+        menuAcademia.setTextColor(Color.parseColor("#ccc"));
+        menuAcademia.setBackgroundColor(Color.TRANSPARENT);
+        menuAcademia.setGravity(Gravity.START);
+        menuAcademia.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        menuAcademia.setTextSize(18);
+        menuAcademia.setOnClickListener(v -> { toggleMenu(false); openConfig(true); });
+        menuPanel.addView(menuAcademia);
+
+        Button menuConfig = new Button(this);
+        menuConfig.setText("Configurações");
+        menuConfig.setTextColor(Color.parseColor("#ccc"));
+        menuConfig.setBackgroundColor(Color.TRANSPARENT);
+        menuConfig.setGravity(Gravity.START);
+        menuConfig.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        menuConfig.setTextSize(18);
+        menuConfig.setOnClickListener(v -> { toggleMenu(false); openConfig(false); });
+        menuPanel.addView(menuConfig);
+
+        menuOverlay.addView(menuPanel);
+        root.addView(mainLayout);
+        root.addView(menuOverlay);
+
+        configModal = new FrameLayout(this);
+        configModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        configModal.setBackgroundColor(Color.parseColor("#00000000"));
+        configModal.setVisibility(View.GONE);
+
+        LinearLayout configBox = new LinearLayout(this);
+        configBox.setOrientation(LinearLayout.VERTICAL);
+        configBox.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        boxParams.setMargins(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
+        configBox.setLayoutParams(boxParams);
+
+        LinearLayout configHeader = new LinearLayout(this);
+        configHeader.setOrientation(LinearLayout.HORIZONTAL);
+        configHeader.setGravity(Gravity.CENTER_VERTICAL);
+        configHeader.setPadding(dpToPx(14), dpToPx(8), dpToPx(14), dpToPx(8));
+
+        Button backBtn = new Button(this);
+        backBtn.setText("←");
+        backBtn.setTextColor(Color.parseColor("#888"));
+        backBtn.setTextSize(28);
+        backBtn.setBackgroundColor(Color.TRANSPARENT);
+        backBtn.setOnClickListener(v -> closeConfig());
+        configHeader.addView(backBtn);
+
+        TextView configTitleView = new TextView(this);
+        configTitleView.setText("Academia");
+        configTitleView.setTextColor(Color.parseColor("#aaa"));
+        configTitleView.setTextSize(18);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+        titleParams.gravity = Gravity.CENTER;
+        configTitleView.setLayoutParams(titleParams);
+        configHeader.addView(configTitleView);
+
+        View spacer = new View(this);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(30), ViewGroup.LayoutParams.WRAP_CONTENT));
+        configHeader.addView(spacer);
+        configBox.addView(configHeader);
+
+        ScrollView configScroll = new ScrollView(this);
+        configScroll.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+        configContent = new LinearLayout(this);
+        configContent.setOrientation(LinearLayout.VERTICAL);
+        configContent.setPadding(dpToPx(14), 0, dpToPx(14), dpToPx(14));
+        configScroll.addView(configContent);
+        configBox.addView(configScroll);
+        configModal.addView(configBox);
+        configModal.setOnClickListener(v -> closeConfig());
+        configBox.setOnClickListener(v -> {});
+        root.addView(configModal);
+
+        pesoAvisoModal = new FrameLayout(this);
+        pesoAvisoModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        pesoAvisoModal.setBackgroundColor(Color.parseColor("#00000000"));
+        pesoAvisoModal.setVisibility(View.GONE);
+        LinearLayout avisoBox = new LinearLayout(this);
+        avisoBox.setOrientation(LinearLayout.VERTICAL);
+        avisoBox.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        avisoBox.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+        FrameLayout.LayoutParams avisoParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        avisoParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        avisoBox.setLayoutParams(avisoParams);
+
+        TextView avisoTitle = new TextView(this);
+        avisoTitle.setText("Hora de Pesar!");
+        avisoTitle.setTextColor(Color.parseColor("#ff8a8a"));
+        avisoTitle.setTextSize(18);
+        avisoTitle.setGravity(Gravity.CENTER);
+        avisoBox.addView(avisoTitle);
+
+        TextView avisoText = new TextView(this);
+        avisoText.setTextColor(Color.parseColor("#ccc"));
+        avisoText.setTextSize(14);
+        avisoText.setGravity(Gravity.CENTER);
+        avisoText.setPadding(0, dpToPx(10), 0, dpToPx(10));
+        avisoBox.addView(avisoText);
+
+        EditText pesoInput = new EditText(this);
+        pesoInput.setHint("Peso atual (kg)");
+        pesoInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        pesoInput.setTextColor(Color.parseColor("#ddd"));
+        pesoInput.setHintTextColor(Color.parseColor("#666"));
+        pesoInput.setBackgroundColor(Color.parseColor("#0a0a0a"));
+        pesoInput.setPadding(dpToPx(6), dpToPx(6), dpToPx(6), dpToPx(6));
+        avisoBox.addView(pesoInput);
+
+        Button pesoBtn = new Button(this);
+        pesoBtn.setText("Registrar");
+        pesoBtn.setTextColor(Color.parseColor("#8bc34a"));
+        pesoBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+        pesoBtn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        pesoBtn.setOnClickListener(v -> {
+            String valStr = pesoInput.getText().toString();
+            if (!valStr.isEmpty()) {
                 try {
-                    const parsed = JSON.parse(dados);
-                    if (parsed && parsed.academia) {
-                        configData = parsed;
-                        localStorage.setItem('academia_data', JSON.stringify(configData));
-                        if (typeof renderConfig === 'function') renderConfig();
-                        if (typeof carregarEstadoBotao === 'function') carregarEstadoBotao();
-                    }
-                } catch (e) {}
-            }
-
-            function salvarNoArquivo() {
-                if (window.AcademiaBridge) {
-                    window.AcademiaBridge.salvarDados(JSON.stringify(configData));
-                    return true;
+                    double val = Double.parseDouble(valStr);
+                    registrarPeso(val);
+                    pesoAvisoModal.setVisibility(View.GONE);
+                } catch (Exception e) {
+                    Toast.makeText(this, "Peso inválido", Toast.LENGTH_SHORT).show();
                 }
-                return false;
             }
+        });
+        avisoBox.addView(pesoBtn);
+        pesoAvisoModal.addView(avisoBox);
+        pesoAvisoModal.setOnClickListener(v -> {});
+        root.addView(pesoAvisoModal);
 
-            function carregarDoArquivo() {
-                if (window.AcademiaBridge) {
-                    const dados = window.AcademiaBridge.carregarDados();
-                    if (dados && dados !== 'null') {
-                        return JSON.parse(dados);
-                    }
+        confirmModal = new FrameLayout(this);
+        confirmModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        confirmModal.setBackgroundColor(Color.parseColor("#00000000"));
+        confirmModal.setVisibility(View.GONE);
+        LinearLayout confirmBox = new LinearLayout(this);
+        confirmBox.setOrientation(LinearLayout.VERTICAL);
+        confirmBox.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        confirmBox.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+        FrameLayout.LayoutParams confirmParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        confirmParams.setMargins(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+        confirmBox.setLayoutParams(confirmParams);
+
+        TextView confirmTitle = new TextView(this);
+        confirmTitle.setTextColor(Color.parseColor("#eee"));
+        confirmTitle.setTextSize(18);
+        confirmTitle.setGravity(Gravity.CENTER);
+        confirmBox.addView(confirmTitle);
+
+        TextView confirmMsg = new TextView(this);
+        confirmMsg.setTextColor(Color.parseColor("#aaa"));
+        confirmMsg.setTextSize(14);
+        confirmMsg.setGravity(Gravity.CENTER);
+        confirmMsg.setPadding(0, dpToPx(10), 0, dpToPx(14));
+        confirmBox.addView(confirmMsg);
+
+        LinearLayout confirmBtnRow = new LinearLayout(this);
+        confirmBtnRow.setOrientation(LinearLayout.HORIZONTAL);
+        confirmBtnRow.setGravity(Gravity.CENTER);
+        confirmBtnRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        confirmBox.addView(confirmBtnRow);
+        confirmModal.addView(confirmBox);
+        confirmModal.setOnClickListener(v -> {});
+        root.addView(confirmModal);
+
+        setContentView(root);
+        carregarEstadoBotao();
+    }
+
+    private void toggleMenu(boolean open) {
+        menuOverlay.setVisibility(open ? View.VISIBLE : View.GONE);
+    }
+
+    private void openConfig(boolean viewOnly) {
+        configModal.setVisibility(View.VISIBLE);
+        renderConfig(viewOnly);
+    }
+
+    private void closeConfig() {
+        configModal.setVisibility(View.GONE);
+    }
+
+    private void loadConfig() {
+        try {
+            String json = prefs.getString("academia_data", null);
+            if (json != null) {
+                configData = new JSONObject(json);
+            } else {
+                configData = new JSONObject();
+                JSONObject academia = new JSONObject();
+                academia.put("inicio", JSONObject.NULL);
+                JSONObject peso = new JSONObject();
+                peso.put("atual", JSONObject.NULL);
+                peso.put("historico", new JSONArray());
+                peso.put("meta", JSONObject.NULL);
+                peso.put("intervalo", 7);
+                peso.put("ultimoRegistro", JSONObject.NULL);
+                academia.put("peso", peso);
+                academia.put("diasDescanso", new JSONArray());
+                academia.put("objetivos", new JSONArray());
+                JSONObject roupas = new JSONObject();
+                roupas.put("camisas", new JSONArray());
+                roupas.put("calcas", new JSONArray());
+                roupas.put("tenis", new JSONArray());
+                academia.put("roupas", roupas);
+                academia.put("combinacoes", new JSONObject());
+                academia.put("treinos", new JSONArray());
+                academia.put("treinoConcluido", new JSONObject());
+                academia.put("botaoAtivo", false);
+                configData.put("academia", academia);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveConfig() {
+        try {
+            prefs.edit().putString("academia_data", configData.toString()).apply();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getTodayName() {
+        String[] names = {"Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
+        return names[new Date().getDay()];
+    }
+
+    private String getTodayKey() {
+        Date d = new Date();
+        return String.format(Locale.getDefault(), "%02d/%02d/%d", d.getDate(), d.getMonth() + 1, d.getYear() + 1900);
+    }
+
+    private JSONArray getTodayTreinos() {
+        try {
+            String hoje = getTodayName();
+            JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
+            JSONArray result = new JSONArray();
+            for (int i = 0; i < treinos.length(); i++) {
+                if (treinos.getJSONObject(i).getString("dia").equals(hoje)) {
+                    result.put(treinos.getJSONObject(i));
                 }
-                return null;
             }
+            return result;
+        } catch (Exception e) {
+            return new JSONArray();
+        }
+    }
 
-            let configData = {
-                academia: {
-                    inicio: null,
-                    peso: { atual: null, historico: [], meta: null, intervalo: 7, ultimoRegistro: null },
-                    diasDescanso: [],
-                    objetivos: [],
-                    roupas: { camisas: [], calcas: [], tenis: [] },
-                    combinacoes: {},
-                    treinos: [],
-                    treinoConcluido: {},
-                    botaoAtivo: false
+    private void handleMainBtnClick() {
+        if (isActive) {
+            mostrarConfirmacao("Parar Treino", "Deseja realmente parar?", ok -> {
+                if (ok) {
+                    pararTreino();
                 }
-            };
-
-            let treinoAtual = null;
-            let timerInterval = null;
-            let timerRestante = 0;
-            let aguardandoTimer = false;
-            let exercicioAtualIndex = 0;
-            let pendingConfirm = null;
-
-            const DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
-
-            function loadConfig() {
-                return new Promise((resolve) => {
-                    try {
-                        const dadosArquivo = carregarDoArquivo();
-                        if (dadosArquivo && dadosArquivo.academia) {
-                            configData = dadosArquivo;
-                            localStorage.setItem('academia_data', JSON.stringify(configData));
-                        } else {
-                            const data = localStorage.getItem('academia_data');
-                            if (data) {
-                                const parsed = JSON.parse(data);
-                                configData = parsed;
-                            }
-                        }
-                        if (!configData.academia.peso) {
-                            configData.academia.peso = { atual: null, historico: [], meta: null, intervalo: 7, ultimoRegistro: null };
-                        }
-                        if (!configData.academia.peso.intervalo) configData.academia.peso.intervalo = 7;
-                        if (!configData.academia.roupas) {
-                            configData.academia.roupas = { camisas: [], calcas: [], tenis: [] };
-                        }
-                        if (!configData.academia.combinacoes) {
-                            configData.academia.combinacoes = {};
-                        }
-                        if (!configData.academia.treinos) {
-                            configData.academia.treinos = [];
-                        }
-                        if (!configData.academia.objetivos) {
-                            configData.academia.objetivos = [];
-                        }
-                        if (!configData.academia.diasDescanso) {
-                            configData.academia.diasDescanso = [];
-                        }
-                        if (!configData.academia.treinoConcluido) {
-                            configData.academia.treinoConcluido = {};
-                        }
-                        if (!configData.academia.inicio) {
-                            configData.academia.inicio = null;
-                        }
-                        if (configData.academia.botaoAtivo === undefined) {
-                            configData.academia.botaoAtivo = false;
-                        }
-                        configData.academia.treinos.forEach(treino => {
-                            if (treino.exercicios) {
-                                treino.exercicios.forEach(ex => {
-                                    if (!ex.loadHistory) ex.loadHistory = [];
-                                });
-                            }
-                        });
-                        if (configData.academia.peso.historico && configData.academia.peso.historico.length > 0) {
-                            configData.academia.peso.atual = configData.academia.peso.historico[configData.academia.peso.historico.length - 1].peso;
-                        }
-                    } catch (e) {
-                        configData = {
-                            academia: {
-                                inicio: null,
-                                peso: { atual: null, historico: [], meta: null, intervalo: 7, ultimoRegistro: null },
-                                diasDescanso: [],
-                                objetivos: [],
-                                roupas: { camisas: [], calcas: [], tenis: [] },
-                                combinacoes: {},
-                                treinos: [],
-                                treinoConcluido: {},
-                                botaoAtivo: false
-                            }
-                        };
-                    }
-                    resolve();
-                });
-            }
-
-            function saveConfig() {
-                return new Promise((resolve) => {
-                    try {
-                        localStorage.setItem('academia_data', JSON.stringify(configData));
-                        salvarNoArquivo();
-                        if (document.getElementById('subModal').classList.contains('open')) {
-                            document.getElementById('subModal').classList.remove('open');
-                            document.getElementById('subModalBox').innerHTML = '';
-                        }
-                        if (typeof renderConfig === 'function') {
-                            renderConfig();
-                        }
-                        if (typeof renderTreinoCard === 'function' && treinoAtual) {
-                            renderTreinoCard();
-                        }
-                        if (typeof carregarEstadoBotao === 'function') {
-                            carregarEstadoBotao();
-                        }
-                    } catch (e) {}
-                    resolve();
-                });
-            }
-
-            function ensureLoadHistory(exercicio) {
-                if (!exercicio.loadHistory) {
-                    exercicio.loadHistory = [];
-                }
-                return exercicio.loadHistory;
-            }
-
-            const btn = document.getElementById('mainBtn');
-            let isActive = false;
-
-            function getTodayName() {
-                const names = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-                return names[new Date().getDay()];
-            }
-
-            function getTodayKey() {
-                const d = new Date();
-                return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-            }
-
-            function getTodayTreinos() {
-                const hoje = getTodayName();
-                const treinos = configData.academia.treinos || [];
-                return treinos.filter(t => t.dia === hoje);
-            }
-
-            function verificarPeso() {
-                const peso = configData.academia.peso;
-                if (!peso.ultimoRegistro) return false;
-                const ultimo = new Date(peso.ultimoRegistro);
-                const hoje = new Date();
-                const diff = Math.floor((hoje - ultimo) / (1000 * 60 * 60 * 24));
-                return diff >= (peso.intervalo || 7);
-            }
-
-            function getDiasDesdePesagem() {
-                const peso = configData.academia.peso;
-                if (!peso.ultimoRegistro) return 999;
-                const ultimo = new Date(peso.ultimoRegistro);
-                const hoje = new Date();
-                return Math.floor((hoje - ultimo) / (1000 * 60 * 60 * 24));
-            }
-
-            function getUltimaPesagemData() {
-                const peso = configData.academia.peso;
-                if (!peso.ultimoRegistro) return 'Nunca';
-                const d = new Date(peso.ultimoRegistro);
-                return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-            }
-
-            function getDiasFrequentados() {
-                const inicio = configData.academia.inicio;
-                if (!inicio) return 0;
-                const parts = inicio.split('-');
-                const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-                const hoje = new Date();
-                const diff = Math.floor((hoje - d) / (1000 * 60 * 60 * 24));
-                return diff > 0 ? diff : 0;
-            }
-
-            function formatDataBR(dataStr) {
-                if (!dataStr) return '';
-                const parts = dataStr.split('-');
-                if (parts.length === 3) {
-                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                }
-                return dataStr;
-            }
-
-            function mostrarConfirmacao(titulo, msg, callback, unicoBotao) {
-                const modal = document.getElementById('confirmModal');
-                document.getElementById('confirmTitle').textContent = titulo;
-                document.getElementById('confirmMsg').textContent = msg;
-                
-                const btnRow = document.querySelector('.confirm-box .btn-row');
-                if (unicoBotao === true) {
-                    btnRow.innerHTML = `<button class="btn-primary" id="confirmOk" style="padding:6px 30px;">OK</button>`;
-                    document.getElementById('confirmOk').addEventListener('click', function() {
-                        document.getElementById('confirmModal').classList.remove('open');
-                        if (pendingConfirm) {
-                            pendingConfirm(true);
-                            pendingConfirm = null;
-                        }
-                    });
-                } else {
-                    btnRow.innerHTML = `
-                        <button class="btn-secondary" id="confirmNo">Não</button>
-                        <button class="btn-danger" id="confirmYes">Sim</button>
-                    `;
-                    document.getElementById('confirmYes').addEventListener('click', function() {
-                        document.getElementById('confirmModal').classList.remove('open');
-                        if (pendingConfirm) {
-                            pendingConfirm(true);
-                            pendingConfirm = null;
-                        }
-                    });
-                    document.getElementById('confirmNo').addEventListener('click', function() {
-                        document.getElementById('confirmModal').classList.remove('open');
-                        if (pendingConfirm) {
-                            pendingConfirm(false);
-                            pendingConfirm = null;
-                        }
-                    });
-                }
-                
-                modal.classList.add('open');
-                pendingConfirm = callback;
-            }
-
-            function mostrarAvisoPeso() {
-                const aviso = document.getElementById('pesoAviso');
-                const p = document.getElementById('pesoAvisoText');
-                const diff = getDiasDesdePesagem();
-                p.textContent = `Já faz ${diff} dias desde a última pesagem (${getUltimaPesagemData()}). Registre seu novo peso.`;
-                aviso.classList.add('open');
-                document.getElementById('pesoAvisoInput').focus();
-            }
-
-            document.getElementById('pesoAvisoBtn').addEventListener('click', function() {
-                const input = document.getElementById('pesoAvisoInput');
-                const val = parseFloat(input.value);
-                if (isNaN(val) || val <= 0) { alert('Peso inválido.'); return; }
-                const hoje = new Date().toISOString().split('T')[0].split('-').reverse().join('/');
-                configData.academia.peso.historico.push({ peso: val, data: hoje });
-                configData.academia.peso.atual = val;
-                configData.academia.peso.ultimoRegistro = new Date().toISOString();
-                saveConfig().then(() => {
-                    document.getElementById('pesoAviso').classList.remove('open');
-                    document.getElementById('pesoAvisoInput').value = '';
-                    if (treinoAtual) renderTreinoCard();
-                });
             });
-
-            function limparTimer() {
-                if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-                timerRestante = 0;
-                aguardandoTimer = false;
-                document.getElementById('timerContainer').innerHTML = '';
+        } else {
+            JSONArray treinos = getTodayTreinos();
+            if (treinos.length() == 0) {
+                mostrarConfirmacao("Aviso", "Nenhum treino programado para hoje.", ok -> {}, true);
+                return;
             }
+            iniciarTreino();
+        }
+    }
 
-            function iniciarTimer(segundos, callback) {
-                limparTimer();
-                timerRestante = segundos;
-                aguardandoTimer = true;
-                const container = document.getElementById('timerContainer');
-                const mins = Math.floor(segundos/60);
-                const secs = segundos%60;
-                container.innerHTML = `<div class="timer-display">
-                    <div class="timer-label">Descanso</div>
-                    <div class="timer-text" id="timerText">${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}</div>
-                </div>`;
-
-                timerInterval = setInterval(() => {
-                    timerRestante--;
-                    if (timerRestante <= 0) {
-                        limparTimer();
-                        container.innerHTML = '';
-                        aguardandoTimer = false;
-                        if (callback) callback();
-                    } else {
-                        const m = Math.floor(timerRestante/60);
-                        const s = timerRestante%60;
-                        document.getElementById('timerText').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-                    }
-                }, 1000);
-            }
-
-            function renderTreinoCard() {
-                const container = document.getElementById('exercisesContainer');
-                const exercicios = treinoAtual.exercicios || [];
-                if (exercicios.length === 0) {
-                    container.innerHTML = '<div style="color:#666;text-align:center;padding:20px;">Nenhum exercício definido.</div>';
-                    return;
-                }
-                let html = '';
-                const ex = exercicios[exercicioAtualIndex];
-                if (!ex) {
-                    container.innerHTML = '<div style="color:#666;text-align:center;padding:20px;">Treino concluído!</div>';
-                    return;
-                }
-                const totalSeries = ex.sets || 1;
-                const seriesFeitas = ex._seriesFeitas || 0;
-                const isDone = seriesFeitas >= totalSeries;
-                const statusClass = isDone ? 'done' : '';
-                const statusText = isDone ? 'Concluído' : `${seriesFeitas}/${totalSeries} séries`;
-                const warmupText = ex.warmup ? 'Aquecimento' : '';
-                html += `<div class="exercise-card">
-                    <div class="ex-name">${ex.exercise || 'Exercício'} ${warmupText}</div>
-                    <div class="ex-details">${ex.sets || '?'} séries x ${ex.reps || '?'} reps</div>
-                    <div class="ex-load">${ex.load !== null && ex.load !== undefined ? `Carga: ${ex.load}kg` : 'Sem carga definida'}</div>
-                    ${ex.metaCarga ? `<div class="ex-load" style="color:#ffaa00;">Meta: ${ex.metaCarga}kg</div>` : ''}
-                    <div class="ex-status ${statusClass}">${statusText}</div>
-                    ${!isDone && !aguardandoTimer ? `<div class="ex-actions">
-                        <button class="btn-done" data-idx="${exercicioAtualIndex}">PRONTO</button>
-                    </div>` : ''}
-                    ${isDone ? '<div class="ex-actions"><span style="color:#8bc34a;font-size:0.85rem;">Concluído</span></div>' : ''}
-                    ${aguardandoTimer ? '<div class="ex-actions"><span style="color:#ffaa00;font-size:0.85rem;">Aguardando descanso...</span></div>' : ''}
-                </div>`;
-                container.innerHTML = html;
-
-                const total = exercicios.length;
-                const done = exercicios.filter(e => (e._seriesFeitas || 0) >= (e.sets || 1)).length;
-                const pct = total > 0 ? (done / total) * 100 : 0;
-                document.getElementById('progressFill').style.width = pct + '%';
-                document.getElementById('progressText').textContent = `${done}/${total} exercícios concluídos`;
-
-                document.querySelectorAll('.btn-done').forEach(b => {
-                    b.addEventListener('click', function() {
-                        const idx = parseInt(this.dataset.idx);
-                        if (aguardandoTimer) return;
-                        const ex = treinoAtual.exercicios[idx];
-                        const totalSeries = ex.sets || 1;
-                        const seriesFeitas = ex._seriesFeitas || 0;
-                        if (seriesFeitas >= totalSeries) return;
-
-                        ex._seriesFeitas = (ex._seriesFeitas || 0) + 1;
-
-                        if (ex._seriesFeitas >= totalSeries) {
-                            ex._done = true;
-                            if (!ex.warmup) {
-                                const overlay = document.createElement('div');
-                                overlay.className = 'sub-modal';
-                                overlay.style.display = 'flex';
-                                overlay.onclick = function(e) {
-                                    if (e.target === this) return;
-                                };
-                                overlay.innerHTML = `<div class="config-box" onclick="event.stopPropagation();">
-                                    <h3>Evolução de Carga</h3>
-                                    <p style="color:#aaa;font-size:0.85rem;margin-bottom:6px;">Registre a evolução para ${ex.exercise}</p>
-                                    <label>Carga atual (kg)</label>
-                                    <input type="number" step="0.5" id="evoLoadDone" value="${ex.load || ''}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                                    <label>Repetições atuais</label>
-                                    <input type="number" id="evoRepsDone" value="${ex.reps || ''}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                                    <div style="margin:3px 0;"><span style="color:#666;font-size:0.7rem;">Deixe em branco se não houve evolução</span></div>
-                                    <div class="btn-row">
-                                        <button class="btn-secondary" id="cancelEvoDone">Pular</button>
-                                        <button class="btn-primary" id="saveEvoDone">Registrar</button>
-                                    </div>
-                                </div>`;
-                                document.body.appendChild(overlay);
-
-                                document.getElementById('cancelEvoDone').onclick = function() {
-                                    overlay.remove();
-                                    salvarProgressoEAtualizar(idx);
-                                };
-
-                                document.getElementById('saveEvoDone').onclick = function() {
-                                    const load = parseFloat(document.getElementById('evoLoadDone').value);
-                                    const reps = parseInt(document.getElementById('evoRepsDone').value);
-                                    const hoje = new Date().toISOString().split('T')[0].split('-').reverse().join('/');
-                                    if (!ex.loadHistory) ex.loadHistory = [];
-                                    if (!isNaN(load) && load > 0) {
-                                        ex.loadHistory.push({ load: load, reps: (reps || ex.reps), date: hoje });
-                                        ex.load = load;
-                                    }
-                                    if (!isNaN(reps) && reps > 0) {
-                                        ex.reps = reps;
-                                    }
-                                    overlay.remove();
-                                    salvarProgressoEAtualizar(idx);
-                                };
-                                return;
-                            } else {
-                                salvarProgressoEAtualizar(idx);
-                                return;
-                            }
-                        } else {
-                            const hojeKey = getTodayKey();
-                            configData.academia[`treino_${hojeKey}`] = treinoAtual;
-                            saveConfig().then(() => renderTreinoCard());
-                        }
-                    });
-                });
-            }
-
-            function salvarProgressoEAtualizar(idx) {
-                const hojeKey = getTodayKey();
-                configData.academia[`treino_${hojeKey}`] = treinoAtual;
-                saveConfig().then(() => {
-                    const treinoOriginal = configData.academia.treinos.find(t => t.nome === treinoAtual.nome && t.dia === treinoAtual.dia);
-                    if (treinoOriginal && treinoOriginal.exercicios) {
-                        const exercicioOriginal = treinoOriginal.exercicios.find(e => e.exercise === treinoAtual.exercicios[idx].exercise);
-                        if (exercicioOriginal) {
-                            exercicioOriginal.loadHistory = treinoAtual.exercicios[idx].loadHistory || [];
-                            exercicioOriginal.load = treinoAtual.exercicios[idx].load;
-                            exercicioOriginal.reps = treinoAtual.exercicios[idx].reps;
-                        }
-                        saveConfig().then(() => {
-                            proximoExercicio(idx);
-                        });
-                    } else {
-                        proximoExercicio(idx);
+    private void iniciarTreino() {
+        try {
+            String hojeKey = getTodayKey();
+            JSONObject treinoConcluido = configData.getJSONObject("academia").getJSONObject("treinoConcluido");
+            if (treinoConcluido.optBoolean(hojeKey, false)) {
+                mostrarConfirmacao("Treino Concluído", "Deseja refazê-lo?", ok -> {
+                    if (ok) {
+                        try {
+                            treinoConcluido.put(hojeKey, false);
+                            saveConfig();
+                            iniciarTreinoAtual();
+                        } catch (Exception e) {}
                     }
                 });
+                return;
             }
+            if (configData.getJSONObject("academia").has("treino_" + hojeKey)) {
+                treinoAtual = configData.getJSONObject("academia").getJSONObject("treino_" + hojeKey);
+                exercicioAtualIndex = 0;
+                todayCard.setVisibility(View.VISIBLE);
+                mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+                isActive = true;
+                configData.getJSONObject("academia").put("botaoAtivo", true);
+                saveConfig();
+                renderTreinoCard();
+                if (verificarPeso()) mostrarAvisoPeso();
+                return;
+            }
+            iniciarTreinoAtual();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-            function proximoExercicio(idxAtual) {
-                const exercicios = treinoAtual.exercicios || [];
-                let proximoIdx = -1;
-                for (let i = idxAtual + 1; i < exercicios.length; i++) {
-                    const ex = exercicios[i];
-                    if ((ex._seriesFeitas || 0) < (ex.sets || 1)) {
-                        proximoIdx = i;
+    private void iniciarTreinoAtual() {
+        try {
+            JSONArray treinos = getTodayTreinos();
+            if (treinos.length() == 0) return;
+            treinoAtual = new JSONObject(treinos.getJSONObject(0).toString());
+            JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
+            for (int i = 0; i < exercicios.length(); i++) {
+                JSONObject ex = exercicios.getJSONObject(i);
+                ex.put("_seriesFeitas", 0);
+                ex.put("_done", false);
+                if (!ex.has("loadHistory")) ex.put("loadHistory", new JSONArray());
+                if (ex.has("loadHistory") && ex.getJSONArray("loadHistory").length() > 0) {
+                    JSONArray hist = ex.getJSONArray("loadHistory");
+                    JSONObject ultimo = hist.getJSONObject(hist.length() - 1);
+                    ex.put("load", ultimo.getDouble("load"));
+                    if (ultimo.has("reps")) ex.put("reps", ultimo.getInt("reps"));
+                }
+            }
+            exercicioAtualIndex = 0;
+            todayCard.setVisibility(View.VISIBLE);
+            mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+            isActive = true;
+            configData.getJSONObject("academia").put("botaoAtivo", true);
+            configData.getJSONObject("academia").put("treino_" + getTodayKey(), treinoAtual);
+            saveConfig();
+            renderTreinoCard();
+            if (verificarPeso()) mostrarAvisoPeso();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void pararTreino() {
+        try {
+            mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+            isActive = false;
+            todayCard.setVisibility(View.GONE);
+            treinoAtual = null;
+            limparTimer();
+            configData.getJSONObject("academia").put("treino_" + getTodayKey(), JSONObject.NULL);
+            configData.getJSONObject("academia").put("botaoAtivo", false);
+            saveConfig();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void carregarEstadoBotao() {
+        try {
+            String hojeKey = getTodayKey();
+            JSONObject academia = configData.getJSONObject("academia");
+            boolean temTreino = !academia.isNull("treino_" + hojeKey);
+            boolean concluido = academia.getJSONObject("treinoConcluido").optBoolean(hojeKey, false);
+            boolean botaoAtivo = academia.optBoolean("botaoAtivo", false);
+
+            if (temTreino && !concluido && botaoAtivo) {
+                treinoAtual = academia.getJSONObject("treino_" + hojeKey);
+                JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
+                boolean todosConcluidos = true;
+                for (int i = 0; i < exercicios.length(); i++) {
+                    JSONObject ex = exercicios.getJSONObject(i);
+                    int feitas = ex.optInt("_seriesFeitas", 0);
+                    int total = ex.optInt("sets", 1);
+                    if (feitas < total) {
+                        todosConcluidos = false;
+                        exercicioAtualIndex = i;
                         break;
                     }
                 }
-
-                if (proximoIdx === -1) {
-                    exercicioAtualIndex = exercicios.length;
-                    renderTreinoCard();
-                    const hojeKey = getTodayKey();
-                    configData.academia.treinoConcluido[hojeKey] = true;
-                    configData.academia[`treino_${hojeKey}`] = null;
-                    configData.academia.botaoAtivo = false;
-                    saveConfig().then(() => {
-                        setTimeout(() => {
-                            mostrarConfirmacao('Treino Concluído', 'Parabéns! Você concluiu o treino de hoje.', function(ok) {
-                                btn.classList.remove('active');
-                                isActive = false;
-                                document.getElementById('todayCard').classList.remove('active');
-                                treinoAtual = null;
-                                limparTimer();
-                                configData.academia.botaoAtivo = false;
-                                saveConfig();
-                            }, true);
-                        }, 500);
-                    });
-                    return;
-                }
-
-                exercicioAtualIndex = proximoIdx;
-                const proxEx = exercicios[proximoIdx];
-                const descanso = proxEx.descanso || 0;
-
-                if (descanso > 0) {
-                    aguardandoTimer = true;
-                    renderTreinoCard();
-                    iniciarTimer(descanso, () => {
-                        aguardandoTimer = false;
-                        renderTreinoCard();
-                    });
-                } else {
-                    renderTreinoCard();
-                }
-
-                const hojeKey = getTodayKey();
-                configData.academia[`treino_${hojeKey}`] = treinoAtual;
-                configData.academia.botaoAtivo = true;
-                saveConfig();
-            }
-
-            function iniciarTreino() {
-                const treinos = getTodayTreinos();
-                if (treinos.length === 0) {
-                    mostrarConfirmacao('Aviso', 'Nenhum treino programado para hoje.', function(ok) {
-                        btn.classList.remove('active');
-                        isActive = false;
-                        document.getElementById('todayCard').classList.remove('active');
-                        configData.academia.botaoAtivo = false;
-                        saveConfig();
-                    }, true);
-                    return;
-                }
-
-                const hojeKey = getTodayKey();
-                if (configData.academia.treinoConcluido && configData.academia.treinoConcluido[hojeKey]) {
-                    mostrarConfirmacao('Treino Concluído', 'Você já concluiu o treino de hoje. Deseja refazê-lo?', function(ok) {
-                        if (ok) {
-                            configData.academia.treinoConcluido[hojeKey] = false;
-                            saveConfig().then(() => iniciarTreinoAtual());
-                        } else {
-                            btn.classList.remove('active');
-                            isActive = false;
-                            configData.academia.botaoAtivo = false;
-                            saveConfig();
-                        }
-                    });
-                    return;
-                }
-
-                if (configData.academia[`treino_${hojeKey}`]) {
-                    treinoAtual = configData.academia[`treino_${hojeKey}`];
-                    exercicioAtualIndex = 0;
-                    if (treinoAtual.exercicios) {
-                        treinoAtual.exercicios.forEach(e => {
-                            if (e._seriesFeitas === undefined) e._seriesFeitas = 0;
-                            if (e._done === undefined) e._done = false;
-                            ensureLoadHistory(e);
-                        });
-                        let algumNaoConcluido = false;
-                        for (let i = 0; i < treinoAtual.exercicios.length; i++) {
-                            if ((treinoAtual.exercicios[i]._seriesFeitas || 0) < (treinoAtual.exercicios[i].sets || 1)) {
-                                exercicioAtualIndex = i;
-                                algumNaoConcluido = true;
-                                break;
-                            }
-                        }
-                        if (!algumNaoConcluido) {
-                            configData.academia.treinoConcluido[hojeKey] = true;
-                            configData.academia[`treino_${hojeKey}`] = null;
-                            configData.academia.botaoAtivo = false;
-                            saveConfig();
-                            btn.classList.remove('active');
-                            isActive = false;
-                            document.getElementById('todayCard').classList.remove('active');
-                            treinoAtual = null;
-                            limparTimer();
-                            return;
-                        }
-                    }
-                    document.getElementById('todayCard').classList.add('active');
-                    btn.classList.add('active');
-                    isActive = true;
-                    configData.academia.botaoAtivo = true;
+                if (todosConcluidos) {
+                    academia.getJSONObject("treinoConcluido").put(hojeKey, true);
+                    academia.put("treino_" + hojeKey, JSONObject.NULL);
+                    academia.put("botaoAtivo", false);
                     saveConfig();
-                    renderTreinoCard();
-                    if (verificarPeso()) mostrarAvisoPeso();
-                    return;
-                }
-
-                iniciarTreinoAtual();
-            }
-
-            function iniciarTreinoAtual() {
-                const treinos = getTodayTreinos();
-                if (treinos.length === 0) return;
-                const treinoBase = treinos[0];
-                treinoAtual = JSON.parse(JSON.stringify(treinoBase));
-                if (treinoAtual.exercicios) {
-                    treinoAtual.exercicios.forEach(e => {
-                        e._seriesFeitas = 0;
-                        e._done = false;
-                        ensureLoadHistory(e);
-                        if (e.loadHistory && e.loadHistory.length > 0) {
-                            const ultimo = e.loadHistory[e.loadHistory.length - 1];
-                            e.load = ultimo.load;
-                            if (ultimo.reps) e.reps = ultimo.reps;
-                        }
-                    });
-                }
-                exercicioAtualIndex = 0;
-                document.getElementById('todayCard').classList.add('active');
-                btn.classList.add('active');
-                isActive = true;
-                configData.academia.botaoAtivo = true;
-                renderTreinoCard();
-
-                const hojeKey = getTodayKey();
-                configData.academia[`treino_${hojeKey}`] = treinoAtual;
-                saveConfig();
-
-                if (verificarPeso()) mostrarAvisoPeso();
-            }
-
-            function carregarEstadoBotao() {
-                const hojeKey = getTodayKey();
-                const temTreinoSalvo = configData.academia[`treino_${hojeKey}`] !== undefined && configData.academia[`treino_${hojeKey}`] !== null;
-                const treinoConcluido = configData.academia.treinoConcluido && configData.academia.treinoConcluido[hojeKey];
-                const botaoAtivo = configData.academia.botaoAtivo || false;
-
-                if (temTreinoSalvo && !treinoConcluido && botaoAtivo) {
-                    const treino = configData.academia[`treino_${hojeKey}`];
-                    if (treino && treino.exercicios) {
-                        treino.exercicios.forEach(e => {
-                            ensureLoadHistory(e);
-                        });
-                        const todosConcluidos = treino.exercicios.every(e => (e._seriesFeitas || 0) >= (e.sets || 1));
-                        if (todosConcluidos) {
-                            btn.classList.remove('active');
-                            isActive = false;
-                            document.getElementById('todayCard').classList.remove('active');
-                            treinoAtual = null;
-                            limparTimer();
-                            configData.academia.treinoConcluido[hojeKey] = true;
-                            configData.academia.botaoAtivo = false;
-                            saveConfig();
-                        } else {
-                            btn.classList.add('active');
-                            isActive = true;
-                            document.getElementById('todayCard').classList.add('active');
-                            treinoAtual = treino;
-                            exercicioAtualIndex = 0;
-                            for (let i = 0; i < treino.exercicios.length; i++) {
-                                if ((treino.exercicios[i]._seriesFeitas || 0) < (treino.exercicios[i].sets || 1)) {
-                                    exercicioAtualIndex = i;
-                                    break;
-                                }
-                            }
-                            renderTreinoCard();
-                        }
-                        return;
-                    }
-                }
-
-                btn.classList.remove('active');
-                isActive = false;
-                document.getElementById('todayCard').classList.remove('active');
-                treinoAtual = null;
-                limparTimer();
-                if (configData.academia.botaoAtivo) {
-                    configData.academia.botaoAtivo = false;
-                    saveConfig();
-                }
-            }
-
-            btn.addEventListener('click', function() {
-                if (isActive) {
-                    if (treinoAtual && treinoAtual.exercicios) {
-                        const algumFeito = treinoAtual.exercicios.some(e => (e._seriesFeitas || 0) > 0);
-                        if (algumFeito) {
-                            mostrarConfirmacao('Parar Treino', 'Você já fez alguns exercícios. Deseja realmente parar?', function(ok) {
-                                if (ok) {
-                                    btn.classList.remove('active');
-                                    isActive = false;
-                                    document.getElementById('todayCard').classList.remove('active');
-                                    treinoAtual = null;
-                                    limparTimer();
-                                    const hojeKey = getTodayKey();
-                                    configData.academia[`treino_${hojeKey}`] = null;
-                                    configData.academia.botaoAtivo = false;
-                                    saveConfig();
-                                }
-                            });
-                            return;
-                        }
-                    }
-                    btn.classList.remove('active');
+                    mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
                     isActive = false;
-                    document.getElementById('todayCard').classList.remove('active');
+                    todayCard.setVisibility(View.GONE);
                     treinoAtual = null;
-                    limparTimer();
-                    configData.academia.botaoAtivo = false;
+                } else {
+                    mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+                    isActive = true;
+                    todayCard.setVisibility(View.VISIBLE);
+                    renderTreinoCard();
+                }
+            } else {
+                mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                isActive = false;
+                todayCard.setVisibility(View.GONE);
+                treinoAtual = null;
+                if (botaoAtivo) {
+                    academia.put("botaoAtivo", false);
                     saveConfig();
-                } else {
-                    const treinos = getTodayTreinos();
-                    if (treinos.length === 0) {
-                        mostrarConfirmacao('Aviso', 'Nenhum treino programado para hoje.', function(ok) {}, true);
-                        return;
-                    }
-                    iniciarTreino();
-                }
-            });
-
-            const hamburger = document.getElementById('hamburgerBtn');
-            const menuOverlay = document.getElementById('menuOverlay');
-            const closeMenuBtn = document.getElementById('closeMenuBtn');
-            const menuAcademiaBtn = document.getElementById('menuAcademiaBtn');
-            const menuConfigBtn = document.getElementById('menuConfigBtn');
-            const configModal = document.getElementById('configModal');
-            const backFromConfig = document.getElementById('backFromConfig');
-            const configContent = document.getElementById('configContent');
-            const configTitle = document.getElementById('configTitle');
-            const subModal = document.getElementById('subModal');
-            const subModalBox = document.getElementById('subModalBox');
-
-            let modoVisualizacao = false;
-
-            function openMenu() {
-                menuOverlay.classList.add('open');
-            }
-
-            function closeMenu() {
-                menuOverlay.classList.remove('open');
-            }
-
-            hamburger.addEventListener('click', openMenu);
-            closeMenuBtn.addEventListener('click', closeMenu);
-
-            function openConfig(mode) {
-                modoVisualizacao = (mode === 'view');
-                configModal.classList.add('open');
-                if (modoVisualizacao) {
-                    configModal.classList.add('view-mode');
-                } else {
-                    configModal.classList.remove('view-mode');
-                }
-                renderConfig();
-            }
-
-            function closeConfig() {
-                configModal.classList.remove('open');
-                configModal.classList.remove('view-mode');
-            }
-
-            backFromConfig.addEventListener('click', function() {
-                closeConfig();
-                openMenu();
-            });
-
-            function openSubModal(html) {
-                subModalBox.innerHTML = html;
-                subModal.classList.add('open');
-            }
-
-            function closeSubModal() {
-                subModal.classList.remove('open');
-                subModalBox.innerHTML = '';
-            }
-
-            function calcularEvolucaoCarga(ex) {
-                ensureLoadHistory(ex);
-                if (!ex.loadHistory || ex.loadHistory.length < 2) return { status: 'neutra', texto: 'Sem dados', diff: 0, pct: 0 };
-                const primeiro = ex.loadHistory[0];
-                const ultimo = ex.loadHistory[ex.loadHistory.length - 1];
-                const diff = ultimo.load - primeiro.load;
-                const pct = primeiro.load !== 0 ? (diff / primeiro.load) * 100 : 0;
-                const meta = ex.metaCarga;
-                let status = 'neutra';
-                if (meta !== null && meta !== undefined) {
-                    if (meta > primeiro.load && diff > 0) status = 'verde';
-                    else if (meta < primeiro.load && diff < 0) status = 'verde';
-                    else if (diff > 0) status = 'verde';
-                    else if (diff < 0) status = 'vermelha';
-                    else status = 'neutra';
-                } else {
-                    status = diff > 0 ? 'verde' : (diff < 0 ? 'vermelha' : 'neutra');
-                }
-                return { status, texto: `${diff > 0 ? '+' : ''}${diff.toFixed(1)}kg`, diff, pct };
-            }
-
-            let draggedIndex = null;
-
-            function renderExerciciosLista(treinoIdx, container) {
-                const treino = configData.academia.treinos[treinoIdx];
-                if (!treino || !treino.exercicios) return;
-                let html = '<div class="exercicio-lista" id="exercicioLista">';
-                treino.exercicios.forEach((ex, idx) => {
-                    ensureLoadHistory(ex);
-                    const detalhes = [];
-                    if (ex.exercise) detalhes.push(ex.exercise);
-                    if (ex.sets) detalhes.push(ex.sets + 'x' + ex.reps);
-                    if (ex.load) detalhes.push(ex.load + 'kg');
-                    html += `<div class="ex-item" draggable="true" data-idx="${idx}">
-                        <span class="drag-handle">⠿</span>
-                        <span class="ex-info">${detalhes.join(' • ')}</span>
-                        <div class="ex-actions">
-                            <button data-idx="${idx}" data-action="edit-exercicio-lista">✎</button>
-                            <button data-idx="${idx}" data-action="delete-exercicio-lista">✕</button>
-                        </div>
-                    </div>`;
-                });
-                html += '</div>';
-                container.innerHTML = html;
-
-                const lista = document.getElementById('exercicioLista');
-                if (!lista) return;
-
-                lista.querySelectorAll('.ex-item').forEach(item => {
-                    item.addEventListener('dragstart', function(e) {
-                        draggedIndex = parseInt(this.dataset.idx);
-                        this.classList.add('dragging');
-                        e.dataTransfer.effectAllowed = 'move';
-                    });
-                    item.addEventListener('dragend', function() {
-                        this.classList.remove('dragging');
-                    });
-                    item.addEventListener('dragover', function(e) {
-                        e.preventDefault();
-                        this.classList.add('drag-over');
-                    });
-                    item.addEventListener('dragleave', function() {
-                        this.classList.remove('drag-over');
-                    });
-                    item.addEventListener('drop', function(e) {
-                        e.preventDefault();
-                        this.classList.remove('drag-over');
-                        const targetIdx = parseInt(this.dataset.idx);
-                        if (draggedIndex !== null && draggedIndex !== targetIdx) {
-                            const exercicios = configData.academia.treinos[treinoIdx].exercicios;
-                            const [moved] = exercicios.splice(draggedIndex, 1);
-                            exercicios.splice(targetIdx, 0, moved);
-                            saveConfig().then(() => {
-                                renderExerciciosLista(treinoIdx, container);
-                                renderConfig();
-                            });
-                        }
-                        draggedIndex = null;
-                    });
-                });
-
-                lista.querySelectorAll('[data-action="edit-exercicio-lista"]').forEach(b => {
-                    b.addEventListener('click', function() {
-                        const idx = parseInt(this.dataset.idx);
-                        const treino = configData.academia.treinos[treinoIdx];
-                        if (!treino || !treino.exercicios || !treino.exercicios[idx]) return;
-                        const ex = treino.exercicios[idx];
-                        ensureLoadHistory(ex);
-                        const descMins = ex.descanso ? Math.floor(ex.descanso/60) : 0;
-                        const descSecs = ex.descanso ? ex.descanso%60 : 0;
-                        let evoHtml = '';
-                        if (!ex.warmup) {
-                            const hist = (ex.loadHistory || []).map(h => h.load + 'kg x' + (h.reps || '?') + ' (' + (h.date || '--') + ')').join(' → ') || 'Nenhum';
-                            evoHtml = `
-                            <div class="evolution-area">
-                                <div class="evo-title">Progressão de Carga</div>
-                                <div class="evo-row">
-                                    <input type="number" step="0.5" id="evoLoad" placeholder="Nova carga" style="flex:1;min-width:50px;" />
-                                    <input type="number" id="evoReps" placeholder="Novas reps" style="flex:1;min-width:50px;" />
-                                    <button id="addEvoBtn">Registrar</button>
-                                </div>
-                                <div class="evolution-history">Histórico: ${hist}</div>
-                                <div style="margin-top:4px;"><button class="btn-secondary" id="editLoadHistoryBtn" style="padding:2px 8px;font-size:0.7rem;">Editar Histórico</button></div>
-                            </div>`;
-                        }
-                        openSubModal(`
-                            <h3>Editar Exercício</h3>
-                            <label>Exercício *</label>
-                            <input type="text" id="exEditNome" value="${ex.exercise || ''}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                            <div class="form-row">
-                                <div class="form-group"><label>Séries *</label><input type="number" id="exEditSets" value="${ex.sets || ''}" /></div>
-                                <div class="form-group"><label>Repetições *</label><input type="number" id="exEditReps" value="${ex.reps || ''}" /></div>
-                                <div class="form-group"><label>Carga (kg) *</label><input type="number" step="0.5" id="exEditLoad" value="${ex.load || ''}" /></div>
-                            </div>
-                            <label>Meta de Carga (kg, opcional)</label>
-                            <input type="number" step="0.5" id="exEditMetaCarga" value="${ex.metaCarga || ''}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                            <label>Descanso entre séries (opcional)</label>
-                            <div style="display:flex;gap:4px;align-items:center;">
-                                <input type="number" id="exEditDescansoMin" value="${descMins}" placeholder="Min" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:60px;" />
-                                <span style="color:#888;">:</span>
-                                <input type="number" id="exEditDescansoSec" value="${descSecs}" placeholder="Seg" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:60px;" />
-                            </div>
-                            <div class="checkbox-row">
-                                <input type="checkbox" id="exEditWarmup" ${ex.warmup ? 'checked' : ''} />
-                                <label for="exEditWarmup">Série de aquecimento</label>
-                            </div>
-                            ${evoHtml}
-                            <div class="btn-row">
-                                <button class="btn-secondary" id="cancelEditExBtn">Cancelar</button>
-                                <button class="btn-primary" id="saveEditExBtn">Salvar</button>
-                            </div>
-                        `);
-
-                        document.getElementById('editLoadHistoryBtn')?.addEventListener('click', function() {
-                            closeSubModal();
-                            const history = ex.loadHistory || [];
-                            let listHtml = '';
-                            if (history.length) {
-                                history.forEach((h, i) => {
-                                    listHtml += `<div class="history-item">
-                                        <span>${h.load}kg x ${h.reps || '?'} reps (${h.date || '--'})</span>
-                                        <div class="history-actions">
-                                            <button data-idx="${i}" data-action="edit-load">✎</button>
-                                            <button data-idx="${i}" data-action="delete-load">✕</button>
-                                        </div>
-                                    </div>`;
-                                });
-                            } else { listHtml = '<div class="small-note">Nenhum registro.</div>'; }
-                            openSubModal(`
-                                <h3>Histórico de Carga - ${ex.exercise}</h3>
-                                <div class="history-list">${listHtml}</div>
-                                <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
-                                    <button class="btn-danger" id="deleteAllLoad">Excluir Todo Histórico</button>
-                                </div>
-                                <div class="btn-row"><button class="btn-secondary" id="closeLoadHistoryBtn">Fechar</button></div>
-                            `);
-
-                            document.getElementById('deleteAllLoad')?.addEventListener('click', function() {
-                                mostrarConfirmacao('Excluir Histórico', 'Tem certeza que deseja excluir todo o histórico de carga?', function(ok) {
-                                    if (ok) {
-                                        ex.loadHistory = [];
-                                        saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                                    }
-                                });
-                            });
-
-                            document.querySelectorAll('#subModal [data-action="delete-load"]').forEach(btn => {
-                                btn.addEventListener('click', function() {
-                                    const i = parseInt(this.dataset.idx);
-                                    mostrarConfirmacao('Excluir Registro', 'Tem certeza que deseja excluir este registro?', function(ok) {
-                                        if (ok) {
-                                            ex.loadHistory.splice(i, 1);
-                                            saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                                        }
-                                    });
-                                });
-                            });
-
-                            document.querySelectorAll('#subModal [data-action="edit-load"]').forEach(btn => {
-                                btn.addEventListener('click', function() {
-                                    const i = parseInt(this.dataset.idx);
-                                    const item = ex.loadHistory[i];
-                                    closeSubModal();
-                                    openSubModal(`
-                                        <h3>Editar Registro</h3>
-                                        <label>Carga (kg)</label>
-                                        <input type="number" step="0.5" id="editLoadVal" value="${item.load}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                                        <label>Repetições</label>
-                                        <input type="number" id="editLoadReps" value="${item.reps || ''}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                                        <label>Data</label>
-                                        <input type="text" id="editLoadData" value="${item.date || ''}" placeholder="dd/mm/aaaa" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                                        <div class="btn-row">
-                                            <button class="btn-secondary" id="cancelEditLoadBtn">Cancelar</button>
-                                            <button class="btn-primary" id="saveEditLoadBtn">Salvar</button>
-                                        </div>
-                                    `);
-                                    document.getElementById('cancelEditLoadBtn').onclick = function() {
-                                        closeSubModal();
-                                        renderConfig();
-                                    };
-                                    document.getElementById('saveEditLoadBtn').onclick = function() {
-                                        const val = parseFloat(document.getElementById('editLoadVal').value);
-                                        const reps = parseInt(document.getElementById('editLoadReps').value);
-                                        const data = document.getElementById('editLoadData').value.trim();
-                                        if (isNaN(val) || val <= 0) { alert('Carga inválida.'); return; }
-                                        if (isNaN(reps) || reps < 1) { alert('Repetições inválidas.'); return; }
-                                        if (!data) { alert('Data inválida.'); return; }
-                                        ex.loadHistory[i] = { load: val, reps: reps, date: data };
-                                        saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                                    };
-                                });
-                            });
-
-                            document.getElementById('closeLoadHistoryBtn').onclick = function() {
-                                closeSubModal();
-                                renderConfig();
-                            };
-                        });
-
-                        if (!ex.warmup) {
-                            document.getElementById('addEvoBtn')?.addEventListener('click', function() {
-                                const load = parseFloat(document.getElementById('evoLoad').value);
-                                const reps = parseInt(document.getElementById('evoReps').value);
-                                if (isNaN(load) || load <= 0) { alert('Carga inválida.'); return; }
-                                if (isNaN(reps) || reps < 1) { alert('Repetições inválidas.'); return; }
-                                const today = new Date().toISOString().split('T')[0].split('-').reverse().join('/');
-                                if (!ex.loadHistory) ex.loadHistory = [];
-                                ex.loadHistory.push({ load: load, reps: reps, date: today });
-                                ex.load = load;
-                                ex.reps = reps;
-                                saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                            });
-                        }
-
-                        document.getElementById('cancelEditExBtn').onclick = closeSubModal;
-                        document.getElementById('saveEditExBtn').onclick = function() {
-                            const exercise = document.getElementById('exEditNome').value.trim();
-                            const sets = parseInt(document.getElementById('exEditSets').value);
-                            const reps = parseInt(document.getElementById('exEditReps').value);
-                            const load = parseFloat(document.getElementById('exEditLoad').value);
-                            const metaCarga = parseFloat(document.getElementById('exEditMetaCarga').value);
-                            const descMin = parseInt(document.getElementById('exEditDescansoMin').value) || 0;
-                            const descSec = parseInt(document.getElementById('exEditDescansoSec').value) || 0;
-                            const descanso = descMin * 60 + descSec;
-                            const warmup = document.getElementById('exEditWarmup').checked;
-
-                            if (!exercise) { alert('Nome do exercício é obrigatório.'); return; }
-                            if (isNaN(sets) || sets < 1) { alert('Número de séries inválido.'); return; }
-                            if (isNaN(reps) || reps < 1) { alert('Número de repetições inválido.'); return; }
-                            if (isNaN(load) || load <= 0) { alert('Carga inválida.'); return; }
-
-                            ex.exercise = exercise;
-                            ex.sets = sets;
-                            ex.reps = reps;
-                            ex.load = load;
-                            ex.metaCarga = isNaN(metaCarga) ? null : metaCarga;
-                            ex.descanso = descanso > 0 ? descanso : null;
-                            ex.warmup = warmup;
-                            ensureLoadHistory(ex);
-                            saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                        };
-                    });
-                });
-
-                lista.querySelectorAll('[data-action="delete-exercicio-lista"]').forEach(b => {
-                    b.addEventListener('click', function() {
-                        const idx = parseInt(this.dataset.idx);
-                        mostrarConfirmacao('Excluir Exercício', 'Tem certeza que deseja excluir este exercício?', function(ok) {
-                            if (ok) {
-                                configData.academia.treinos[treinoIdx].exercicios.splice(idx, 1);
-                                saveConfig().then(() => {
-                                    renderExerciciosLista(treinoIdx, container);
-                                    renderConfig();
-                                });
-                            }
-                        });
-                    });
-                });
-            }
-
-            function renderConfig() {
-                configTitle.textContent = modoVisualizacao ? 'Academia - Visão Geral' : 'Configurações';
-                const data = configData.academia;
-                let html = '';
-
-                const diasFreq = getDiasFrequentados();
-                const inicioDisplay = data.inicio ? formatDataBR(data.inicio) : 'Não definida';
-                html += `<label>Data de Início</label>
-                        <div class="value-display">
-                            <span>${inicioDisplay} ${data.inicio && diasFreq > 0 ? `(${diasFreq} dias)` : ''}</span>
-                            ${!modoVisualizacao ? `<button class="action-btn" id="editInicioBtn">${data.inicio ? 'Editar' : 'Definir'}</button>` : ''}
-                        </div>`;
-
-                const peso = data.peso;
-                let evolucaoPeso = { status: 'neutra', texto: 'Sem dados', diff: 0, pct: 0 };
-                if (peso.historico && peso.historico.length >= 2) {
-                    const primeiro = peso.historico[0];
-                    const ultimo = peso.historico[peso.historico.length - 1];
-                    const diff = ultimo.peso - primeiro.peso;
-                    const pct = primeiro.peso !== 0 ? (diff / primeiro.peso) * 100 : 0;
-                    const meta = peso.meta;
-                    let status = 'neutra';
-                    if (meta !== null) {
-                        if (meta < primeiro.peso && diff < 0) status = 'verde';
-                        else if (meta > primeiro.peso && diff > 0) status = 'verde';
-                        else if (diff > 0) status = 'verde';
-                        else if (diff < 0) status = 'vermelha';
-                        else status = 'neutra';
-                    } else {
-                        status = diff > 0 ? 'verde' : (diff < 0 ? 'vermelha' : 'neutra');
-                    }
-                    evolucaoPeso = { status, texto: `${diff > 0 ? '+' : ''}${diff.toFixed(1)}kg`, diff, pct };
-                }
-
-                if (modoVisualizacao) {
-                    html += `<div class="sub-section"><h4>Evolução do Peso</h4>
-                        <div class="value-display">
-                            <span>Peso Atual: ${peso.atual !== null ? peso.atual + ' kg' : '--'}</span>
-                            <span class="evolucao-${evolucaoPeso.status}">${evolucaoPeso.texto} (${evolucaoPeso.pct > 0 ? '+' : ''}${evolucaoPeso.pct.toFixed(1)}%)</span>
-                            <span class="status-dot ${evolucaoPeso.status}"></span>
-                        </div>
-                        <div class="small-note">Última pesagem: ${getUltimaPesagemData()}</div>
-                        ${peso.meta !== null ? `<div class="small-note">Meta: ${peso.meta} kg</div>` : ''}
-                    </div>`;
-
-                    const todosExercicios = [];
-                    (data.treinos || []).forEach(t => {
-                        (t.exercicios || []).forEach(e => {
-                            if (!e.warmup) {
-                                const exCopy = { ...e };
-                                ensureLoadHistory(exCopy);
-                                todosExercicios.push(exCopy);
-                            }
-                        });
-                    });
-
-                    html += `<div class="sub-section"><h4>Evolução de Carga</h4>
-                        <table class="evo-table">
-                            <tr><th>Exercício</th><th>Evolução</th><th>Progresso</th></tr>`;
-                    if (todosExercicios.length > 0) {
-                        todosExercicios.forEach((ex, index) => {
-                            const evo = calcularEvolucaoCarga(ex);
-                            const statusClass = evo.status === 'verde' ? 'evolucao-verde' : (evo.status === 'vermelha' ? 'evolucao-vermelha' : 'evolucao-neutra');
-                            html += `<tr>
-                                <td>${ex.exercise}</td>
-                                <td class="${statusClass}">${evo.texto}</td>
-                                <td class="${statusClass}">${evo.pct > 0 ? '+' : ''}${evo.pct.toFixed(1)}%</td>
-                            </tr>`;
-                        });
-                    } else {
-                        html += `<tr><td colspan="3" style="color:#666;text-align:center;">Nenhum exercício com dados</td></tr>`;
-                    }
-                    html += `</table></div>`;
-
-                    html += `<div class="sub-section"><h4>Resumo</h4>
-                        <div class="value-display"><span>Peso Atual: ${peso.atual !== null ? peso.atual + ' kg' : '--'}</span></div>
-                        <div class="value-display"><span>Meta: ${peso.meta !== null ? peso.meta + ' kg' : 'Não definida'}</span></div>
-                        <div class="value-display"><span>Intervalo Pesagem: ${peso.intervalo || 7} dias</span></div>
-                        <div class="value-display"><span>Última pesagem: ${getUltimaPesagemData()}</span></div>
-                        <div class="value-display"><span>Dias frequentados: ${diasFreq}</span></div>
-                        <div class="value-display"><span>Data de início: ${inicioDisplay}</span></div>
-                    </div>`;
-
-                    html += `<div class="sub-section"><h4>Objetivos</h4>`;
-                    const objs = data.objetivos || [];
-                    if (objs.length) {
-                        objs.forEach(obj => { html += `<div class="config-item"><span>${obj}</span></div>`; });
-                    } else { html += `<div class="small-note">Nenhum objetivo definido.</div>`; }
-                    html += `</div>`;
-
-                    html += `<div class="sub-section"><h4>Dias de Descanso</h4>
-                        <div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0;">`;
-                    (data.diasDescanso || []).forEach(d => {
-                        html += `<span style="background:#1a1a1a;padding:2px 8px;border-radius:4px;border:1px solid #2a2a2a;font-size:0.8rem;">${d}</span>`;
-                    });
-                    if ((data.diasDescanso || []).length === 0) html += `<span class="small-note">Nenhum dia de descanso</span>`;
-                    html += `</div></div>`;
-
-                    html += `<div class="sub-section"><h4>Roupas</h4>`;
-                    ['camisas', 'calcas', 'tenis'].forEach(cat => {
-                        const label = cat === 'camisas' ? 'Camisas' : cat === 'calcas' ? 'Calças' : 'Tênis';
-                        const items = data.roupas[cat] || [];
-                        html += `<div style="margin:3px 0;"><label style="font-size:0.7rem;color:#888;">${label}</label>`;
-                        if (items.length) {
-                            items.forEach(item => { html += `<div class="clothe-item"><span>${item}</span></div>`; });
-                        } else { html += `<div class="small-note">Nenhuma ${label.toLowerCase()}.</div>`; }
-                        html += `</div>`;
-                    });
-                    html += `</div>`;
-
-                    html += `<div class="sub-section"><h4>Combinações</h4>`;
-                    const combos = data.combinacoes || {};
-                    const workingDays = DIAS_SEMANA.filter(d => !(data.diasDescanso || []).includes(d));
-                    if (workingDays.length) {
-                        workingDays.forEach(day => {
-                            const c = combos[day] || [];
-                            html += `<div style="margin:3px 0;background:#0d0d0d;padding:4px 6px;border-radius:4px;border:1px solid #1a1a1a;">
-                                <strong style="color:#aaa;font-size:0.8rem;">${day}</strong>`;
-                            if (c.length) {
-                                c.forEach(combo => { html += `<div class="combo-item"><span class="combo-text">${combo}</span></div>`; });
-                            } else { html += `<div class="small-note">Nenhuma combinação.</div>`; }
-                            html += `</div>`;
-                        });
-                    } else { html += `<div class="small-note">Nenhum dia disponível.</div>`; }
-                    html += `</div>`;
-
-                    configContent.innerHTML = html;
-
-                } else {
-                    html += `<div class="sub-section"><h4>Peso</h4>`;
-                    html += `<label>Peso Atual</label>
-                            <div class="value-display">
-                                <span>${peso.atual !== null ? peso.atual + ' kg' : '--'}</span>
-                                <div style="display:flex;gap:4px;">
-                                    <button class="action-btn" id="addPesoBtn">Registrar</button>
-                                    <button class="action-btn secondary" id="showPesoHistoryBtn">Histórico</button>
-                                </div>
-                            </div>`;
-
-                    html += `<label>Intervalo para Pesagem (dias)</label>
-                            <div class="value-display">
-                                <span>${peso.intervalo || 7} dias</span>
-                                <button class="action-btn" id="editIntervaloBtn">Editar</button>
-                            </div>`;
-
-                    if (peso.meta !== null) {
-                        html += `<div class="small-note">Meta: ${peso.meta} kg</div>`;
-                    }
-                    html += `</div>`;
-
-                    html += `<div class="sub-section"><h4>Dias de Descanso</h4>
-                            <div class="checkbox-grid">`;
-                    DIAS_SEMANA.forEach(d => {
-                        const checked = (data.diasDescanso || []).includes(d) ? 'checked' : '';
-                        html += `<div class="checkbox-row">
-                                    <input type="checkbox" id="desc_${d}" ${checked} value="${d}" />
-                                    <label for="desc_${d}">${d}</label>
-                                </div>`;
-                    });
-                    html += `</div></div>`;
-
-                    html += `<div class="sub-section"><h4>Objetivos</h4>`;
-                    const objs = data.objetivos || [];
-                    if (objs.length) {
-                        objs.forEach((obj, idx) => {
-                            html += `<div class="config-item">
-                                        <span>${obj}</span>
-                                        <div class="item-actions">
-                                            <button class="edit-btn" data-idx="${idx}" data-type="objetivo" data-action="edit">✎</button>
-                                            <button class="del-btn" data-idx="${idx}" data-type="objetivo" data-action="delete">✕</button>
-                                        </div>
-                                    </div>`;
-                        });
-                    } else { html += `<div class="small-note">Nenhum objetivo definido.</div>`; }
-                    html += `<div class="add-area"><button id="addObjetivoBtn">+ Adicionar Objetivo</button></div></div>`;
-
-                    html += `<div class="sub-section"><h4>Treinos</h4>`;
-                    const treinos = data.treinos || [];
-                    if (treinos.length) {
-                        treinos.forEach((treino, idx) => {
-                            const dia = treino.dia || '';
-                            const diaTag = dia ? `<span class="goal-tag">${dia}</span>` : '';
-                            const objetivoTag = treino.objetivo ? `<span class="goal-tag" style="background:#1a2a3a;border-color:#2a4a6a;">${treino.objetivo}</span>` : '';
-                            html += `<div class="config-item" style="flex-direction:column;align-items:stretch;gap:3px;">
-                                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;">
-                                            <span><strong>${treino.nome || 'Treino'}</strong> ${diaTag} ${objetivoTag}</span>
-                                            <div class="item-actions">
-                                                <button class="edit-btn" data-idx="${idx}" data-type="treino" data-action="edit">✎</button>
-                                                <button class="del-btn" data-idx="${idx}" data-type="treino" data-action="delete">✕</button>
-                                            </div>
-                                        </div>`;
-                            html += `<div id="exerciciosContainer_${idx}"></div>`;
-                            html += `<div class="add-area" style="margin-top:3px;">
-                                        <button class="btn-primary" data-idx="${idx}" data-action="add-exercicio" style="padding:3px 10px;font-size:0.75rem;">+ Exercício</button>
-                                    </div>
-                                </div>`;
-                        });
-                    } else { html += `<div class="small-note">Nenhum treino definido.</div>`; }
-                    html += `<div class="add-area" style="margin-top:3px;"><button id="addTreinoBtn">+ Adicionar Treino</button></div></div>`;
-
-                    html += `<div class="sub-section"><h4>Roupas</h4>`;
-                    const roupas = data.roupas || { camisas: [], calcas: [], tenis: [] };
-                    ['camisas', 'calcas', 'tenis'].forEach(cat => {
-                        const label = cat === 'camisas' ? 'Camisas' : cat === 'calcas' ? 'Calças' : 'Tênis';
-                        html += `<div style="margin-top:4px;"><label style="margin:0;font-size:0.7rem;color:#888;">${label}</label>`;
-                        const items = roupas[cat] || [];
-                        if (items.length) {
-                            items.forEach((item, idx) => {
-                                html += `<div class="clothe-item">
-                                            <span>${item}</span>
-                                            <div class="item-actions">
-                                                <button class="edit-btn" data-cat="${cat}" data-idx="${idx}" data-action="edit-roupa">✎</button>
-                                                <button class="del-btn" data-cat="${cat}" data-idx="${idx}" data-action="delete-roupa">✕</button>
-                                            </div>
-                                        </div>`;
-                            });
-                        } else { html += `<div class="small-note">Nenhuma ${label.toLowerCase()}.</div>`; }
-                        html += `<div class="add-area"><button data-cat="${cat}" data-action="add-roupa">+ Adicionar ${label.toLowerCase()}</button></div></div>`;
-                    });
-                    html += `</div>`;
-
-                    html += `<div class="sub-section"><h4>Combinações por Dia</h4>`;
-                    const combinacoes = data.combinacoes || {};
-                    const workingDays2 = DIAS_SEMANA.filter(d => !(data.diasDescanso || []).includes(d));
-                    if (workingDays2.length) {
-                        workingDays2.forEach(day => {
-                            const combos = combinacoes[day] || [];
-                            html += `<div style="margin:4px 0;background:#0d0d0d;padding:4px 6px;border-radius:4px;border:1px solid #1a1a1a;">
-                                        <strong style="color:#aaa;font-size:0.8rem;">${day}</strong>`;
-                            if (combos.length) {
-                                combos.forEach((c, ci) => {
-                                    html += `<div class="combo-item">
-                                                <span class="combo-text">${c}</span>
-                                                <button class="del-btn" data-day="${day}" data-idx="${ci}" data-action="delete-combo">✕</button>
-                                            </div>`;
-                                });
-                            } else { html += `<div class="small-note">Nenhuma combinação.</div>`; }
-                            const r = data.roupas || { camisas: [], calcas: [], tenis: [] };
-                            html += `<div class="combo-selects">
-                                        <select id="comboCamisa_${day}"><option value="">Camisa</option>${r.camisas.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
-                                        <select id="comboCalca_${day}"><option value="">Calça</option>${r.calcas.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
-                                        <select id="comboTenis_${day}"><option value="">Tênis</option>${r.tenis.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
-                                        <button data-day="${day}" data-action="add-combo" class="btn-primary" style="padding:3px 10px;font-size:0.75rem;">Adicionar</button>
-                                    </div>
-                                </div>`;
-                        });
-                    } else { html += `<div class="small-note">Nenhum dia disponível. Defina os dias de descanso primeiro.</div>`; }
-                    html += `</div>`;
-                }
-
-                configContent.innerHTML = html;
-
-                if (!modoVisualizacao) {
-                    (data.treinos || []).forEach((treino, idx) => {
-                        const container = document.getElementById(`exerciciosContainer_${idx}`);
-                        if (container) {
-                            renderExerciciosLista(idx, container);
-                        }
-                    });
-
-                    document.querySelectorAll('.checkbox-row input[type="checkbox"]').forEach(cb => {
-                        cb.addEventListener('change', function() {
-                            const checked = [];
-                            document.querySelectorAll('.checkbox-row input[type="checkbox"]:checked').forEach(c => {
-                                checked.push(c.value);
-                            });
-                            configData.academia.diasDescanso = checked;
-                            saveConfig().then(() => renderConfig());
-                        });
-                    });
-
-                    document.getElementById('editInicioBtn')?.addEventListener('click', function() {
-                        const currentVal = configData.academia.inicio || '';
-                        openSubModal(`
-                            <h3>${currentVal ? 'Editar' : 'Definir'} Data de Início</h3>
-                            <input type="date" id="editInicioInput" value="${currentVal}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:8px 0;" />
-                            <div class="btn-row">
-                                <button class="btn-secondary" id="cancelInicioBtn">Cancelar</button>
-                                <button class="btn-primary" id="saveInicioBtn">Salvar</button>
-                            </div>
-                        `);
-                        document.getElementById('cancelInicioBtn').onclick = closeSubModal;
-                        document.getElementById('saveInicioBtn').onclick = function() {
-                            const val = document.getElementById('editInicioInput').value;
-                            if (val) {
-                                configData.academia.inicio = val;
-                                saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                            } else {
-                                alert('Selecione uma data válida.');
-                            }
-                        };
-                    });
-
-                    document.getElementById('editIntervaloBtn')?.addEventListener('click', function() {
-                        openSubModal(`
-                            <h3>Intervalo para Pesagem</h3>
-                            <input type="number" id="editIntervaloInput" value="${configData.academia.peso.intervalo || 7}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:8px 0;" />
-                            <div class="small-note">A cada quantos dias você deve pesar?</div>
-                            <div class="btn-row">
-                                <button class="btn-secondary" id="cancelIntervaloBtn">Cancelar</button>
-                                <button class="btn-primary" id="saveIntervaloBtn">Salvar</button>
-                            </div>
-                        `);
-                        document.getElementById('cancelIntervaloBtn').onclick = closeSubModal;
-                        document.getElementById('saveIntervaloBtn').onclick = function() {
-                            const val = parseInt(document.getElementById('editIntervaloInput').value);
-                            if (isNaN(val) || val < 1) { alert('Valor inválido.'); return; }
-                            configData.academia.peso.intervalo = val;
-                            saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                        };
-                    });
-
-                    document.getElementById('addPesoBtn')?.addEventListener('click', function() {
-                        openSubModal(`
-                            <h3>Registrar Peso</h3>
-                            <label>Peso (kg)</label>
-                            <input type="number" step="0.1" id="pesoInput" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                            <label>Meta (opcional)</label>
-                            <input type="number" step="0.1" id="pesoMetaInput" value="${configData.academia.peso.meta || ''}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                            <div class="btn-row">
-                                <button class="btn-secondary" id="cancelPesoBtn">Cancelar</button>
-                                <button class="btn-primary" id="savePesoBtn">Salvar</button>
-                            </div>
-                        `);
-                        document.getElementById('cancelPesoBtn').onclick = closeSubModal;
-                        document.getElementById('savePesoBtn').onclick = function() {
-                            const val = parseFloat(document.getElementById('pesoInput').value);
-                            const meta = parseFloat(document.getElementById('pesoMetaInput').value);
-                            if (isNaN(val) || val <= 0) { alert('Peso inválido.'); return; }
-                            const hoje = new Date().toISOString().split('T')[0].split('-').reverse().join('/');
-                            if (!configData.academia.peso.historico) configData.academia.peso.historico = [];
-                            configData.academia.peso.historico.push({ peso: val, data: hoje });
-                            configData.academia.peso.atual = val;
-                            configData.academia.peso.ultimoRegistro = new Date().toISOString();
-                            if (!isNaN(meta) && meta > 0) configData.academia.peso.meta = meta;
-                            saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                        };
-                    });
-
-                    document.getElementById('showPesoHistoryBtn')?.addEventListener('click', function() {
-                        const history = configData.academia.peso.historico || [];
-                        let listHtml = '';
-                        if (history.length) {
-                            history.forEach((h, i) => {
-                                listHtml += `<div class="history-item">
-                                    <span>${h.peso} kg (${h.data})</span>
-                                    <div class="history-actions">
-                                        <button data-idx="${i}" data-action="edit-peso">✎</button>
-                                        <button data-idx="${i}" data-action="delete-peso">✕</button>
-                                    </div>
-                                </div>`;
-                            });
-                        } else { listHtml = '<div class="small-note">Nenhum registro.</div>'; }
-                        openSubModal(`
-                            <h3>Histórico de Peso</h3>
-                            <div class="history-list">${listHtml}</div>
-                            <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
-                                <button class="btn-danger" id="deleteAllPeso">Excluir Todo Histórico</button>
-                            </div>
-                            <div class="btn-row"><button class="btn-secondary" id="closePesoHistoryBtn">Fechar</button></div>
-                        `);
-
-                        document.getElementById('deleteAllPeso')?.addEventListener('click', function() {
-                            mostrarConfirmacao('Excluir Histórico', 'Tem certeza que deseja excluir todo o histórico de peso?', function(ok) {
-                                if (ok) {
-                                    configData.academia.peso.historico = [];
-                                    configData.academia.peso.atual = null;
-                                    configData.academia.peso.ultimoRegistro = null;
-                                    saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                                }
-                            });
-                        });
-
-                        document.querySelectorAll('#subModal [data-action="delete-peso"]').forEach(b => {
-                            b.addEventListener('click', function() {
-                                const idx = parseInt(this.dataset.idx);
-                                mostrarConfirmacao('Excluir Registro', 'Tem certeza que deseja excluir este registro?', function(ok) {
-                                    if (ok) {
-                                        configData.academia.peso.historico.splice(idx, 1);
-                                        if (configData.academia.peso.historico.length > 0) {
-                                            const last = configData.academia.peso.historico[configData.academia.peso.historico.length-1];
-                                            configData.academia.peso.atual = last.peso;
-                                        } else { configData.academia.peso.atual = null; }
-                                        saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                                    }
-                                });
-                            });
-                        });
-
-                        document.querySelectorAll('#subModal [data-action="edit-peso"]').forEach(b => {
-                            b.addEventListener('click', function() {
-                                const idx = parseInt(this.dataset.idx);
-                                const item = configData.academia.peso.historico[idx];
-                                closeSubModal();
-                                openSubModal(`
-                                    <h3>Editar Registro</h3>
-                                    <label>Peso (kg)</label>
-                                    <input type="number" step="0.1" id="editPesoVal" value="${item.peso}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                                    <label>Data</label>
-                                    <input type="text" id="editPesoData" value="${item.data}" placeholder="dd/mm/aaaa" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                                    <div class="btn-row">
-                                        <button class="btn-secondary" id="cancelEditPesoBtn">Cancelar</button>
-                                        <button class="btn-primary" id="saveEditPesoBtn">Salvar</button>
-                                    </div>
-                                `);
-                                document.getElementById('cancelEditPesoBtn').onclick = function() {
-                                    closeSubModal();
-                                    document.getElementById('showPesoHistoryBtn').click();
-                                };
-                                document.getElementById('saveEditPesoBtn').onclick = function() {
-                                    const val = parseFloat(document.getElementById('editPesoVal').value);
-                                    const data = document.getElementById('editPesoData').value.trim();
-                                    if (isNaN(val) || val <= 0) { alert('Peso inválido.'); return; }
-                                    if (!data) { alert('Data inválida.'); return; }
-                                    configData.academia.peso.historico[idx] = { peso: val, data: data };
-                                    if (idx === configData.academia.peso.historico.length - 1) {
-                                        configData.academia.peso.atual = val;
-                                    }
-                                    saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                                };
-                            });
-                        });
-
-                        document.getElementById('closePesoHistoryBtn').onclick = closeSubModal;
-                    });
-
-                    document.getElementById('addObjetivoBtn')?.addEventListener('click', function() {
-                        openSubModal(`
-                            <h3>Novo Objetivo</h3>
-                            <input type="text" id="novoObjetivoInput" placeholder="Digite o objetivo" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:8px 0;" />
-                            <div class="btn-row">
-                                <button class="btn-secondary" id="cancelObjBtn">Cancelar</button>
-                                <button class="btn-primary" id="saveObjBtn">Salvar</button>
-                            </div>
-                        `);
-                        document.getElementById('cancelObjBtn').onclick = closeSubModal;
-                        document.getElementById('saveObjBtn').onclick = function() {
-                            const val = document.getElementById('novoObjetivoInput').value.trim();
-                            if (!val) { alert('Digite um objetivo.'); return; }
-                            if (!configData.academia.objetivos) configData.academia.objetivos = [];
-                            configData.academia.objetivos.push(val);
-                            saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                        };
-                    });
-
-                    document.querySelectorAll('[data-type="objetivo"]').forEach(b => {
-                        b.addEventListener('click', function() {
-                            const idx = parseInt(this.dataset.idx);
-                            const action = this.dataset.action;
-                            if (action === 'delete') {
-                                mostrarConfirmacao('Excluir Objetivo', 'Tem certeza que deseja excluir este objetivo?', function(ok) {
-                                    if (ok) {
-                                        if (configData.academia.objetivos) {
-                                            configData.academia.objetivos.splice(idx, 1);
-                                            saveConfig().then(() => renderConfig());
-                                        }
-                                    }
-                                });
-                            } else if (action === 'edit') {
-                                openSubModal(`
-                                    <h3>Editar Objetivo</h3>
-                                    <input type="text" id="editObjInput" value="${configData.academia.objetivos[idx]}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:8px 0;" />
-                                    <div class="btn-row">
-                                        <button class="btn-secondary" id="cancelEditObjBtn">Cancelar</button>
-                                        <button class="btn-primary" id="saveEditObjBtn">Salvar</button>
-                                    </div>
-                                `);
-                                document.getElementById('cancelEditObjBtn').onclick = closeSubModal;
-                                document.getElementById('saveEditObjBtn').onclick = function() {
-                                    const val = document.getElementById('editObjInput').value.trim();
-                                    if (!val) { alert('Digite um objetivo.'); return; }
-                                    configData.academia.objetivos[idx] = val;
-                                    saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                                };
-                            }
-                        });
-                    });
-
-                    document.getElementById('addTreinoBtn')?.addEventListener('click', function() {
-                        const objetivos = configData.academia.objetivos || [];
-                        let objOptions = '<option value="">Nenhum</option>';
-                        objetivos.forEach(o => { objOptions += `<option value="${o}">${o}</option>`; });
-                        openSubModal(`
-                            <h3>Novo Treino</h3>
-                            <label>Nome</label>
-                            <input type="text" id="novoTreinoNome" placeholder="Nome do treino" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                            <label>Dia *</label>
-                            <select id="novoTreinoDia" class="day-select" style="width:100%;margin:3px 0;">
-                                <option value="">Selecione um dia</option>
-                                ${DIAS_SEMANA.map(d => `<option value="${d}">${d}</option>`).join('')}
-                            </select>
-                            <label>Objetivo (opcional)</label>
-                            <select id="novoTreinoObjetivo" class="day-select" style="width:100%;margin:3px 0;">${objOptions}</select>
-                            <div class="btn-row">
-                                <button class="btn-secondary" id="cancelTreinoBtn">Cancelar</button>
-                                <button class="btn-primary" id="saveTreinoBtn">Salvar</button>
-                            </div>
-                        `);
-                        document.getElementById('cancelTreinoBtn').onclick = closeSubModal;
-                        document.getElementById('saveTreinoBtn').onclick = function() {
-                            const nome = document.getElementById('novoTreinoNome').value.trim();
-                            const dia = document.getElementById('novoTreinoDia').value;
-                            const objetivo = document.getElementById('novoTreinoObjetivo').value;
-                            if (!nome) { alert('Nome do treino é obrigatório.'); return; }
-                            if (!dia) { alert('Selecione um dia para o treino.'); return; }
-                            if (!configData.academia.treinos) configData.academia.treinos = [];
-                            configData.academia.treinos.push({ nome, dia, objetivo, exercicios: [] });
-                            saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                        };
-                    });
-
-                    document.querySelectorAll('[data-type="treino"]').forEach(b => {
-                        b.addEventListener('click', function() {
-                            const idx = parseInt(this.dataset.idx);
-                            const action = this.dataset.action;
-                            if (action === 'delete') {
-                                mostrarConfirmacao('Excluir Treino', 'Tem certeza que deseja excluir este treino?', function(ok) {
-                                    if (ok) {
-                                        if (configData.academia.treinos) {
-                                            configData.academia.treinos.splice(idx, 1);
-                                            saveConfig().then(() => renderConfig());
-                                        }
-                                    }
-                                });
-                            } else if (action === 'edit') {
-                                const treino = configData.academia.treinos[idx];
-                                const objetivos = configData.academia.objetivos || [];
-                                let objOptions2 = '<option value="">Nenhum</option>';
-                                objetivos.forEach(o => {
-                                    objOptions2 += `<option value="${o}" ${treino.objetivo === o ? 'selected' : ''}>${o}</option>`;
-                                });
-                                openSubModal(`
-                                    <h3>Editar Treino</h3>
-                                    <label>Nome</label>
-                                    <input type="text" id="editTreinoNome" value="${treino.nome}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                                    <label>Dia *</label>
-                                    <select id="editTreinoDia" class="day-select" style="width:100%;margin:3px 0;">
-                                        <option value="">Selecione um dia</option>
-                                        ${DIAS_SEMANA.map(d => `<option value="${d}" ${treino.dia === d ? 'selected' : ''}>${d}</option>`).join('')}
-                                    </select>
-                                    <label>Objetivo (opcional)</label>
-                                    <select id="editTreinoObjetivo" class="day-select" style="width:100%;margin:3px 0;">${objOptions2}</select>
-                                    <div class="btn-row">
-                                        <button class="btn-secondary" id="cancelEditTreinoBtn">Cancelar</button>
-                                        <button class="btn-primary" id="saveEditTreinoBtn">Salvar</button>
-                                    </div>
-                                `);
-                                document.getElementById('cancelEditTreinoBtn').onclick = closeSubModal;
-                                document.getElementById('saveEditTreinoBtn').onclick = function() {
-                                    const nome = document.getElementById('editTreinoNome').value.trim();
-                                    const dia = document.getElementById('editTreinoDia').value;
-                                    const objetivo = document.getElementById('editTreinoObjetivo').value;
-                                    if (!nome) { alert('Nome é obrigatório.'); return; }
-                                    if (!dia) { alert('Selecione um dia.'); return; }
-                                    configData.academia.treinos[idx].nome = nome;
-                                    configData.academia.treinos[idx].dia = dia;
-                                    configData.academia.treinos[idx].objetivo = objetivo;
-                                    saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                                };
-                            }
-                        });
-                    });
-
-                    document.querySelectorAll('[data-action="add-exercicio"]').forEach(b => {
-                        b.addEventListener('click', function() {
-                            const idx = parseInt(this.dataset.idx);
-                            const treino = configData.academia.treinos[idx];
-                            if (!treino) return;
-                            openSubModal(`
-                                <h3>Adicionar Exercício</h3>
-                                <label>Exercício *</label>
-                                <input type="text" id="exNome" placeholder="Ex: Supino" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                                <div class="form-row">
-                                    <div class="form-group"><label>Séries *</label><input type="number" id="exSets" placeholder="4" value="3" /></div>
-                                    <div class="form-group"><label>Repetições *</label><input type="number" id="exReps" placeholder="12" value="10" /></div>
-                                    <div class="form-group"><label>Carga (kg) *</label><input type="number" step="0.5" id="exLoad" placeholder="20" /></div>
-                                </div>
-                                <label>Meta de Carga (kg, opcional)</label>
-                                <input type="number" step="0.5" id="exMetaCarga" placeholder="Ex: 30" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:3px 0;" />
-                                <label>Descanso entre séries (opcional)</label>
-                                <div style="display:flex;gap:4px;align-items:center;">
-                                    <input type="number" id="exDescansoMin" placeholder="Min" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:60px;" />
-                                    <span style="color:#888;">:</span>
-                                    <input type="number" id="exDescansoSec" placeholder="Seg" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:60px;" />
-                                </div>
-                                <div class="checkbox-row">
-                                    <input type="checkbox" id="exWarmup" />
-                                    <label for="exWarmup">Série de aquecimento</label>
-                                </div>
-                                <div class="btn-row">
-                                    <button class="btn-secondary" id="cancelExBtn">Cancelar</button>
-                                    <button class="btn-primary" id="saveExBtn">Salvar</button>
-                                </div>
-                            `);
-                            document.getElementById('cancelExBtn').onclick = closeSubModal;
-                            document.getElementById('saveExBtn').onclick = function() {
-                                const exercise = document.getElementById('exNome').value.trim();
-                                const sets = parseInt(document.getElementById('exSets').value);
-                                const reps = parseInt(document.getElementById('exReps').value);
-                                const load = parseFloat(document.getElementById('exLoad').value);
-                                const metaCarga = parseFloat(document.getElementById('exMetaCarga').value);
-                                const descMin = parseInt(document.getElementById('exDescansoMin').value) || 0;
-                                const descSec = parseInt(document.getElementById('exDescansoSec').value) || 0;
-                                const descanso = descMin * 60 + descSec;
-                                const warmup = document.getElementById('exWarmup').checked;
-
-                                if (!exercise) { alert('Nome do exercício é obrigatório.'); return; }
-                                if (isNaN(sets) || sets < 1) { alert('Número de séries inválido.'); return; }
-                                if (isNaN(reps) || reps < 1) { alert('Número de repetições inválido.'); return; }
-                                if (isNaN(load) || load <= 0) { alert('Carga inválida.'); return; }
-
-                                const exercicio = {
-                                    exercise, sets, reps, load,
-                                    metaCarga: isNaN(metaCarga) ? null : metaCarga,
-                                    descanso: descanso > 0 ? descanso : null,
-                                    warmup, loadHistory: []
-                                };
-                                if (!treino.exercicios) treino.exercicios = [];
-                                treino.exercicios.push(exercicio);
-                                saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                            };
-                        });
-                    });
-
-                    document.querySelectorAll('[data-action="add-roupa"]').forEach(b => {
-                        b.addEventListener('click', function() {
-                            const cat = this.dataset.cat;
-                            const label = cat === 'camisas' ? 'Camisa' : cat === 'calcas' ? 'Calça' : 'Tênis';
-                            openSubModal(`
-                                <h3>Nova ${label}</h3>
-                                <input type="text" id="novaRoupaInput" placeholder="Nome da ${label.toLowerCase()}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:8px 0;" />
-                                <div class="checkbox-row">
-                                    <input type="checkbox" id="roupaSweat" />
-                                    <label for="roupaSweat">Marca suor</label>
-                                </div>
-                                <div class="btn-row">
-                                    <button class="btn-secondary" id="cancelRoupaBtn">Cancelar</button>
-                                    <button class="btn-primary" id="saveRoupaBtn">Salvar</button>
-                                </div>
-                            `);
-                            document.getElementById('cancelRoupaBtn').onclick = closeSubModal;
-                            document.getElementById('saveRoupaBtn').onclick = function() {
-                                let val = document.getElementById('novaRoupaInput').value.trim();
-                                const sweat = document.getElementById('roupaSweat').checked;
-                                if (!val) { alert('Nome é obrigatório.'); return; }
-                                if (sweat) val += ' (suor)';
-                                if (!configData.academia.roupas) configData.academia.roupas = { camisas: [], calcas: [], tenis: [] };
-                                if (!configData.academia.roupas[cat]) configData.academia.roupas[cat] = [];
-                                configData.academia.roupas[cat].push(val);
-                                saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                            };
-                        });
-                    });
-
-                    document.querySelectorAll('[data-action="delete-roupa"]').forEach(b => {
-                        b.addEventListener('click', function() {
-                            const cat = this.dataset.cat;
-                            const idx = parseInt(this.dataset.idx);
-                            mostrarConfirmacao('Excluir Roupa', 'Tem certeza que deseja excluir esta roupa?', function(ok) {
-                                if (ok) {
-                                    if (configData.academia.roupas && configData.academia.roupas[cat]) {
-                                        configData.academia.roupas[cat].splice(idx, 1);
-                                        saveConfig().then(() => renderConfig());
-                                    }
-                                }
-                            });
-                        });
-                    });
-
-                    document.querySelectorAll('[data-action="edit-roupa"]').forEach(b => {
-                        b.addEventListener('click', function() {
-                            const cat = this.dataset.cat;
-                            const idx = parseInt(this.dataset.idx);
-                            const item = configData.academia.roupas[cat][idx];
-                            const isSweat = item.indexOf('(suor)') !== -1;
-                            const cleanName = item.replace(' (suor)', '');
-                            openSubModal(`
-                                <h3>Editar Roupa</h3>
-                                <input type="text" id="editRoupaInput" value="${cleanName}" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#ddd;padding:6px;border-radius:4px;width:100%;margin:8px 0;" />
-                                <div class="checkbox-row">
-                                    <input type="checkbox" id="editRoupaSweat" ${isSweat ? 'checked' : ''} />
-                                    <label for="editRoupaSweat">Marca suor</label>
-                                </div>
-                                <div class="btn-row">
-                                    <button class="btn-secondary" id="cancelEditRoupaBtn">Cancelar</button>
-                                    <button class="btn-primary" id="saveEditRoupaBtn">Salvar</button>
-                                </div>
-                            `);
-                            document.getElementById('cancelEditRoupaBtn').onclick = closeSubModal;
-                            document.getElementById('saveEditRoupaBtn').onclick = function() {
-                                let val = document.getElementById('editRoupaInput').value.trim();
-                                const sweat = document.getElementById('editRoupaSweat').checked;
-                                if (!val) { alert('Nome é obrigatório.'); return; }
-                                if (sweat) val += ' (suor)';
-                                configData.academia.roupas[cat][idx] = val;
-                                saveConfig().then(() => { closeSubModal(); renderConfig(); });
-                            };
-                        });
-                    });
-
-                    document.querySelectorAll('[data-action="add-combo"]').forEach(b => {
-                        b.addEventListener('click', function() {
-                            const day = this.dataset.day;
-                            const camisa = document.getElementById(`comboCamisa_${day}`)?.value || '';
-                            const calca = document.getElementById(`comboCalca_${day}`)?.value || '';
-                            const tenis = document.getElementById(`comboTenis_${day}`)?.value || '';
-                            const comboText = [camisa, calca, tenis].filter(Boolean).join(', ');
-                            if (!comboText) { alert('Selecione pelo menos uma peça.'); return; }
-                            if (!configData.academia.combinacoes) configData.academia.combinacoes = {};
-                            if (!configData.academia.combinacoes[day]) configData.academia.combinacoes[day] = [];
-                            configData.academia.combinacoes[day].push(comboText);
-                            saveConfig().then(() => renderConfig());
-                        });
-                    });
-
-                    document.querySelectorAll('[data-action="delete-combo"]').forEach(b => {
-                        b.addEventListener('click', function() {
-                            const day = this.dataset.day;
-                            const idx = parseInt(this.dataset.idx);
-                            mostrarConfirmacao('Excluir Combinação', 'Tem certeza que deseja excluir esta combinação?', function(ok) {
-                                if (ok) {
-                                    if (configData.academia.combinacoes && configData.academia.combinacoes[day]) {
-                                        configData.academia.combinacoes[day].splice(idx, 1);
-                                        if (configData.academia.combinacoes[day].length === 0) {
-                                            delete configData.academia.combinacoes[day];
-                                        }
-                                        saveConfig().then(() => renderConfig());
-                                    }
-                                }
-                            });
-                        });
-                    });
                 }
             }
-
-            menuAcademiaBtn.addEventListener('click', function() {
-                closeMenu();
-                openConfig('view');
-            });
-
-            menuConfigBtn.addEventListener('click', function() {
-                closeMenu();
-                openConfig('edit');
-            });
-
-            loadConfig().finally(() => {
-                carregarEstadoBotao();
-            });
-
-            btn.textContent = '';
-        })();
-
-setInterval(function() {
-    var dados = localStorage.getItem('academia_data');
-    if (dados && window.AcademiaBridge) {
-        window.AcademiaBridge.salvarDados(dados);
-    }
-}, 2000);
-
-window.addEventListener('beforeunload', function() {
-    var dados = localStorage.getItem('academia_data');
-    if (dados && window.AcademiaBridge) {
-        window.AcademiaBridge.salvarDados(dados);
-    }
-});
-
-function restaurarDadosDoArquivo() {
-    if (window.AcademiaBridge) {
-        var dados = window.AcademiaBridge.carregarDados();
-        if (dados && dados !== 'null') {
-            localStorage.setItem('academia_data', dados);
-            try {
-                configData = JSON.parse(dados);
-                if (typeof renderConfig === 'function') renderConfig();
-                if (typeof carregarEstadoBotao === 'function') carregarEstadoBotao();
-            } catch(e) {}
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
+
+    private void renderTreinoCard() {
+        try {
+            exercisesContainer.removeAllViews();
+            timerContainer.removeAllViews();
+            if (treinoAtual == null || !treinoAtual.has("exercicios")) return;
+            JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
+            if (exercicioAtualIndex >= exercicios.length()) {
+                TextView doneText = new TextView(this);
+                doneText.setText("Treino concluído!");
+                doneText.setTextColor(Color.parseColor("#666"));
+                doneText.setGravity(Gravity.CENTER);
+                doneText.setPadding(0, dpToPx(20), 0, dpToPx(20));
+                exercisesContainer.addView(doneText);
+                concluirTreinoCompleto();
+                return;
+            }
+            JSONObject ex = exercicios.getJSONObject(exercicioAtualIndex);
+            int totalSeries = ex.optInt("sets", 1);
+            int seriesFeitas = ex.optInt("_seriesFeitas", 0);
+            boolean isDone = seriesFeitas >= totalSeries;
+
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            card.setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14));
+            card.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            TextView name = new TextView(this);
+            name.setText(ex.optString("exercise", "Exercício") + (ex.optBoolean("warmup", false) ? " (Aquecimento)" : ""));
+            name.setTextColor(Color.parseColor("#eee"));
+            name.setTextSize(18);
+            name.setGravity(Gravity.CENTER);
+            name.setPadding(0, 0, 0, dpToPx(4));
+            card.addView(name);
+
+            TextView details = new TextView(this);
+            details.setText(totalSeries + " séries x " + ex.optInt("reps", 0) + " reps");
+            details.setTextColor(Color.parseColor("#aaa"));
+            details.setTextSize(14);
+            details.setGravity(Gravity.CENTER);
+            card.addView(details);
+
+            TextView load = new TextView(this);
+            load.setText("Carga: " + ex.optDouble("load", 0) + "kg");
+            load.setTextColor(Color.parseColor("#8bc34a"));
+            load.setTextSize(15);
+            load.setGravity(Gravity.CENTER);
+            card.addView(load);
+
+            TextView status = new TextView(this);
+            status.setText(isDone ? "Concluído" : (seriesFeitas + "/" + totalSeries + " séries"));
+            status.setTextColor(isDone ? Color.parseColor("#8bc34a") : Color.parseColor("#666"));
+            status.setTextSize(12);
+            status.setGravity(Gravity.CENTER);
+            status.setPadding(0, dpToPx(3), 0, 0);
+            card.addView(status);
+
+            if (!isDone && !aguardandoTimer) {
+                Button btnDone = new Button(this);
+                btnDone.setText("PRONTO");
+                btnDone.setTextColor(Color.parseColor("#8bc34a"));
+                btnDone.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                btnParams.setMargins(0, dpToPx(8), 0, 0);
+                btnParams.gravity = Gravity.CENTER;
+                btnDone.setLayoutParams(btnParams);
+                btnDone.setOnClickListener(v -> {
+                    if (aguardandoTimer) return;
+                    ex.put("_seriesFeitas", seriesFeitas + 1);
+                    if (ex.optInt("_seriesFeitas", 0) >= totalSeries) {
+                        ex.put("_done", true);
+                        if (!ex.optBoolean("warmup", false)) {
+                            pedirEvolucaoCarga(ex, exercicioAtualIndex);
+                            return;
+                        }
+                    }
+                    salvarProgressoEAtualizar(exercicioAtualIndex);
+                });
+                card.addView(btnDone);
+            } else if (aguardandoTimer) {
+                TextView waitText = new TextView(this);
+                waitText.setText("Aguardando descanso...");
+                waitText.setTextColor(Color.parseColor("#ffaa00"));
+                waitText.setTextSize(12);
+                waitText.setGravity(Gravity.CENTER);
+                waitText.setPadding(0, dpToPx(8), 0, 0);
+                card.addView(waitText);
+            }
+            exercisesContainer.addView(card);
+
+            int total = exercicios.length();
+            int done = 0;
+            for (int i = 0; i < total; i++) {
+                if (exercicios.getJSONObject(i).optInt("_seriesFeitas", 0) >= exercicios.getJSONObject(i).optInt("sets", 1)) {
+                    done++;
+                }
+            }
+            int pct = total > 0 ? (done * 100 / total) : 0;
+            progressFill.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, pct));
+            progressText.setText(done + "/" + total + " exercícios concluídos");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void pedirEvolucaoCarga(JSONObject ex, int idx) {
+        try {
+            FrameLayout overlay = new FrameLayout(this);
+            overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            overlay.setBackgroundColor(Color.parseColor("#00000000"));
+            overlay.setOnClickListener(v -> {});
+
+            LinearLayout box = new LinearLayout(this);
+            box.setOrientation(LinearLayout.VERTICAL);
+            box.setBackgroundColor(Color.parseColor("#1a1a1a"));
+            box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
+            FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+            boxParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+            box.setLayoutParams(boxParams);
+
+            TextView title = new TextView(this);
+            title.setText("Evolução de Carga");
+            title.setTextColor(Color.parseColor("#eee"));
+            title.setTextSize(18);
+            title.setGravity(Gravity.CENTER);
+            box.addView(title);
+
+            TextView desc = new TextView(this);
+            desc.setText("Registre a evolução para " + ex.optString("exercise"));
+            desc.setTextColor(Color.parseColor("#aaa"));
+            desc.setTextSize(14);
+            desc.setPadding(0, dpToPx(6), 0, dpToPx(6));
+            box.addView(desc);
+
+            EditText loadInput = new EditText(this);
+            loadInput.setHint("Carga atual (kg)");
+            loadInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            loadInput.setText(String.valueOf(ex.optDouble("load", 0)));
+            loadInput.setTextColor(Color.parseColor("#ddd"));
+            loadInput.setBackgroundColor(Color.parseColor("#0a0a0a"));
+            box.addView(loadInput);
+
+            EditText repsInput = new EditText(this);
+            repsInput.setHint("Repetições atuais");
+            repsInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+            repsInput.setText(String.valueOf(ex.optInt("reps", 0)));
+            repsInput.setTextColor(Color.parseColor("#ddd"));
+            repsInput.setBackgroundColor(Color.parseColor("#0a0a0a"));
+            box.addView(repsInput);
+
+            LinearLayout btnRow = new LinearLayout(this);
+            btnRow.setOrientation(LinearLayout.HORIZONTAL);
+            btnRow.setGravity(Gravity.CENTER);
+            btnRow.setPadding(0, dpToPx(10), 0, 0);
+
+            Button btnCancel = new Button(this);
+            btnCancel.setText("Pular");
+            btnCancel.setTextColor(Color.parseColor("#ccc"));
+            btnCancel.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            btnCancel.setOnClickListener(v -> {
+                ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                salvarProgressoEAtualizar(idx);
+            });
+            btnRow.addView(btnCancel);
+
+            Button btnSave = new Button(this);
+            btnSave.setText("Registrar");
+            btnSave.setTextColor(Color.parseColor("#8bc34a"));
+            btnSave.setBackgroundColor(Color.parseColor("#1a3a1a"));
+            btnSave.setPadding(dpToPx(14), 0, dpToPx(14), 0);
+            btnSave.setOnClickListener(v -> {
+                try {
+                    double load = Double.parseDouble(loadInput.getText().toString());
+                    int reps = Integer.parseInt(repsInput.getText().toString());
+                    String hoje = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
+                    JSONArray hist = ex.optJSONArray("loadHistory");
+                    if (hist == null) hist = new JSONArray();
+                    JSONObject reg = new JSONObject();
+                    reg.put("load", load);
+                    reg.put("reps", reps);
+                    reg.put("date", hoje);
+                    hist.put(reg);
+                    ex.put("loadHistory", hist);
+                    ex.put("load", load);
+                    ex.put("reps", reps);
+                    ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                    salvarProgressoEAtualizar(idx);
+                } catch (Exception e) {
+                    ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                    salvarProgressoEAtualizar(idx);
+                }
+            });
+            btnRow.addView(btnSave);
+            box.addView(btnRow);
+            overlay.addView(box);
+            ((FrameLayout) getWindow().getDecorView()).addView(overlay);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void salvarProgressoEAtualizar(int idx) {
+        try {
+            String hojeKey = getTodayKey();
+            configData.getJSONObject("academia").put("treino_" + hojeKey, treinoAtual);
+            saveConfig();
+            proximoExercicio(idx);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void proximoExercicio(int idxAtual) {
+        try {
+            JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
+            int proximoIdx = -1;
+            for (int i = idxAtual + 1; i < exercicios.length(); i++) {
+                JSONObject ex = exercicios.getJSONObject(i);
+                if (ex.optInt("_seriesFeitas", 0) < ex.optInt("sets", 1)) {
+                    proximoIdx = i;
+                    break;
+                }
+            }
+            if (proximoIdx == -1) {
+                exercicioAtualIndex = exercicios.length();
+                renderTreinoCard();
+                return;
+            }
+            exercicioAtualIndex = proximoIdx;
+            JSONObject proxEx = exercicios.getJSONObject(proximoIdx);
+            int descanso = proxEx.optInt("descanso", 0);
+            if (descanso > 0) {
+                aguardandoTimer = true;
+                renderTreinoCard();
+                iniciarTimer(descanso, () -> {
+                    aguardandoTimer = false;
+                    renderTreinoCard();
+                });
+            } else {
+                renderTreinoCard();
+            }
+            configData.getJSONObject("academia").put("treino_" + getTodayKey(), treinoAtual);
+            configData.getJSONObject("academia").put("botaoAtivo", true);
+            saveConfig();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void concluirTreinoCompleto() {
+        try {
+            String hojeKey = getTodayKey();
+            configData.getJSONObject("academia").getJSONObject("treinoConcluido").put(hojeKey, true);
+            configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
+            configData.getJSONObject("academia").put("botaoAtivo", false);
+            saveConfig();
+            mostrarConfirmacao("Treino Concluído", "Parabéns! Você concluiu o treino de hoje.", ok -> {
+                mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                isActive = false;
+                todayCard.setVisibility(View.GONE);
+                treinoAtual = null;
+                limparTimer();
+            }, true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void iniciarTimer(int segundos, Runnable callback) {
+        limparTimer();
+        timerRestante = segundos;
+        aguardandoTimer = true;
+        timerContainer.removeAllViews();
+
+        LinearLayout timerDisplay = new LinearLayout(this);
+        timerDisplay.setOrientation(LinearLayout.VERTICAL);
+        timerDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        timerDisplay.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, dpToPx(6), 0, dpToPx(6));
+        timerDisplay.setLayoutParams(params);
+
+        TextView label = new TextView(this);
+        label.setText("Descanso");
+        label.setTextColor(Color.parseColor("#888"));
+        label.setTextSize(11);
+        label.setGravity(Gravity.CENTER);
+        timerDisplay.addView(label);
+
+        TextView text = new TextView(this);
+        text.setId(View.generateViewId());
+        text.setTextColor(Color.parseColor("#8bc34a"));
+        text.setTextSize(22);
+        text.setGravity(Gravity.CENTER);
+        timerDisplay.addView(text);
+        timerContainer.addView(timerDisplay);
+
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                timerRestante--;
+                if (timerRestante <= 0) {
+                    limparTimer();
+                    if (callback != null) callback.run();
+                } else {
+                    int m = timerRestante / 60;
+                    int s = timerRestante % 60;
+                    TextView tv = findViewById(text.getId());
+                    if (tv != null) tv.setText(String.format(Locale.getDefault(), "%02d:%02d", m, s));
+                    timerHandler.postDelayed(this, 1000);
+                }
+            }
+        };
+        timerHandler.post(timerRunnable);
+    }
+
+    private void limparTimer() {
+        if (timerRunnable != null) {
+            timerHandler.removeCallbacks(timerRunnable);
+            timerRunnable = null;
+        }
+        timerRestante = 0;
+        aguardandoTimer = false;
+        timerContainer.removeAllViews();
+    }
+
+    private boolean verificarPeso() {
+        try {
+            JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
+            if (peso.isNull("ultimoRegistro")) return false;
+            String ultimoStr = peso.getString("ultimoRegistro");
+            Date ultimo = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(ultimoStr);
+            if (ultimo == null) return false;
+            Date hoje = new Date();
+            long diff = (hoje.getTime() - ultimo.getTime()) / (1000 * 60 * 60 * 24);
+            return diff >= peso.optInt("intervalo", 7);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void mostrarAvisoPeso() {
+        try {
+            JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
+            String ultimoStr = peso.optString("ultimoRegistro", "");
+            String dataFormatada = "Nunca";
+            if (!ultimoStr.isEmpty()) {
+                Date d = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(ultimoStr);
+                if (d != null) dataFormatada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(d);
+            }
+            long diff = 999;
+            if (!ultimoStr.isEmpty()) {
+                Date ultimo = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(ultimoStr);
+                if (ultimo != null) diff = (new Date().getTime() - ultimo.getTime()) / (1000 * 60 * 60 * 24);
+            }
+            TextView avisoText = pesoAvisoModal.findViewById(android.R.id.text1);
+            if (avisoText == null) {
+                LinearLayout box = (LinearLayout) pesoAvisoModal.getChildAt(0);
+                avisoText = (TextView) box.getChildAt(1);
+            }
+            avisoText.setText("Já faz " + diff + " dias desde a última pesagem (" + dataFormatada + "). Registre seu novo peso.");
+            pesoAvisoModal.setVisibility(View.VISIBLE);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void registrarPeso(double val) {
+        try {
+            JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
+            JSONArray hist = peso.getJSONArray("historico");
+            String hoje = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
+            JSONObject reg = new JSONObject();
+            reg.put("peso", val);
+            reg.put("data", hoje);
+            hist.put(reg);
+            peso.put("atual", val);
+            peso.put("ultimoRegistro", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(new Date()));
+            saveConfig();
+            if (treinoAtual != null) renderTreinoCard();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void renderConfig(boolean viewOnly) {
+        configContent.removeAllViews();
+        try {
+            JSONObject academia = configData.getJSONObject("academia");
+            TextView sectionTitle = new TextView(this);
+            sectionTitle.setText("Resumo");
+            sectionTitle.setTextColor(Color.parseColor("#999"));
+            sectionTitle.setTextSize(14);
+            sectionTitle.setPadding(0, dpToPx(10), 0, dpToPx(5));
+            configContent.addView(sectionTitle);
+
+            addConfigRow("Data de Início", academia.optString("inicio", "Não definida"));
+            
+            JSONObject peso = academia.getJSONObject("peso");
+            addConfigRow("Peso Atual", peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg");
+            addConfigRow("Meta", peso.isNull("meta") ? "Não definida" : peso.getDouble("meta") + " kg");
+            addConfigRow("Intervalo Pesagem", peso.optInt("intervalo", 7) + " dias");
+
+            if (!viewOnly) {
+                Button btnPeso = new Button(this);
+                btnPeso.setText("Registrar Peso");
+                btnPeso.setTextColor(Color.parseColor("#8bc34a"));
+                btnPeso.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                btnPeso.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                btnPeso.setPadding(0, dpToPx(8), 0, dpToPx(8));
+                btnPeso.setOnClickListener(v -> {
+                    EditText input = new EditText(this);
+                    input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+                    input.setHint("Peso (kg)");
+                    input.setTextColor(Color.parseColor("#ddd"));
+                    input.setBackgroundColor(Color.parseColor("#0a0a0a"));
+                    
+                    FrameLayout overlay = new FrameLayout(this);
+                    overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                    overlay.setBackgroundColor(Color.parseColor("#00000000"));
+                    overlay.setOnClickListener(ev -> {});
+                    
+                    LinearLayout box = new LinearLayout(this);
+                    box.setOrientation(LinearLayout.VERTICAL);
+                    box.setBackgroundColor(Color.parseColor("#1a1a1a"));
+                    box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
+                    FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+                    box.setLayoutParams(boxParams);
+                    
+                    TextView title = new TextView(this);
+                    title.setText("Registrar Peso");
+                    title.setTextColor(Color.parseColor("#eee"));
+                    title.setTextSize(18);
+                    title.setGravity(Gravity.CENTER);
+                    box.addView(title);
+                    box.addView(input);
+                    
+                    Button saveBtn = new Button(this);
+                    saveBtn.setText("Salvar");
+                    saveBtn.setTextColor(Color.parseColor("#8bc34a"));
+                    saveBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                    saveBtn.setOnClickListener(ev -> {
+                        try {
+                            double val = Double.parseDouble(input.getText().toString());
+                            registrarPeso(val);
+                            ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                            renderConfig(false);
+                        } catch (Exception e) {
+                            Toast.makeText(this, "Inválido", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    box.addView(saveBtn);
+                    overlay.addView(box);
+                    ((FrameLayout) getWindow().getDecorView()).addView(overlay);
+                });
+                configContent.addView(btnPeso);
+            }
+
+            sectionTitle = new TextView(this);
+            sectionTitle.setText("Dias de Descanso");
+            sectionTitle.setTextColor(Color.parseColor("#999"));
+            sectionTitle.setTextSize(14);
+            sectionTitle.setPadding(0, dpToPx(15), 0, dpToPx(5));
+            configContent.addView(sectionTitle);
+
+            JSONArray diasDescanso = academia.getJSONArray("diasDescanso");
+            LinearLayout diasContainer = new LinearLayout(this);
+            diasContainer.setOrientation(LinearLayout.VERTICAL);
+            for (String dia : DIAS_SEMANA) {
+                CheckBox cb = new CheckBox(this);
+                cb.setText(dia);
+                cb.setTextColor(Color.parseColor("#aaa"));
+                cb.setChecked(diasDescanso.toString().contains("\"" + dia + "\""));
+                if (viewOnly) cb.setEnabled(false);
+                cb.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    try {
+                        JSONArray novos = new JSONArray();
+                        for (int i = 0; i < DIAS_SEMANA.length; i++) {
+                            CheckBox c = (CheckBox) diasContainer.getChildAt(i);
+                            if (c.isChecked()) novos.put(c.getText().toString());
+                        }
+                        academia.put("diasDescanso", novos);
+                        saveConfig();
+                    } catch (Exception e) {}
+                });
+                diasContainer.addView(cb);
+            }
+            configContent.addView(diasContainer);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void addConfigRow(String label, String value) {
+        TextView tv = new TextView(this);
+        tv.setText(label + ": " + value);
+        tv.setTextColor(Color.parseColor("#ccc"));
+        tv.setTextSize(13);
+        tv.setPadding(0, dpToPx(4), 0, dpToPx(4));
+        configContent.addView(tv);
+    }
+
+    private void mostrarConfirmacao(String titulo, String msg, ConfirmCallback callback, boolean unicoBotao) {
+        try {
+            TextView titleView = confirmModal.findViewById(android.R.id.text1);
+            TextView msgView = confirmModal.findViewById(android.R.id.text2);
+            if (titleView == null) {
+                LinearLayout box = (LinearLayout) confirmModal.getChildAt(0);
+                titleView = (TextView) box.getChildAt(0);
+                msgView = (TextView) box.getChildAt(1);
+            }
+            titleView.setText(titulo);
+            msgView.setText(msg);
+            
+            LinearLayout btnRow = (LinearLayout) ((LinearLayout) confirmModal.getChildAt(0)).getChildAt(2);
+            btnRow.removeAllViews();
+            
+            if (unicoBotao) {
+                Button btnOk = new Button(this);
+                btnOk.setText("OK");
+                btnOk.setTextColor(Color.parseColor("#8bc34a"));
+                btnOk.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                btnOk.setOnClickListener(v -> {
+                    confirmModal.setVisibility(View.GONE);
+                    if (callback != null) callback.onConfirm(true);
+                });
+                btnRow.addView(btnOk);
+            } else {
+                Button btnNo = new Button(this);
+                btnNo.setText("Não");
+                btnNo.setTextColor(Color.parseColor("#ccc"));
+                btnNo.setBackgroundColor(Color.parseColor("#2a2a2a"));
+                btnNo.setOnClickListener(v -> {
+                    confirmModal.setVisibility(View.GONE);
+                    if (callback != null) callback.onConfirm(false);
+                });
+                btnRow.addView(btnNo);
+                
+                Button btnYes = new Button(this);
+                btnYes.setText("Sim");
+                btnYes.setTextColor(Color.parseColor("#ff8a8a"));
+                btnYes.setBackgroundColor(Color.parseColor("#3a1a1a"));
+                btnYes.setOnClickListener(v -> {
+                    confirmModal.setVisibility(View.GONE);
+                    if (callback != null) callback.onConfirm(true);
+                });
+                btnRow.addView(btnYes);
+            }
+            confirmModal.setVisibility(View.VISIBLE);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void mostrarConfirmacao(String titulo, String msg, ConfirmCallback callback) {
+        mostrarConfirmacao(titulo, msg, callback, false);
+    }
+
+    private int dpToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
+    }
+
+    interface ConfirmCallback {
+        void onConfirm(boolean ok);
+    }
 }
-
-setTimeout(restaurarDadosDoArquivo, 1000);
-
-    </script>
-</body>
-</html>
+ENDOFJAVA
