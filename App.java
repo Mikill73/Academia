@@ -2305,7 +2305,7 @@ public class MainActivity extends JFrame {
                             t.getJSONArray("exercicios").remove(exIdx);
                             salvarDados();
                             renderDados();
-                        } catch (JSONException ex2) {}
+                        } catch (JSONException exc) {}
                     });
                 });
                 actions.add(delEx);
