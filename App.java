@@ -41,8 +41,7 @@ public class MainActivity extends Activity {
     private Runnable timerRunnable;
     private int timerRestante = 0;
 
-    private LinearLayout mainScreenContainer;
-    private LinearLayout detailsScreenContainer;
+    private LinearLayout mainLayout;
     private FrameLayout confirmModal;
     private LinearLayout todayCard;
     private LinearLayout exercisesContainer;
@@ -52,6 +51,8 @@ public class MainActivity extends Activity {
     private Button mainBtn;
     private Button academiaBtn;
     private Button configBtn;
+    private ScrollView mainScrollView;
+    private LinearLayout academiaContainer;
     private boolean isConfigViewOnly = true;
 
     private static final String[] DIAS_SEMANA = {"Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"};
@@ -88,24 +89,15 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        if (detailsScreenContainer != null && detailsScreenContainer.getVisibility() == View.VISIBLE) {
-            showMainScreen();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
     private void setupUI() {
         FrameLayout root = new FrameLayout(this);
         root.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         root.setBackgroundColor(COR_FUNDO);
 
-        mainScreenContainer = new LinearLayout(this);
-        mainScreenContainer.setOrientation(LinearLayout.VERTICAL);
-        mainScreenContainer.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        mainScreenContainer.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        mainLayout = new LinearLayout(this);
+        mainLayout.setOrientation(LinearLayout.VERTICAL);
+        mainLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        mainLayout.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
 
         mainBtn = new Button(this);
         LinearLayout.LayoutParams mainParams = new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130));
@@ -123,7 +115,7 @@ public class MainActivity extends Activity {
                 handleMainBtnClick();
             }
         });
-        mainScreenContainer.addView(mainBtn);
+        mainLayout.addView(mainBtn);
 
         LinearLayout btnRow = new LinearLayout(this);
         btnRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -141,7 +133,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 isConfigViewOnly = true;
-                showDetailsScreen();
+                showAcademiaView();
             }
         });
         btnRow.addView(academiaBtn);
@@ -156,12 +148,12 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 isConfigViewOnly = false;
-                showDetailsScreen();
+                showAcademiaView();
             }
         });
         btnRow.addView(configBtn);
 
-        mainScreenContainer.addView(btnRow);
+        mainLayout.addView(btnRow);
 
         todayCard = new LinearLayout(this);
         todayCard.setOrientation(LinearLayout.VERTICAL);
@@ -205,60 +197,18 @@ public class MainActivity extends Activity {
         progressText.setPadding(0, dpToPx(6), 0, 0);
         todayCard.addView(progressText);
 
-        mainScreenContainer.addView(todayCard);
-        root.addView(mainScreenContainer);
+        mainLayout.addView(todayCard);
 
-        detailsScreenContainer = new LinearLayout(this);
-        detailsScreenContainer.setOrientation(LinearLayout.VERTICAL);
-        detailsScreenContainer.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        detailsScreenContainer.setBackgroundColor(COR_CARD);
-        detailsScreenContainer.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
-        detailsScreenContainer.setVisibility(View.GONE);
+        mainScrollView = new ScrollView(this);
+        mainScrollView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+        mainScrollView.setVisibility(View.GONE);
+        academiaContainer = new LinearLayout(this);
+        academiaContainer.setOrientation(LinearLayout.VERTICAL);
+        academiaContainer.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
+        mainScrollView.addView(academiaContainer);
+        mainLayout.addView(mainScrollView);
 
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(0, 0, 0, dpToPx(14));
-
-        Button closeBtn = new Button(this);
-        closeBtn.setText("✕");
-        closeBtn.setTextColor(COR_CINZA_ESCURO);
-        closeBtn.setTextSize(28);
-        closeBtn.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
-        closeBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showMainScreen();
-            }
-        });
-        header.addView(closeBtn);
-
-        TextView detailsTitle = new TextView(this);
-        detailsTitle.setId(View.generateViewId());
-        detailsTitle.setText("Academia");
-        detailsTitle.setTextColor(COR_CINZA_MEDIO);
-        detailsTitle.setTextSize(18);
-        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
-        titleParams.gravity = Gravity.CENTER;
-        detailsTitle.setLayoutParams(titleParams);
-        header.addView(detailsTitle);
-
-        View spacer = new View(this);
-        spacer.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(30), ViewGroup.LayoutParams.WRAP_CONTENT));
-        header.addView(spacer);
-
-        detailsScreenContainer.addView(header);
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
-        final LinearLayout contentContainer = new LinearLayout(this);
-        contentContainer.setOrientation(LinearLayout.VERTICAL);
-        contentContainer.setPadding(0, 0, 0, dpToPx(14));
-        scroll.addView(contentContainer);
-        detailsScreenContainer.addView(scroll);
-
-        root.addView(detailsScreenContainer);
-
+        root.addView(mainLayout);
         setupConfirmModal(root);
         setContentView(root);
     }
@@ -302,62 +252,68 @@ public class MainActivity extends Activity {
         root.addView(confirmModal);
     }
 
-    private void showDetailsScreen() {
-        if (detailsScreenContainer != null && mainScreenContainer != null) {
-            TextView title = detailsScreenContainer.findViewWithTag(null);
-            for(int i=0; i<detailsScreenContainer.getChildCount(); i++) {
-                View v = detailsScreenContainer.getChildAt(i);
-                if(v instanceof LinearLayout) {
-                    LinearLayout header = (LinearLayout) v;
-                    if(header.getChildCount() >= 2 && header.getChildAt(1) instanceof TextView) {
-                        TextView tv = (TextView) header.getChildAt(1);
-                        tv.setText(isConfigViewOnly ? "Academia" : "Configurações");
-                        break;
-                    }
-                }
+    private void showAcademiaView() {
+        mainBtn.setVisibility(View.GONE);
+        academiaBtn.setVisibility(View.GONE);
+        configBtn.setVisibility(View.GONE);
+        todayCard.setVisibility(View.GONE);
+        mainScrollView.setVisibility(View.VISIBLE);
+        renderAcademiaContent();
+    }
+
+    private void hideAcademiaView() {
+        mainScrollView.setVisibility(View.GONE);
+        mainBtn.setVisibility(View.VISIBLE);
+        academiaBtn.setVisibility(View.VISIBLE);
+        configBtn.setVisibility(View.VISIBLE);
+        if (isActive) {
+            todayCard.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void renderAcademiaContent() {
+        academiaContainer.removeAllViews();
+
+        Button backBtn = new Button(this);
+        backBtn.setText("Voltar");
+        backBtn.setTextColor(COR_CINZA_CLARO);
+        backBtn.setBackgroundColor(COR_CARD);
+        backBtn.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+        backBtn.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
+        LinearLayout.LayoutParams backParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        backParams.setMargins(0, 0, 0, dpToPx(12));
+        backBtn.setLayoutParams(backParams);
+        backBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideAcademiaView();
             }
-            mainScreenContainer.setVisibility(View.GONE);
-            detailsScreenContainer.setVisibility(View.VISIBLE);
-            renderDetailsContent();
-        }
-    }
+        });
+        academiaContainer.addView(backBtn);
 
-    private void showMainScreen() {
-        if (detailsScreenContainer != null && mainScreenContainer != null) {
-            detailsScreenContainer.setVisibility(View.GONE);
-            mainScreenContainer.setVisibility(View.VISIBLE);
+        if (configData == null) {
+            TextView empty = new TextView(this);
+            empty.setText("Nenhum dado disponível.");
+            empty.setTextColor(COR_CINZA_CLARO);
+            empty.setGravity(Gravity.CENTER);
+            academiaContainer.addView(empty);
+            return;
         }
-    }
 
-    private void renderDetailsContent() {
-        LinearLayout container = null;
         try {
-            ScrollView scroll = (ScrollView) detailsScreenContainer.getChildAt(1);
-            container = (LinearLayout) scroll.getChildAt(0);
-            container.removeAllViews();
-
-            if (configData == null) {
-                TextView empty = new TextView(this);
-                empty.setText("Nenhum dado disponível.");
-                empty.setTextColor(COR_CINZA_CLARO);
-                empty.setGravity(Gravity.CENTER);
-                container.addView(empty);
-                return;
-            }
-
             final JSONObject academia = configData.getJSONObject("academia");
             TextView sectionTitle = new TextView(this);
             sectionTitle.setText("Resumo");
             sectionTitle.setTextColor(Color.rgb(153, 153, 153));
             sectionTitle.setTextSize(14);
             sectionTitle.setPadding(0, dpToPx(10), 0, dpToPx(5));
-            container.addView(sectionTitle);
+            academiaContainer.addView(sectionTitle);
 
-            addInfoRow(container, "Data de Início", academia.optString("inicio", "Não definida"));
+            addInfoRow(academiaContainer, "Data de Início", academia.optString("inicio", "Não definida"));
             JSONObject peso = academia.getJSONObject("peso");
-            addInfoRow(container, "Peso Atual", peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg");
-            addInfoRow(container, "Meta", peso.isNull("meta") ? "Não definida" : peso.getDouble("meta") + " kg");
-            addInfoRow(container, "Intervalo Pesagem", peso.optInt("intervalo", 7) + " dias");
+            addInfoRow(academiaContainer, "Peso Atual", peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg");
+            addInfoRow(academiaContainer, "Meta", peso.isNull("meta") ? "Não definida" : peso.getDouble("meta") + " kg");
+            addInfoRow(academiaContainer, "Intervalo Pesagem", peso.optInt("intervalo", 7) + " dias");
 
             if (!isConfigViewOnly) {
                 Button btnPeso = new Button(this);
@@ -372,7 +328,7 @@ public class MainActivity extends Activity {
                         showPesoInput();
                     }
                 });
-                container.addView(btnPeso);
+                academiaContainer.addView(btnPeso);
             }
 
             sectionTitle = new TextView(this);
@@ -380,7 +336,7 @@ public class MainActivity extends Activity {
             sectionTitle.setTextColor(Color.rgb(153, 153, 153));
             sectionTitle.setTextSize(14);
             sectionTitle.setPadding(0, dpToPx(15), 0, dpToPx(5));
-            container.addView(sectionTitle);
+            academiaContainer.addView(sectionTitle);
 
             JSONArray diasDescanso = academia.getJSONArray("diasDescanso");
             final LinearLayout diasContainer = new LinearLayout(this);
@@ -407,14 +363,14 @@ public class MainActivity extends Activity {
                 });
                 diasContainer.addView(cb);
             }
-            container.addView(diasContainer);
+            academiaContainer.addView(diasContainer);
 
             TextView treinosTitle = new TextView(this);
             treinosTitle.setText("Treinos Disponíveis");
             treinosTitle.setTextColor(Color.rgb(153, 153, 153));
             treinosTitle.setTextSize(14);
             treinosTitle.setPadding(0, dpToPx(15), 0, dpToPx(5));
-            container.addView(treinosTitle);
+            academiaContainer.addView(treinosTitle);
 
             JSONArray treinos = academia.getJSONArray("treinos");
             for (int i = 0; i < treinos.length(); i++) {
@@ -427,18 +383,15 @@ public class MainActivity extends Activity {
                 tv.setTextColor(COR_CINZA_CLARO);
                 tv.setTextSize(13);
                 tv.setPadding(0, dpToPx(3), 0, dpToPx(3));
-                container.addView(tv);
+                academiaContainer.addView(tv);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            if (container != null) {
-                container.removeAllViews();
-                TextView errorTv = new TextView(this);
-                errorTv.setText("Erro ao carregar dados. Reinicie o app.");
-                errorTv.setTextColor(COR_VERMELHO_CLARO);
-                errorTv.setGravity(Gravity.CENTER);
-                container.addView(errorTv);
-            }
+            TextView errorTv = new TextView(this);
+            errorTv.setText("Erro ao carregar dados. Reinicie o app.");
+            errorTv.setTextColor(COR_VERMELHO_CLARO);
+            errorTv.setGravity(Gravity.CENTER);
+            academiaContainer.addView(errorTv);
         }
     }
 
@@ -495,7 +448,7 @@ public class MainActivity extends Activity {
                     double val = Double.parseDouble(input.getText().toString());
                     registrarPeso(val);
                     ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
-                    renderDetailsContent();
+                    renderAcademiaContent();
                 } catch (Exception e) {
                     Toast.makeText(MainActivity.this, "Inválido", Toast.LENGTH_SHORT).show();
                 }
