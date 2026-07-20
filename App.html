@@ -1,122 +1,1129 @@
-cat > App.java << 'EOF'
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
+mkdir -p src/main/java/com/academia/app
+cat > src/main/java/com/academia/app/MainActivity.java << 'ENDOFJAVA'
+package com.academia.app;
 
-public class App {
-    private static boolean isActive = false;
-    private static JButton mainBtn;
-    private static JPanel todayCard;
-    private static JLabel exInfo;
-    private static JButton doneBtn;
+import android.app.Activity;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Academia");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(400, 700);
-            frame.setLocationRelativeTo(null);
-            frame.getContentPane().setBackground(Color.decode("#0d0d0d"));
-            frame.setLayout(null);
+public class MainActivity extends Activity {
 
-            JButton hamburger = new JButton("☰");
-            hamburger.setBounds(16, 16, 40, 40);
-            hamburger.setBackground(Color.decode("#0d0d0d"));
-            hamburger.setForeground(Color.WHITE);
-            hamburger.setBorderPainted(false);
-            hamburger.setFont(new Font("Arial", Font.PLAIN, 28));
-            hamburger.addActionListener(e -> showMenu(frame));
-            frame.add(hamburger);
+    private SharedPreferences prefs;
+    private JSONObject configData;
+    private JSONObject treinoAtual;
+    private int exercicioAtualIndex = 0;
+    private boolean isActive = false;
+    private boolean aguardandoTimer = false;
+    private Handler timerHandler;
+    private Runnable timerRunnable;
+    private int timerRestante = 0;
 
-            mainBtn = new JButton();
-            mainBtn.setBounds(135, 150, 130, 130);
-            mainBtn.setBackground(Color.decode("#ff0000"));
-            mainBtn.setForeground(Color.WHITE);
-            mainBtn.setBorderPainted(false);
-            mainBtn.setFont(new Font("Arial", Font.BOLD, 14));
-            mainBtn.setText("INICIAR");
-            mainBtn.addActionListener(e -> toggleTreino());
-            frame.add(mainBtn);
+    private LinearLayout mainLayout;
+    private LinearLayout menuPanel;
+    private FrameLayout menuOverlay;
+    private FrameLayout configModal;
+    private LinearLayout configContent;
+    private FrameLayout pesoAvisoModal;
+    private FrameLayout confirmModal;
+    private LinearLayout todayCard;
+    private LinearLayout exercisesContainer;
+    private LinearLayout timerContainer;
+    private View progressFill;
+    private TextView progressText;
+    private Button mainBtn;
+    private TextView cardTitle;
 
-            todayCard = new JPanel();
-            todayCard.setBounds(20, 320, 360, 250);
-            todayCard.setBackground(Color.decode("#1a1a1a"));
-            todayCard.setBorder(BorderFactory.createLineBorder(Color.decode("#2a2a2a"), 1));
-            todayCard.setLayout(new BorderLayout());
-            todayCard.setVisible(false);
+    private static final String[] DIAS_SEMANA = {"Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"};
 
-            JLabel cardTitle = new JLabel("Treino de Hoje", SwingConstants.CENTER);
-            cardTitle.setForeground(Color.decode("#aaa"));
-            cardTitle.setFont(new Font("Arial", Font.BOLD, 14));
-            cardTitle.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
-            todayCard.add(cardTitle, BorderLayout.NORTH);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        prefs = getSharedPreferences("AcademiaPrefs", MODE_PRIVATE);
+        timerHandler = new Handler(Looper.getMainLooper());
+        loadConfig();
 
-            exInfo = new JLabel("Supino: 3 x 10 (50kg)", SwingConstants.CENTER);
-            exInfo.setForeground(Color.decode("#eee"));
-            exInfo.setFont(new Font("Arial", Font.PLAIN, 16));
-            todayCard.add(exInfo, BorderLayout.CENTER);
+        FrameLayout root = new FrameLayout(this);
+        root.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.setBackgroundColor(Color.parseColor("#0d0d0d"));
 
-            doneBtn = new JButton("PRONTO");
-            doneBtn.setBackground(Color.decode("#1a3a1a"));
-            doneBtn.setForeground(Color.decode("#8bc34a"));
-            doneBtn.setBorderPainted(false);
-            doneBtn.setFont(new Font("Arial", Font.BOLD, 14));
-            doneBtn.addActionListener(e -> {
-                exInfo.setText("Concluído!");
-                exInfo.setForeground(Color.decode("#8bc34a"));
-                doneBtn.setEnabled(false);
-                mainBtn.setBackground(Color.decode("#ff0000"));
-                mainBtn.setText("INICIAR");
-                isActive = false;
-            });
-            
-            JPanel btnPanel = new JPanel();
-            btnPanel.setBackground(Color.decode("#1a1a1a"));
-            btnPanel.add(doneBtn);
-            todayCard.add(btnPanel, BorderLayout.SOUTH);
+        mainLayout = new LinearLayout(this);
+        mainLayout.setOrientation(LinearLayout.VERTICAL);
+        mainLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-            frame.add(todayCard);
-            frame.setVisible(true);
+        Button hamburger = new Button(this);
+        hamburger.setText("☰");
+        hamburger.setTextColor(Color.WHITE);
+        hamburger.setTextSize(28);
+        hamburger.setBackgroundColor(Color.TRANSPARENT);
+        LinearLayout.LayoutParams hamburgerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        hamburgerParams.setMargins(16, 16, 0, 0);
+        hamburger.setLayoutParams(hamburgerParams);
+        hamburger.setOnClickListener(v -> toggleMenu(true));
+        mainLayout.addView(hamburger);
+
+        mainBtn = new Button(this);
+        mainBtn.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130), Gravity.CENTER));
+        ((LinearLayout.LayoutParams) mainBtn.getLayoutParams()).topMargin = dpToPx(40);
+        mainBtn.setBackgroundDrawable(new android.graphics.drawable.ShapeDrawable(new android.graphics.drawable.shapes.OvalShape()));
+        mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+        mainBtn.setOnClickListener(v -> handleMainBtnClick());
+        mainLayout.addView(mainBtn);
+
+        todayCard = new LinearLayout(this);
+        todayCard.setOrientation(LinearLayout.VERTICAL);
+        todayCard.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        todayCard.setPadding(dpToPx(14), dpToPx(16), dpToPx(14), dpToPx(16));
+        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        cardParams.setMargins(dpToPx(10), dpToPx(20), dpToPx(10), 0);
+        todayCard.setLayoutParams(cardParams);
+        todayCard.setVisibility(View.GONE);
+
+        cardTitle = new TextView(this);
+        cardTitle.setText("Treino de Hoje");
+        cardTitle.setTextColor(Color.parseColor("#aaa"));
+        cardTitle.setTextSize(14);
+        cardTitle.setGravity(Gravity.CENTER);
+        cardTitle.setPadding(0, 0, 0, dpToPx(8));
+        todayCard.addView(cardTitle);
+
+        exercisesContainer = new LinearLayout(this);
+        exercisesContainer.setOrientation(LinearLayout.VERTICAL);
+        todayCard.addView(exercisesContainer);
+
+        timerContainer = new LinearLayout(this);
+        timerContainer.setOrientation(LinearLayout.VERTICAL);
+        todayCard.addView(timerContainer);
+
+        LinearLayout progressLayout = new LinearLayout(this);
+        progressLayout.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        progressLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(5)));
+        progressFill = new View(this);
+        progressFill.setBackgroundColor(Color.parseColor("#8bc34a"));
+        progressFill.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 0));
+        progressLayout.addView(progressFill);
+        todayCard.addView(progressLayout);
+
+        progressText = new TextView(this);
+        progressText.setText("0/0 concluídos");
+        progressText.setTextColor(Color.parseColor("#888"));
+        progressText.setTextSize(11);
+        progressText.setGravity(Gravity.CENTER);
+        progressText.setPadding(0, dpToPx(6), 0, 0);
+        todayCard.addView(progressText);
+
+        mainLayout.addView(todayCard);
+
+        menuOverlay = new FrameLayout(this);
+        menuOverlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        menuOverlay.setBackgroundColor(Color.parseColor("#00000000"));
+        menuOverlay.setVisibility(View.GONE);
+        menuOverlay.setOnClickListener(v -> toggleMenu(false));
+
+        menuPanel = new LinearLayout(this);
+        menuPanel.setOrientation(LinearLayout.VERTICAL);
+        menuPanel.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        menuPanel.setLayoutParams(new FrameLayout.LayoutParams(dpToPx(280), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.START));
+        menuPanel.setOnClickListener(v -> {});
+
+        Button closeMenu = new Button(this);
+        closeMenu.setText("✕");
+        closeMenu.setTextColor(Color.parseColor("#888"));
+        closeMenu.setTextSize(28);
+        closeMenu.setBackgroundColor(Color.TRANSPARENT);
+        closeMenu.setGravity(Gravity.END);
+        closeMenu.setOnClickListener(v -> toggleMenu(false));
+        menuPanel.addView(closeMenu);
+
+        Button menuAcademia = new Button(this);
+        menuAcademia.setText("Academia");
+        menuAcademia.setTextColor(Color.parseColor("#ccc"));
+        menuAcademia.setBackgroundColor(Color.TRANSPARENT);
+        menuAcademia.setGravity(Gravity.START);
+        menuAcademia.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        menuAcademia.setTextSize(18);
+        menuAcademia.setOnClickListener(v -> { toggleMenu(false); openConfig(true); });
+        menuPanel.addView(menuAcademia);
+
+        Button menuConfig = new Button(this);
+        menuConfig.setText("Configurações");
+        menuConfig.setTextColor(Color.parseColor("#ccc"));
+        menuConfig.setBackgroundColor(Color.TRANSPARENT);
+        menuConfig.setGravity(Gravity.START);
+        menuConfig.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        menuConfig.setTextSize(18);
+        menuConfig.setOnClickListener(v -> { toggleMenu(false); openConfig(false); });
+        menuPanel.addView(menuConfig);
+
+        menuOverlay.addView(menuPanel);
+        root.addView(mainLayout);
+        root.addView(menuOverlay);
+
+        configModal = new FrameLayout(this);
+        configModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        configModal.setBackgroundColor(Color.parseColor("#00000000"));
+        configModal.setVisibility(View.GONE);
+
+        LinearLayout configBox = new LinearLayout(this);
+        configBox.setOrientation(LinearLayout.VERTICAL);
+        configBox.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        boxParams.setMargins(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
+        configBox.setLayoutParams(boxParams);
+
+        LinearLayout configHeader = new LinearLayout(this);
+        configHeader.setOrientation(LinearLayout.HORIZONTAL);
+        configHeader.setGravity(Gravity.CENTER_VERTICAL);
+        configHeader.setPadding(dpToPx(14), dpToPx(8), dpToPx(14), dpToPx(8));
+
+        Button backBtn = new Button(this);
+        backBtn.setText("←");
+        backBtn.setTextColor(Color.parseColor("#888"));
+        backBtn.setTextSize(28);
+        backBtn.setBackgroundColor(Color.TRANSPARENT);
+        backBtn.setOnClickListener(v -> closeConfig());
+        configHeader.addView(backBtn);
+
+        TextView configTitleView = new TextView(this);
+        configTitleView.setText("Academia");
+        configTitleView.setTextColor(Color.parseColor("#aaa"));
+        configTitleView.setTextSize(18);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+        titleParams.gravity = Gravity.CENTER;
+        configTitleView.setLayoutParams(titleParams);
+        configHeader.addView(configTitleView);
+
+        View spacer = new View(this);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(30), ViewGroup.LayoutParams.WRAP_CONTENT));
+        configHeader.addView(spacer);
+        configBox.addView(configHeader);
+
+        ScrollView configScroll = new ScrollView(this);
+        configScroll.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+        configContent = new LinearLayout(this);
+        configContent.setOrientation(LinearLayout.VERTICAL);
+        configContent.setPadding(dpToPx(14), 0, dpToPx(14), dpToPx(14));
+        configScroll.addView(configContent);
+        configBox.addView(configScroll);
+        configModal.addView(configBox);
+        configModal.setOnClickListener(v -> closeConfig());
+        configBox.setOnClickListener(v -> {});
+        root.addView(configModal);
+
+        pesoAvisoModal = new FrameLayout(this);
+        pesoAvisoModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        pesoAvisoModal.setBackgroundColor(Color.parseColor("#00000000"));
+        pesoAvisoModal.setVisibility(View.GONE);
+        LinearLayout avisoBox = new LinearLayout(this);
+        avisoBox.setOrientation(LinearLayout.VERTICAL);
+        avisoBox.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        avisoBox.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+        FrameLayout.LayoutParams avisoParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        avisoParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        avisoBox.setLayoutParams(avisoParams);
+
+        TextView avisoTitle = new TextView(this);
+        avisoTitle.setText("Hora de Pesar!");
+        avisoTitle.setTextColor(Color.parseColor("#ff8a8a"));
+        avisoTitle.setTextSize(18);
+        avisoTitle.setGravity(Gravity.CENTER);
+        avisoBox.addView(avisoTitle);
+
+        TextView avisoText = new TextView(this);
+        avisoText.setTextColor(Color.parseColor("#ccc"));
+        avisoText.setTextSize(14);
+        avisoText.setGravity(Gravity.CENTER);
+        avisoText.setPadding(0, dpToPx(10), 0, dpToPx(10));
+        avisoBox.addView(avisoText);
+
+        EditText pesoInput = new EditText(this);
+        pesoInput.setHint("Peso atual (kg)");
+        pesoInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        pesoInput.setTextColor(Color.parseColor("#ddd"));
+        pesoInput.setHintTextColor(Color.parseColor("#666"));
+        pesoInput.setBackgroundColor(Color.parseColor("#0a0a0a"));
+        pesoInput.setPadding(dpToPx(6), dpToPx(6), dpToPx(6), dpToPx(6));
+        avisoBox.addView(pesoInput);
+
+        Button pesoBtn = new Button(this);
+        pesoBtn.setText("Registrar");
+        pesoBtn.setTextColor(Color.parseColor("#8bc34a"));
+        pesoBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+        pesoBtn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        pesoBtn.setOnClickListener(v -> {
+            String valStr = pesoInput.getText().toString();
+            if (!valStr.isEmpty()) {
+                try {
+                    double val = Double.parseDouble(valStr);
+                    registrarPeso(val);
+                    pesoAvisoModal.setVisibility(View.GONE);
+                } catch (Exception e) {
+                    Toast.makeText(this, "Peso inválido", Toast.LENGTH_SHORT).show();
+                }
+            }
         });
+        avisoBox.addView(pesoBtn);
+        pesoAvisoModal.addView(avisoBox);
+        pesoAvisoModal.setOnClickListener(v -> {});
+        root.addView(pesoAvisoModal);
+
+        confirmModal = new FrameLayout(this);
+        confirmModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        confirmModal.setBackgroundColor(Color.parseColor("#00000000"));
+        confirmModal.setVisibility(View.GONE);
+        LinearLayout confirmBox = new LinearLayout(this);
+        confirmBox.setOrientation(LinearLayout.VERTICAL);
+        confirmBox.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        confirmBox.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+        FrameLayout.LayoutParams confirmParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        confirmParams.setMargins(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+        confirmBox.setLayoutParams(confirmParams);
+
+        TextView confirmTitle = new TextView(this);
+        confirmTitle.setTextColor(Color.parseColor("#eee"));
+        confirmTitle.setTextSize(18);
+        confirmTitle.setGravity(Gravity.CENTER);
+        confirmBox.addView(confirmTitle);
+
+        TextView confirmMsg = new TextView(this);
+        confirmMsg.setTextColor(Color.parseColor("#aaa"));
+        confirmMsg.setTextSize(14);
+        confirmMsg.setGravity(Gravity.CENTER);
+        confirmMsg.setPadding(0, dpToPx(10), 0, dpToPx(14));
+        confirmBox.addView(confirmMsg);
+
+        LinearLayout confirmBtnRow = new LinearLayout(this);
+        confirmBtnRow.setOrientation(LinearLayout.HORIZONTAL);
+        confirmBtnRow.setGravity(Gravity.CENTER);
+        confirmBtnRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        confirmBox.addView(confirmBtnRow);
+        confirmModal.addView(confirmBox);
+        confirmModal.setOnClickListener(v -> {});
+        root.addView(confirmModal);
+
+        setContentView(root);
+        carregarEstadoBotao();
     }
 
-    private static void toggleTreino() {
-        isActive = !isActive;
-        if (isActive) {
-            mainBtn.setBackground(Color.decode("#00cc00"));
-            mainBtn.setText("PARAR");
-            todayCard.setVisible(true);
-            exInfo.setText("Supino: 3 x 10 (50kg)");
-            exInfo.setForeground(Color.decode("#eee"));
-            doneBtn.setEnabled(true);
-        } else {
-            mainBtn.setBackground(Color.decode("#ff0000"));
-            mainBtn.setText("INICIAR");
-            todayCard.setVisible(false);
+    private void toggleMenu(boolean open) {
+        menuOverlay.setVisibility(open ? View.VISIBLE : View.GONE);
+    }
+
+    private void openConfig(boolean viewOnly) {
+        configModal.setVisibility(View.VISIBLE);
+        renderConfig(viewOnly);
+    }
+
+    private void closeConfig() {
+        configModal.setVisibility(View.GONE);
+    }
+
+    private void loadConfig() {
+        try {
+            String json = prefs.getString("academia_data", null);
+            if (json != null) {
+                configData = new JSONObject(json);
+            } else {
+                configData = new JSONObject();
+                JSONObject academia = new JSONObject();
+                academia.put("inicio", JSONObject.NULL);
+                JSONObject peso = new JSONObject();
+                peso.put("atual", JSONObject.NULL);
+                peso.put("historico", new JSONArray());
+                peso.put("meta", JSONObject.NULL);
+                peso.put("intervalo", 7);
+                peso.put("ultimoRegistro", JSONObject.NULL);
+                academia.put("peso", peso);
+                academia.put("diasDescanso", new JSONArray());
+                academia.put("objetivos", new JSONArray());
+                JSONObject roupas = new JSONObject();
+                roupas.put("camisas", new JSONArray());
+                roupas.put("calcas", new JSONArray());
+                roupas.put("tenis", new JSONArray());
+                academia.put("roupas", roupas);
+                academia.put("combinacoes", new JSONObject());
+                academia.put("treinos", new JSONArray());
+                academia.put("treinoConcluido", new JSONObject());
+                academia.put("botaoAtivo", false);
+                configData.put("academia", academia);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
-    private static void showMenu(JFrame frame) {
-        JPopupMenu menu = new JPopupMenu();
-        menu.setBackground(Color.decode("#1a1a1a"));
-        
-        JMenuItem item1 = new JMenuItem("Academia");
-        item1.setForeground(Color.decode("#ccc"));
-        item1.setBackground(Color.decode("#1a1a1a"));
-        item1.setFont(new Font("Arial", Font.PLAIN, 16));
-        item1.addActionListener(e -> JOptionPane.showMessageDialog(frame, "Tela Academia"));
-        menu.add(item1);
-        
-        JMenuItem item2 = new JMenuItem("Configurações");
-        item2.setForeground(Color.decode("#ccc"));
-        item2.setBackground(Color.decode("#1a1a1a"));
-        item2.setFont(new Font("Arial", Font.PLAIN, 16));
-        item2.addActionListener(e -> JOptionPane.showMessageDialog(frame, "Tela Configurações"));
-        menu.add(item2);
-        
-        menu.show(frame, 16, 60);
+    private void saveConfig() {
+        try {
+            prefs.edit().putString("academia_data", configData.toString()).apply();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getTodayName() {
+        String[] names = {"Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
+        return names[new Date().getDay()];
+    }
+
+    private String getTodayKey() {
+        Date d = new Date();
+        return String.format(Locale.getDefault(), "%02d/%02d/%d", d.getDate(), d.getMonth() + 1, d.getYear() + 1900);
+    }
+
+    private JSONArray getTodayTreinos() {
+        try {
+            String hoje = getTodayName();
+            JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
+            JSONArray result = new JSONArray();
+            for (int i = 0; i < treinos.length(); i++) {
+                if (treinos.getJSONObject(i).getString("dia").equals(hoje)) {
+                    result.put(treinos.getJSONObject(i));
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            return new JSONArray();
+        }
+    }
+
+    private void handleMainBtnClick() {
+        if (isActive) {
+            mostrarConfirmacao("Parar Treino", "Deseja realmente parar?", ok -> {
+                if (ok) {
+                    pararTreino();
+                }
+            });
+        } else {
+            JSONArray treinos = getTodayTreinos();
+            if (treinos.length() == 0) {
+                mostrarConfirmacao("Aviso", "Nenhum treino programado para hoje.", ok -> {}, true);
+                return;
+            }
+            iniciarTreino();
+        }
+    }
+
+    private void iniciarTreino() {
+        try {
+            String hojeKey = getTodayKey();
+            JSONObject treinoConcluido = configData.getJSONObject("academia").getJSONObject("treinoConcluido");
+            if (treinoConcluido.optBoolean(hojeKey, false)) {
+                mostrarConfirmacao("Treino Concluído", "Deseja refazê-lo?", ok -> {
+                    if (ok) {
+                        try {
+                            treinoConcluido.put(hojeKey, false);
+                            saveConfig();
+                            iniciarTreinoAtual();
+                        } catch (Exception e) {}
+                    }
+                });
+                return;
+            }
+            if (configData.getJSONObject("academia").has("treino_" + hojeKey)) {
+                treinoAtual = configData.getJSONObject("academia").getJSONObject("treino_" + hojeKey);
+                exercicioAtualIndex = 0;
+                todayCard.setVisibility(View.VISIBLE);
+                mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+                isActive = true;
+                configData.getJSONObject("academia").put("botaoAtivo", true);
+                saveConfig();
+                renderTreinoCard();
+                if (verificarPeso()) mostrarAvisoPeso();
+                return;
+            }
+            iniciarTreinoAtual();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void iniciarTreinoAtual() {
+        try {
+            JSONArray treinos = getTodayTreinos();
+            if (treinos.length() == 0) return;
+            treinoAtual = new JSONObject(treinos.getJSONObject(0).toString());
+            JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
+            for (int i = 0; i < exercicios.length(); i++) {
+                JSONObject ex = exercicios.getJSONObject(i);
+                ex.put("_seriesFeitas", 0);
+                ex.put("_done", false);
+                if (!ex.has("loadHistory")) ex.put("loadHistory", new JSONArray());
+                if (ex.has("loadHistory") && ex.getJSONArray("loadHistory").length() > 0) {
+                    JSONArray hist = ex.getJSONArray("loadHistory");
+                    JSONObject ultimo = hist.getJSONObject(hist.length() - 1);
+                    ex.put("load", ultimo.getDouble("load"));
+                    if (ultimo.has("reps")) ex.put("reps", ultimo.getInt("reps"));
+                }
+            }
+            exercicioAtualIndex = 0;
+            todayCard.setVisibility(View.VISIBLE);
+            mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+            isActive = true;
+            configData.getJSONObject("academia").put("botaoAtivo", true);
+            configData.getJSONObject("academia").put("treino_" + getTodayKey(), treinoAtual);
+            saveConfig();
+            renderTreinoCard();
+            if (verificarPeso()) mostrarAvisoPeso();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void pararTreino() {
+        try {
+            mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+            isActive = false;
+            todayCard.setVisibility(View.GONE);
+            treinoAtual = null;
+            limparTimer();
+            configData.getJSONObject("academia").put("treino_" + getTodayKey(), JSONObject.NULL);
+            configData.getJSONObject("academia").put("botaoAtivo", false);
+            saveConfig();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void carregarEstadoBotao() {
+        try {
+            String hojeKey = getTodayKey();
+            JSONObject academia = configData.getJSONObject("academia");
+            boolean temTreino = !academia.isNull("treino_" + hojeKey);
+            boolean concluido = academia.getJSONObject("treinoConcluido").optBoolean(hojeKey, false);
+            boolean botaoAtivo = academia.optBoolean("botaoAtivo", false);
+
+            if (temTreino && !concluido && botaoAtivo) {
+                treinoAtual = academia.getJSONObject("treino_" + hojeKey);
+                JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
+                boolean todosConcluidos = true;
+                for (int i = 0; i < exercicios.length(); i++) {
+                    JSONObject ex = exercicios.getJSONObject(i);
+                    int feitas = ex.optInt("_seriesFeitas", 0);
+                    int total = ex.optInt("sets", 1);
+                    if (feitas < total) {
+                        todosConcluidos = false;
+                        exercicioAtualIndex = i;
+                        break;
+                    }
+                }
+                if (todosConcluidos) {
+                    academia.getJSONObject("treinoConcluido").put(hojeKey, true);
+                    academia.put("treino_" + hojeKey, JSONObject.NULL);
+                    academia.put("botaoAtivo", false);
+                    saveConfig();
+                    mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                    isActive = false;
+                    todayCard.setVisibility(View.GONE);
+                    treinoAtual = null;
+                } else {
+                    mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+                    isActive = true;
+                    todayCard.setVisibility(View.VISIBLE);
+                    renderTreinoCard();
+                }
+            } else {
+                mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                isActive = false;
+                todayCard.setVisibility(View.GONE);
+                treinoAtual = null;
+                if (botaoAtivo) {
+                    academia.put("botaoAtivo", false);
+                    saveConfig();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void renderTreinoCard() {
+        try {
+            exercisesContainer.removeAllViews();
+            timerContainer.removeAllViews();
+            if (treinoAtual == null || !treinoAtual.has("exercicios")) return;
+            JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
+            if (exercicioAtualIndex >= exercicios.length()) {
+                TextView doneText = new TextView(this);
+                doneText.setText("Treino concluído!");
+                doneText.setTextColor(Color.parseColor("#666"));
+                doneText.setGravity(Gravity.CENTER);
+                doneText.setPadding(0, dpToPx(20), 0, dpToPx(20));
+                exercisesContainer.addView(doneText);
+                concluirTreinoCompleto();
+                return;
+            }
+            JSONObject ex = exercicios.getJSONObject(exercicioAtualIndex);
+            int totalSeries = ex.optInt("sets", 1);
+            int seriesFeitas = ex.optInt("_seriesFeitas", 0);
+            boolean isDone = seriesFeitas >= totalSeries;
+
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            card.setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14));
+            card.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            TextView name = new TextView(this);
+            name.setText(ex.optString("exercise", "Exercício") + (ex.optBoolean("warmup", false) ? " (Aquecimento)" : ""));
+            name.setTextColor(Color.parseColor("#eee"));
+            name.setTextSize(18);
+            name.setGravity(Gravity.CENTER);
+            name.setPadding(0, 0, 0, dpToPx(4));
+            card.addView(name);
+
+            TextView details = new TextView(this);
+            details.setText(totalSeries + " séries x " + ex.optInt("reps", 0) + " reps");
+            details.setTextColor(Color.parseColor("#aaa"));
+            details.setTextSize(14);
+            details.setGravity(Gravity.CENTER);
+            card.addView(details);
+
+            TextView load = new TextView(this);
+            load.setText("Carga: " + ex.optDouble("load", 0) + "kg");
+            load.setTextColor(Color.parseColor("#8bc34a"));
+            load.setTextSize(15);
+            load.setGravity(Gravity.CENTER);
+            card.addView(load);
+
+            TextView status = new TextView(this);
+            status.setText(isDone ? "Concluído" : (seriesFeitas + "/" + totalSeries + " séries"));
+            status.setTextColor(isDone ? Color.parseColor("#8bc34a") : Color.parseColor("#666"));
+            status.setTextSize(12);
+            status.setGravity(Gravity.CENTER);
+            status.setPadding(0, dpToPx(3), 0, 0);
+            card.addView(status);
+
+            if (!isDone && !aguardandoTimer) {
+                Button btnDone = new Button(this);
+                btnDone.setText("PRONTO");
+                btnDone.setTextColor(Color.parseColor("#8bc34a"));
+                btnDone.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                btnParams.setMargins(0, dpToPx(8), 0, 0);
+                btnParams.gravity = Gravity.CENTER;
+                btnDone.setLayoutParams(btnParams);
+                btnDone.setOnClickListener(v -> {
+                    if (aguardandoTimer) return;
+                    ex.put("_seriesFeitas", seriesFeitas + 1);
+                    if (ex.optInt("_seriesFeitas", 0) >= totalSeries) {
+                        ex.put("_done", true);
+                        if (!ex.optBoolean("warmup", false)) {
+                            pedirEvolucaoCarga(ex, exercicioAtualIndex);
+                            return;
+                        }
+                    }
+                    salvarProgressoEAtualizar(exercicioAtualIndex);
+                });
+                card.addView(btnDone);
+            } else if (aguardandoTimer) {
+                TextView waitText = new TextView(this);
+                waitText.setText("Aguardando descanso...");
+                waitText.setTextColor(Color.parseColor("#ffaa00"));
+                waitText.setTextSize(12);
+                waitText.setGravity(Gravity.CENTER);
+                waitText.setPadding(0, dpToPx(8), 0, 0);
+                card.addView(waitText);
+            }
+            exercisesContainer.addView(card);
+
+            int total = exercicios.length();
+            int done = 0;
+            for (int i = 0; i < total; i++) {
+                if (exercicios.getJSONObject(i).optInt("_seriesFeitas", 0) >= exercicios.getJSONObject(i).optInt("sets", 1)) {
+                    done++;
+                }
+            }
+            int pct = total > 0 ? (done * 100 / total) : 0;
+            progressFill.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, pct));
+            progressText.setText(done + "/" + total + " exercícios concluídos");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void pedirEvolucaoCarga(JSONObject ex, int idx) {
+        try {
+            FrameLayout overlay = new FrameLayout(this);
+            overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            overlay.setBackgroundColor(Color.parseColor("#00000000"));
+            overlay.setOnClickListener(v -> {});
+
+            LinearLayout box = new LinearLayout(this);
+            box.setOrientation(LinearLayout.VERTICAL);
+            box.setBackgroundColor(Color.parseColor("#1a1a1a"));
+            box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
+            FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+            boxParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+            box.setLayoutParams(boxParams);
+
+            TextView title = new TextView(this);
+            title.setText("Evolução de Carga");
+            title.setTextColor(Color.parseColor("#eee"));
+            title.setTextSize(18);
+            title.setGravity(Gravity.CENTER);
+            box.addView(title);
+
+            TextView desc = new TextView(this);
+            desc.setText("Registre a evolução para " + ex.optString("exercise"));
+            desc.setTextColor(Color.parseColor("#aaa"));
+            desc.setTextSize(14);
+            desc.setPadding(0, dpToPx(6), 0, dpToPx(6));
+            box.addView(desc);
+
+            EditText loadInput = new EditText(this);
+            loadInput.setHint("Carga atual (kg)");
+            loadInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            loadInput.setText(String.valueOf(ex.optDouble("load", 0)));
+            loadInput.setTextColor(Color.parseColor("#ddd"));
+            loadInput.setBackgroundColor(Color.parseColor("#0a0a0a"));
+            box.addView(loadInput);
+
+            EditText repsInput = new EditText(this);
+            repsInput.setHint("Repetições atuais");
+            repsInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+            repsInput.setText(String.valueOf(ex.optInt("reps", 0)));
+            repsInput.setTextColor(Color.parseColor("#ddd"));
+            repsInput.setBackgroundColor(Color.parseColor("#0a0a0a"));
+            box.addView(repsInput);
+
+            LinearLayout btnRow = new LinearLayout(this);
+            btnRow.setOrientation(LinearLayout.HORIZONTAL);
+            btnRow.setGravity(Gravity.CENTER);
+            btnRow.setPadding(0, dpToPx(10), 0, 0);
+
+            Button btnCancel = new Button(this);
+            btnCancel.setText("Pular");
+            btnCancel.setTextColor(Color.parseColor("#ccc"));
+            btnCancel.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            btnCancel.setOnClickListener(v -> {
+                ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                salvarProgressoEAtualizar(idx);
+            });
+            btnRow.addView(btnCancel);
+
+            Button btnSave = new Button(this);
+            btnSave.setText("Registrar");
+            btnSave.setTextColor(Color.parseColor("#8bc34a"));
+            btnSave.setBackgroundColor(Color.parseColor("#1a3a1a"));
+            btnSave.setPadding(dpToPx(14), 0, dpToPx(14), 0);
+            btnSave.setOnClickListener(v -> {
+                try {
+                    double load = Double.parseDouble(loadInput.getText().toString());
+                    int reps = Integer.parseInt(repsInput.getText().toString());
+                    String hoje = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
+                    JSONArray hist = ex.optJSONArray("loadHistory");
+                    if (hist == null) hist = new JSONArray();
+                    JSONObject reg = new JSONObject();
+                    reg.put("load", load);
+                    reg.put("reps", reps);
+                    reg.put("date", hoje);
+                    hist.put(reg);
+                    ex.put("loadHistory", hist);
+                    ex.put("load", load);
+                    ex.put("reps", reps);
+                    ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                    salvarProgressoEAtualizar(idx);
+                } catch (Exception e) {
+                    ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                    salvarProgressoEAtualizar(idx);
+                }
+            });
+            btnRow.addView(btnSave);
+            box.addView(btnRow);
+            overlay.addView(box);
+            ((FrameLayout) getWindow().getDecorView()).addView(overlay);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void salvarProgressoEAtualizar(int idx) {
+        try {
+            String hojeKey = getTodayKey();
+            configData.getJSONObject("academia").put("treino_" + hojeKey, treinoAtual);
+            saveConfig();
+            proximoExercicio(idx);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void proximoExercicio(int idxAtual) {
+        try {
+            JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
+            int proximoIdx = -1;
+            for (int i = idxAtual + 1; i < exercicios.length(); i++) {
+                JSONObject ex = exercicios.getJSONObject(i);
+                if (ex.optInt("_seriesFeitas", 0) < ex.optInt("sets", 1)) {
+                    proximoIdx = i;
+                    break;
+                }
+            }
+            if (proximoIdx == -1) {
+                exercicioAtualIndex = exercicios.length();
+                renderTreinoCard();
+                return;
+            }
+            exercicioAtualIndex = proximoIdx;
+            JSONObject proxEx = exercicios.getJSONObject(proximoIdx);
+            int descanso = proxEx.optInt("descanso", 0);
+            if (descanso > 0) {
+                aguardandoTimer = true;
+                renderTreinoCard();
+                iniciarTimer(descanso, () -> {
+                    aguardandoTimer = false;
+                    renderTreinoCard();
+                });
+            } else {
+                renderTreinoCard();
+            }
+            configData.getJSONObject("academia").put("treino_" + getTodayKey(), treinoAtual);
+            configData.getJSONObject("academia").put("botaoAtivo", true);
+            saveConfig();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void concluirTreinoCompleto() {
+        try {
+            String hojeKey = getTodayKey();
+            configData.getJSONObject("academia").getJSONObject("treinoConcluido").put(hojeKey, true);
+            configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
+            configData.getJSONObject("academia").put("botaoAtivo", false);
+            saveConfig();
+            mostrarConfirmacao("Treino Concluído", "Parabéns! Você concluiu o treino de hoje.", ok -> {
+                mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                isActive = false;
+                todayCard.setVisibility(View.GONE);
+                treinoAtual = null;
+                limparTimer();
+            }, true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void iniciarTimer(int segundos, Runnable callback) {
+        limparTimer();
+        timerRestante = segundos;
+        aguardandoTimer = true;
+        timerContainer.removeAllViews();
+
+        LinearLayout timerDisplay = new LinearLayout(this);
+        timerDisplay.setOrientation(LinearLayout.VERTICAL);
+        timerDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        timerDisplay.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, dpToPx(6), 0, dpToPx(6));
+        timerDisplay.setLayoutParams(params);
+
+        TextView label = new TextView(this);
+        label.setText("Descanso");
+        label.setTextColor(Color.parseColor("#888"));
+        label.setTextSize(11);
+        label.setGravity(Gravity.CENTER);
+        timerDisplay.addView(label);
+
+        TextView text = new TextView(this);
+        text.setId(View.generateViewId());
+        text.setTextColor(Color.parseColor("#8bc34a"));
+        text.setTextSize(22);
+        text.setGravity(Gravity.CENTER);
+        timerDisplay.addView(text);
+        timerContainer.addView(timerDisplay);
+
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                timerRestante--;
+                if (timerRestante <= 0) {
+                    limparTimer();
+                    if (callback != null) callback.run();
+                } else {
+                    int m = timerRestante / 60;
+                    int s = timerRestante % 60;
+                    TextView tv = findViewById(text.getId());
+                    if (tv != null) tv.setText(String.format(Locale.getDefault(), "%02d:%02d", m, s));
+                    timerHandler.postDelayed(this, 1000);
+                }
+            }
+        };
+        timerHandler.post(timerRunnable);
+    }
+
+    private void limparTimer() {
+        if (timerRunnable != null) {
+            timerHandler.removeCallbacks(timerRunnable);
+            timerRunnable = null;
+        }
+        timerRestante = 0;
+        aguardandoTimer = false;
+        timerContainer.removeAllViews();
+    }
+
+    private boolean verificarPeso() {
+        try {
+            JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
+            if (peso.isNull("ultimoRegistro")) return false;
+            String ultimoStr = peso.getString("ultimoRegistro");
+            Date ultimo = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(ultimoStr);
+            if (ultimo == null) return false;
+            Date hoje = new Date();
+            long diff = (hoje.getTime() - ultimo.getTime()) / (1000 * 60 * 60 * 24);
+            return diff >= peso.optInt("intervalo", 7);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void mostrarAvisoPeso() {
+        try {
+            JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
+            String ultimoStr = peso.optString("ultimoRegistro", "");
+            String dataFormatada = "Nunca";
+            if (!ultimoStr.isEmpty()) {
+                Date d = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(ultimoStr);
+                if (d != null) dataFormatada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(d);
+            }
+            long diff = 999;
+            if (!ultimoStr.isEmpty()) {
+                Date ultimo = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(ultimoStr);
+                if (ultimo != null) diff = (new Date().getTime() - ultimo.getTime()) / (1000 * 60 * 60 * 24);
+            }
+            TextView avisoText = pesoAvisoModal.findViewById(android.R.id.text1);
+            if (avisoText == null) {
+                LinearLayout box = (LinearLayout) pesoAvisoModal.getChildAt(0);
+                avisoText = (TextView) box.getChildAt(1);
+            }
+            avisoText.setText("Já faz " + diff + " dias desde a última pesagem (" + dataFormatada + "). Registre seu novo peso.");
+            pesoAvisoModal.setVisibility(View.VISIBLE);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void registrarPeso(double val) {
+        try {
+            JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
+            JSONArray hist = peso.getJSONArray("historico");
+            String hoje = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
+            JSONObject reg = new JSONObject();
+            reg.put("peso", val);
+            reg.put("data", hoje);
+            hist.put(reg);
+            peso.put("atual", val);
+            peso.put("ultimoRegistro", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(new Date()));
+            saveConfig();
+            if (treinoAtual != null) renderTreinoCard();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void renderConfig(boolean viewOnly) {
+        configContent.removeAllViews();
+        try {
+            JSONObject academia = configData.getJSONObject("academia");
+            TextView sectionTitle = new TextView(this);
+            sectionTitle.setText("Resumo");
+            sectionTitle.setTextColor(Color.parseColor("#999"));
+            sectionTitle.setTextSize(14);
+            sectionTitle.setPadding(0, dpToPx(10), 0, dpToPx(5));
+            configContent.addView(sectionTitle);
+
+            addConfigRow("Data de Início", academia.optString("inicio", "Não definida"));
+            
+            JSONObject peso = academia.getJSONObject("peso");
+            addConfigRow("Peso Atual", peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg");
+            addConfigRow("Meta", peso.isNull("meta") ? "Não definida" : peso.getDouble("meta") + " kg");
+            addConfigRow("Intervalo Pesagem", peso.optInt("intervalo", 7) + " dias");
+
+            if (!viewOnly) {
+                Button btnPeso = new Button(this);
+                btnPeso.setText("Registrar Peso");
+                btnPeso.setTextColor(Color.parseColor("#8bc34a"));
+                btnPeso.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                btnPeso.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                btnPeso.setPadding(0, dpToPx(8), 0, dpToPx(8));
+                btnPeso.setOnClickListener(v -> {
+                    EditText input = new EditText(this);
+                    input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+                    input.setHint("Peso (kg)");
+                    input.setTextColor(Color.parseColor("#ddd"));
+                    input.setBackgroundColor(Color.parseColor("#0a0a0a"));
+                    
+                    FrameLayout overlay = new FrameLayout(this);
+                    overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                    overlay.setBackgroundColor(Color.parseColor("#00000000"));
+                    overlay.setOnClickListener(ev -> {});
+                    
+                    LinearLayout box = new LinearLayout(this);
+                    box.setOrientation(LinearLayout.VERTICAL);
+                    box.setBackgroundColor(Color.parseColor("#1a1a1a"));
+                    box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
+                    FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+                    box.setLayoutParams(boxParams);
+                    
+                    TextView title = new TextView(this);
+                    title.setText("Registrar Peso");
+                    title.setTextColor(Color.parseColor("#eee"));
+                    title.setTextSize(18);
+                    title.setGravity(Gravity.CENTER);
+                    box.addView(title);
+                    box.addView(input);
+                    
+                    Button saveBtn = new Button(this);
+                    saveBtn.setText("Salvar");
+                    saveBtn.setTextColor(Color.parseColor("#8bc34a"));
+                    saveBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                    saveBtn.setOnClickListener(ev -> {
+                        try {
+                            double val = Double.parseDouble(input.getText().toString());
+                            registrarPeso(val);
+                            ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                            renderConfig(false);
+                        } catch (Exception e) {
+                            Toast.makeText(this, "Inválido", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    box.addView(saveBtn);
+                    overlay.addView(box);
+                    ((FrameLayout) getWindow().getDecorView()).addView(overlay);
+                });
+                configContent.addView(btnPeso);
+            }
+
+            sectionTitle = new TextView(this);
+            sectionTitle.setText("Dias de Descanso");
+            sectionTitle.setTextColor(Color.parseColor("#999"));
+            sectionTitle.setTextSize(14);
+            sectionTitle.setPadding(0, dpToPx(15), 0, dpToPx(5));
+            configContent.addView(sectionTitle);
+
+            JSONArray diasDescanso = academia.getJSONArray("diasDescanso");
+            LinearLayout diasContainer = new LinearLayout(this);
+            diasContainer.setOrientation(LinearLayout.VERTICAL);
+            for (String dia : DIAS_SEMANA) {
+                CheckBox cb = new CheckBox(this);
+                cb.setText(dia);
+                cb.setTextColor(Color.parseColor("#aaa"));
+                cb.setChecked(diasDescanso.toString().contains("\"" + dia + "\""));
+                if (viewOnly) cb.setEnabled(false);
+                cb.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    try {
+                        JSONArray novos = new JSONArray();
+                        for (int i = 0; i < DIAS_SEMANA.length; i++) {
+                            CheckBox c = (CheckBox) diasContainer.getChildAt(i);
+                            if (c.isChecked()) novos.put(c.getText().toString());
+                        }
+                        academia.put("diasDescanso", novos);
+                        saveConfig();
+                    } catch (Exception e) {}
+                });
+                diasContainer.addView(cb);
+            }
+            configContent.addView(diasContainer);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void addConfigRow(String label, String value) {
+        TextView tv = new TextView(this);
+        tv.setText(label + ": " + value);
+        tv.setTextColor(Color.parseColor("#ccc"));
+        tv.setTextSize(13);
+        tv.setPadding(0, dpToPx(4), 0, dpToPx(4));
+        configContent.addView(tv);
+    }
+
+    private void mostrarConfirmacao(String titulo, String msg, ConfirmCallback callback, boolean unicoBotao) {
+        try {
+            TextView titleView = confirmModal.findViewById(android.R.id.text1);
+            TextView msgView = confirmModal.findViewById(android.R.id.text2);
+            if (titleView == null) {
+                LinearLayout box = (LinearLayout) confirmModal.getChildAt(0);
+                titleView = (TextView) box.getChildAt(0);
+                msgView = (TextView) box.getChildAt(1);
+            }
+            titleView.setText(titulo);
+            msgView.setText(msg);
+            
+            LinearLayout btnRow = (LinearLayout) ((LinearLayout) confirmModal.getChildAt(0)).getChildAt(2);
+            btnRow.removeAllViews();
+            
+            if (unicoBotao) {
+                Button btnOk = new Button(this);
+                btnOk.setText("OK");
+                btnOk.setTextColor(Color.parseColor("#8bc34a"));
+                btnOk.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                btnOk.setOnClickListener(v -> {
+                    confirmModal.setVisibility(View.GONE);
+                    if (callback != null) callback.onConfirm(true);
+                });
+                btnRow.addView(btnOk);
+            } else {
+                Button btnNo = new Button(this);
+                btnNo.setText("Não");
+                btnNo.setTextColor(Color.parseColor("#ccc"));
+                btnNo.setBackgroundColor(Color.parseColor("#2a2a2a"));
+                btnNo.setOnClickListener(v -> {
+                    confirmModal.setVisibility(View.GONE);
+                    if (callback != null) callback.onConfirm(false);
+                });
+                btnRow.addView(btnNo);
+                
+                Button btnYes = new Button(this);
+                btnYes.setText("Sim");
+                btnYes.setTextColor(Color.parseColor("#ff8a8a"));
+                btnYes.setBackgroundColor(Color.parseColor("#3a1a1a"));
+                btnYes.setOnClickListener(v -> {
+                    confirmModal.setVisibility(View.GONE);
+                    if (callback != null) callback.onConfirm(true);
+                });
+                btnRow.addView(btnYes);
+            }
+            confirmModal.setVisibility(View.VISIBLE);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void mostrarConfirmacao(String titulo, String msg, ConfirmCallback callback) {
+        mostrarConfirmacao(titulo, msg, callback, false);
+    }
+
+    private int dpToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
+    }
+
+    interface ConfirmCallback {
+        void onConfirm(boolean ok);
     }
 }
-EOF
-javac App.java
-java App
+ENDOFJAVA
