@@ -41,8 +41,6 @@ public class MainActivity extends Activity {
     private int timerRestante = 0;
 
     private LinearLayout mainLayout;
-    private LinearLayout menuPanel;
-    private FrameLayout menuOverlay;
     private FrameLayout configModal;
     private LinearLayout configContent;
     private FrameLayout pesoAvisoModal;
@@ -97,26 +95,10 @@ public class MainActivity extends Activity {
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        Button hamburger = new Button(this);
-        hamburger.setText("☰");
-        hamburger.setTextColor(COR_BRANCO);
-        hamburger.setTextSize(28);
-        hamburger.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
-        LinearLayout.LayoutParams hamburgerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        hamburgerParams.setMargins(dpToPx(16), dpToPx(16), 0, 0);
-        hamburger.setLayoutParams(hamburgerParams);
-        hamburger.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleMenu(true);
-            }
-        });
-        mainLayout.addView(hamburger);
-
         mainBtn = new Button(this);
         LinearLayout.LayoutParams mainParams = new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130));
         mainParams.gravity = Gravity.CENTER_HORIZONTAL;
-        mainParams.topMargin = dpToPx(40);
+        mainParams.topMargin = dpToPx(60);
         mainBtn.setLayoutParams(mainParams);
         mainBtn.setBackgroundDrawable(new ShapeDrawable(new OvalShape()));
         mainBtn.setBackgroundColor(COR_VERMELHO);
@@ -130,6 +112,47 @@ public class MainActivity extends Activity {
             }
         });
         mainLayout.addView(mainBtn);
+
+        LinearLayout botoesLayout = new LinearLayout(this);
+        botoesLayout.setOrientation(LinearLayout.HORIZONTAL);
+        botoesLayout.setGravity(Gravity.CENTER);
+        botoesLayout.setPadding(0, dpToPx(30), 0, 0);
+        LinearLayout.LayoutParams botoesParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        botoesLayout.setLayoutParams(botoesParams);
+
+        Button btnAcademia = new Button(this);
+        btnAcademia.setText("Academia");
+        btnAcademia.setTextColor(COR_BRANCO);
+        btnAcademia.setBackgroundColor(COR_CARD);
+        btnAcademia.setPadding(dpToPx(20), dpToPx(10), dpToPx(20), dpToPx(10));
+        LinearLayout.LayoutParams btnAcadParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+        btnAcadParams.setMargins(dpToPx(10), 0, dpToPx(5), 0);
+        btnAcademia.setLayoutParams(btnAcadParams);
+        btnAcademia.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openConfig(true);
+            }
+        });
+        botoesLayout.addView(btnAcademia);
+
+        Button btnConfig = new Button(this);
+        btnConfig.setText("Configurações");
+        btnConfig.setTextColor(COR_BRANCO);
+        btnConfig.setBackgroundColor(COR_CARD);
+        btnConfig.setPadding(dpToPx(20), dpToPx(10), dpToPx(20), dpToPx(10));
+        LinearLayout.LayoutParams btnConfParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+        btnConfParams.setMargins(dpToPx(5), 0, dpToPx(10), 0);
+        btnConfig.setLayoutParams(btnConfParams);
+        btnConfig.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openConfig(false);
+            }
+        });
+        botoesLayout.addView(btnConfig);
+
+        mainLayout.addView(botoesLayout);
 
         todayCard = new LinearLayout(this);
         todayCard.setOrientation(LinearLayout.VERTICAL);
@@ -175,77 +198,7 @@ public class MainActivity extends Activity {
 
         mainLayout.addView(todayCard);
 
-        menuOverlay = new FrameLayout(this);
-        menuOverlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        menuOverlay.setBackgroundColor(COR_FUNDO_OVERLAY);
-        menuOverlay.setVisibility(View.GONE);
-        menuOverlay.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleMenu(false);
-            }
-        });
-
-        menuPanel = new LinearLayout(this);
-        menuPanel.setOrientation(LinearLayout.VERTICAL);
-        menuPanel.setBackgroundColor(COR_CARD);
-        FrameLayout.LayoutParams menuParams = new FrameLayout.LayoutParams(dpToPx(280), ViewGroup.LayoutParams.MATCH_PARENT);
-        menuParams.gravity = Gravity.START;
-        menuPanel.setLayoutParams(menuParams);
-        menuPanel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {}
-        });
-
-        Button closeMenu = new Button(this);
-        closeMenu.setText("✕");
-        closeMenu.setTextColor(COR_CINZA_ESCURO);
-        closeMenu.setTextSize(28);
-        closeMenu.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
-        closeMenu.setGravity(Gravity.END);
-        closeMenu.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleMenu(false);
-            }
-        });
-        menuPanel.addView(closeMenu);
-
-        Button menuAcademia = new Button(this);
-        menuAcademia.setText("Academia");
-        menuAcademia.setTextColor(COR_CINZA_CLARO);
-        menuAcademia.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
-        menuAcademia.setGravity(Gravity.START);
-        menuAcademia.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
-        menuAcademia.setTextSize(18);
-        menuAcademia.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleMenu(false);
-                openConfig(true);
-            }
-        });
-        menuPanel.addView(menuAcademia);
-
-        Button menuConfig = new Button(this);
-        menuConfig.setText("Configurações");
-        menuConfig.setTextColor(COR_CINZA_CLARO);
-        menuConfig.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
-        menuConfig.setGravity(Gravity.START);
-        menuConfig.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
-        menuConfig.setTextSize(18);
-        menuConfig.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleMenu(false);
-                openConfig(false);
-            }
-        });
-        menuPanel.addView(menuConfig);
-
-        menuOverlay.addView(menuPanel);
         root.addView(mainLayout);
-        root.addView(menuOverlay);
 
         setupConfigModal(root);
         setupPesoAvisoModal(root);
@@ -263,9 +216,8 @@ public class MainActivity extends Activity {
         LinearLayout configBox = new LinearLayout(this);
         configBox.setOrientation(LinearLayout.VERTICAL);
         configBox.setBackgroundColor(COR_CARD);
-        FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        boxParams.gravity = Gravity.CENTER;
-        boxParams.setMargins(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+        FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        boxParams.setMargins(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
         configBox.setLayoutParams(boxParams);
 
         LinearLayout configHeader = new LinearLayout(this);
@@ -300,11 +252,13 @@ public class MainActivity extends Activity {
         configHeader.addView(spacer);
         configBox.addView(configHeader);
 
+        ScrollView configScroll = new ScrollView(this);
+        configScroll.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         configContent = new LinearLayout(this);
         configContent.setOrientation(LinearLayout.VERTICAL);
-        configContent.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
-        configBox.addView(configContent);
-
+        configContent.setPadding(dpToPx(14), 0, dpToPx(14), dpToPx(14));
+        configScroll.addView(configContent);
+        configBox.addView(configScroll);
         configModal.addView(configBox);
         configModal.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -421,12 +375,6 @@ public class MainActivity extends Activity {
             public void onClick(View v) {}
         });
         root.addView(confirmModal);
-    }
-
-    private void toggleMenu(boolean open) {
-        if (menuOverlay != null) {
-            menuOverlay.setVisibility(open ? View.VISIBLE : View.GONE);
-        }
     }
 
     private void openConfig(boolean viewOnly) {
@@ -1177,7 +1125,6 @@ public class MainActivity extends Activity {
         try {
             if (configContent == null || configData == null) return;
             configContent.removeAllViews();
-
             final JSONObject academia = configData.getJSONObject("academia");
             TextView sectionTitle = new TextView(this);
             sectionTitle.setText("Resumo");
@@ -1292,7 +1239,6 @@ public class MainActivity extends Activity {
             configContent.addView(diasContainer);
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "Erro ao carregar configurações", Toast.LENGTH_SHORT).show();
         }
     }
 
