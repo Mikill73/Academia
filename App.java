@@ -263,8 +263,9 @@ public class MainActivity extends Activity {
         LinearLayout configBox = new LinearLayout(this);
         configBox.setOrientation(LinearLayout.VERTICAL);
         configBox.setBackgroundColor(COR_CARD);
-        FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        boxParams.setMargins(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
+        FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        boxParams.gravity = Gravity.CENTER;
+        boxParams.setMargins(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
         configBox.setLayoutParams(boxParams);
 
         LinearLayout configHeader = new LinearLayout(this);
@@ -299,13 +300,11 @@ public class MainActivity extends Activity {
         configHeader.addView(spacer);
         configBox.addView(configHeader);
 
-        ScrollView configScroll = new ScrollView(this);
-        configScroll.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         configContent = new LinearLayout(this);
         configContent.setOrientation(LinearLayout.VERTICAL);
-        configContent.setPadding(dpToPx(14), 0, dpToPx(14), dpToPx(14));
-        configScroll.addView(configContent);
-        configBox.addView(configScroll);
+        configContent.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
+        configBox.addView(configContent);
+
         configModal.addView(configBox);
         configModal.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1178,6 +1177,7 @@ public class MainActivity extends Activity {
         try {
             if (configContent == null || configData == null) return;
             configContent.removeAllViews();
+
             final JSONObject academia = configData.getJSONObject("academia");
             TextView sectionTitle = new TextView(this);
             sectionTitle.setText("Resumo");
@@ -1292,6 +1292,7 @@ public class MainActivity extends Activity {
             configContent.addView(diasContainer);
         } catch (Exception e) {
             e.printStackTrace();
+            Toast.makeText(this, "Erro ao carregar configurações", Toast.LENGTH_SHORT).show();
         }
     }
 
