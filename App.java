@@ -41,9 +41,8 @@ public class MainActivity extends Activity {
     private Runnable timerRunnable;
     private int timerRestante = 0;
 
-    private LinearLayout mainLayout;
-    private FrameLayout overlayModal;
-    private LinearLayout overlayContent;
+    private LinearLayout mainScreenContainer;
+    private LinearLayout detailsScreenContainer;
     private FrameLayout confirmModal;
     private LinearLayout todayCard;
     private LinearLayout exercisesContainer;
@@ -89,15 +88,24 @@ public class MainActivity extends Activity {
         }
     }
 
+    @Override
+    public void onBackPressed() {
+        if (detailsScreenContainer != null && detailsScreenContainer.getVisibility() == View.VISIBLE) {
+            showMainScreen();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
     private void setupUI() {
         FrameLayout root = new FrameLayout(this);
         root.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         root.setBackgroundColor(COR_FUNDO);
 
-        mainLayout = new LinearLayout(this);
-        mainLayout.setOrientation(LinearLayout.VERTICAL);
-        mainLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        mainLayout.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        mainScreenContainer = new LinearLayout(this);
+        mainScreenContainer.setOrientation(LinearLayout.VERTICAL);
+        mainScreenContainer.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        mainScreenContainer.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
 
         mainBtn = new Button(this);
         LinearLayout.LayoutParams mainParams = new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130));
@@ -115,7 +123,7 @@ public class MainActivity extends Activity {
                 handleMainBtnClick();
             }
         });
-        mainLayout.addView(mainBtn);
+        mainScreenContainer.addView(mainBtn);
 
         LinearLayout btnRow = new LinearLayout(this);
         btnRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -133,7 +141,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 isConfigViewOnly = true;
-                openOverlay();
+                showDetailsScreen();
             }
         });
         btnRow.addView(academiaBtn);
@@ -148,12 +156,12 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 isConfigViewOnly = false;
-                openOverlay();
+                showDetailsScreen();
             }
         });
         btnRow.addView(configBtn);
 
-        mainLayout.addView(btnRow);
+        mainScreenContainer.addView(btnRow);
 
         todayCard = new LinearLayout(this);
         todayCard.setOrientation(LinearLayout.VERTICAL);
@@ -197,35 +205,20 @@ public class MainActivity extends Activity {
         progressText.setPadding(0, dpToPx(6), 0, 0);
         todayCard.addView(progressText);
 
-        mainLayout.addView(todayCard);
+        mainScreenContainer.addView(todayCard);
+        root.addView(mainScreenContainer);
 
-        overlayModal = new FrameLayout(this);
-        overlayModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        overlayModal.setBackgroundColor(COR_FUNDO_OVERLAY);
-        overlayModal.setVisibility(View.GONE);
-        overlayModal.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                closeOverlay();
-            }
-        });
-
-        overlayContent = new LinearLayout(this);
-        overlayContent.setOrientation(LinearLayout.VERTICAL);
-        overlayContent.setBackgroundColor(COR_CARD);
-        FrameLayout.LayoutParams overlayParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        overlayParams.gravity = Gravity.CENTER;
-        overlayParams.setMargins(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
-        overlayContent.setLayoutParams(overlayParams);
-        overlayContent.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {}
-        });
+        detailsScreenContainer = new LinearLayout(this);
+        detailsScreenContainer.setOrientation(LinearLayout.VERTICAL);
+        detailsScreenContainer.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        detailsScreenContainer.setBackgroundColor(COR_CARD);
+        detailsScreenContainer.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        detailsScreenContainer.setVisibility(View.GONE);
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dpToPx(14), dpToPx(8), dpToPx(14), dpToPx(8));
+        header.setPadding(0, 0, 0, dpToPx(14));
 
         Button closeBtn = new Button(this);
         closeBtn.setText("✕");
@@ -235,39 +228,38 @@ public class MainActivity extends Activity {
         closeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                closeOverlay();
+                showMainScreen();
             }
         });
         header.addView(closeBtn);
 
-        TextView overlayTitle = new TextView(this);
-        overlayTitle.setText("Academia");
-        overlayTitle.setTextColor(COR_CINZA_MEDIO);
-        overlayTitle.setTextSize(18);
+        TextView detailsTitle = new TextView(this);
+        detailsTitle.setId(View.generateViewId());
+        detailsTitle.setText("Academia");
+        detailsTitle.setTextColor(COR_CINZA_MEDIO);
+        detailsTitle.setTextSize(18);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
         titleParams.gravity = Gravity.CENTER;
-        overlayTitle.setLayoutParams(titleParams);
-        header.addView(overlayTitle);
+        detailsTitle.setLayoutParams(titleParams);
+        header.addView(detailsTitle);
 
         View spacer = new View(this);
         spacer.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(30), ViewGroup.LayoutParams.WRAP_CONTENT));
         header.addView(spacer);
 
-        overlayContent.addView(header);
+        detailsScreenContainer.addView(header);
 
         ScrollView scroll = new ScrollView(this);
         scroll.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         final LinearLayout contentContainer = new LinearLayout(this);
         contentContainer.setOrientation(LinearLayout.VERTICAL);
-        contentContainer.setPadding(dpToPx(14), 0, dpToPx(14), dpToPx(14));
+        contentContainer.setPadding(0, 0, 0, dpToPx(14));
         scroll.addView(contentContainer);
-        overlayContent.addView(scroll);
-        overlayModal.addView(overlayContent);
-        root.addView(mainLayout);
-        root.addView(overlayModal);
+        detailsScreenContainer.addView(scroll);
+
+        root.addView(detailsScreenContainer);
 
         setupConfirmModal(root);
-
         setContentView(root);
     }
 
@@ -310,26 +302,37 @@ public class MainActivity extends Activity {
         root.addView(confirmModal);
     }
 
-    private void openOverlay() {
-        if (overlayModal != null && overlayContent != null) {
-            overlayModal.setVisibility(View.VISIBLE);
-            LinearLayout header = (LinearLayout) overlayContent.getChildAt(0);
-            TextView overlayTitle = (TextView) header.getChildAt(1);
-            overlayTitle.setText(isConfigViewOnly ? "Academia" : "Configurações");
-            renderOverlayContent();
+    private void showDetailsScreen() {
+        if (detailsScreenContainer != null && mainScreenContainer != null) {
+            TextView title = detailsScreenContainer.findViewWithTag(null);
+            for(int i=0; i<detailsScreenContainer.getChildCount(); i++) {
+                View v = detailsScreenContainer.getChildAt(i);
+                if(v instanceof LinearLayout) {
+                    LinearLayout header = (LinearLayout) v;
+                    if(header.getChildCount() >= 2 && header.getChildAt(1) instanceof TextView) {
+                        TextView tv = (TextView) header.getChildAt(1);
+                        tv.setText(isConfigViewOnly ? "Academia" : "Configurações");
+                        break;
+                    }
+                }
+            }
+            mainScreenContainer.setVisibility(View.GONE);
+            detailsScreenContainer.setVisibility(View.VISIBLE);
+            renderDetailsContent();
         }
     }
 
-    private void closeOverlay() {
-        if (overlayModal != null) {
-            overlayModal.setVisibility(View.GONE);
+    private void showMainScreen() {
+        if (detailsScreenContainer != null && mainScreenContainer != null) {
+            detailsScreenContainer.setVisibility(View.GONE);
+            mainScreenContainer.setVisibility(View.VISIBLE);
         }
     }
 
-    private void renderOverlayContent() {
+    private void renderDetailsContent() {
         LinearLayout container = null;
         try {
-            ScrollView scroll = (ScrollView) overlayContent.getChildAt(1);
+            ScrollView scroll = (ScrollView) detailsScreenContainer.getChildAt(1);
             container = (LinearLayout) scroll.getChildAt(0);
             container.removeAllViews();
 
@@ -492,7 +495,7 @@ public class MainActivity extends Activity {
                     double val = Double.parseDouble(input.getText().toString());
                     registrarPeso(val);
                     ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
-                    renderOverlayContent();
+                    renderDetailsContent();
                 } catch (Exception e) {
                     Toast.makeText(MainActivity.this, "Inválido", Toast.LENGTH_SHORT).show();
                 }
