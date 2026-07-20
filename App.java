@@ -5,6 +5,8 @@ package com.academia.app;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.OvalShape;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -51,17 +53,25 @@ public class MainActivity extends Activity {
     private View progressFill;
     private TextView progressText;
     private Button mainBtn;
-    private TextView cardTitle;
 
     private static final String[] DIAS_SEMANA = {"Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        prefs = getSharedPreferences("AcademiaPrefs", MODE_PRIVATE);
-        timerHandler = new Handler(Looper.getMainLooper());
-        loadConfig();
+        try {
+            prefs = getSharedPreferences("AcademiaPrefs", MODE_PRIVATE);
+            timerHandler = new Handler(Looper.getMainLooper());
+            loadConfig();
+            setupUI();
+            carregarEstadoBotao();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Erro ao iniciar: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
 
+    private void setupUI() {
         FrameLayout root = new FrameLayout(this);
         root.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         root.setBackgroundColor(Color.parseColor("#0d0d0d"));
@@ -76,7 +86,7 @@ public class MainActivity extends Activity {
         hamburger.setTextSize(28);
         hamburger.setBackgroundColor(Color.TRANSPARENT);
         LinearLayout.LayoutParams hamburgerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        hamburgerParams.setMargins(16, 16, 0, 0);
+        hamburgerParams.setMargins(dpToPx(16), dpToPx(16), 0, 0);
         hamburger.setLayoutParams(hamburgerParams);
         hamburger.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -87,10 +97,15 @@ public class MainActivity extends Activity {
         mainLayout.addView(hamburger);
 
         mainBtn = new Button(this);
-        mainBtn.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130), Gravity.CENTER));
-        ((LinearLayout.LayoutParams) mainBtn.getLayoutParams()).topMargin = dpToPx(40);
-        mainBtn.setBackgroundDrawable(new android.graphics.drawable.ShapeDrawable(new android.graphics.drawable.shapes.OvalShape()));
+        LinearLayout.LayoutParams mainParams = new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130));
+        mainParams.gravity = Gravity.CENTER_HORIZONTAL;
+        mainParams.topMargin = dpToPx(40);
+        mainBtn.setLayoutParams(mainParams);
+        mainBtn.setBackgroundDrawable(new ShapeDrawable(new OvalShape()));
         mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+        mainBtn.setText("INICIAR");
+        mainBtn.setTextColor(Color.WHITE);
+        mainBtn.setTextSize(14);
         mainBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -108,7 +123,7 @@ public class MainActivity extends Activity {
         todayCard.setLayoutParams(cardParams);
         todayCard.setVisibility(View.GONE);
 
-        cardTitle = new TextView(this);
+        TextView cardTitle = new TextView(this);
         cardTitle.setText("Treino de Hoje");
         cardTitle.setTextColor(Color.parseColor("#aaa"));
         cardTitle.setTextSize(14);
@@ -145,7 +160,7 @@ public class MainActivity extends Activity {
 
         menuOverlay = new FrameLayout(this);
         menuOverlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        menuOverlay.setBackgroundColor(Color.parseColor("#00000000"));
+        menuOverlay.setBackgroundColor(Color.parseColor("#88000000"));
         menuOverlay.setVisibility(View.GONE);
         menuOverlay.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -157,7 +172,9 @@ public class MainActivity extends Activity {
         menuPanel = new LinearLayout(this);
         menuPanel.setOrientation(LinearLayout.VERTICAL);
         menuPanel.setBackgroundColor(Color.parseColor("#1a1a1a"));
-        menuPanel.setLayoutParams(new FrameLayout.LayoutParams(dpToPx(280), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.START));
+        FrameLayout.LayoutParams menuParams = new FrameLayout.LayoutParams(dpToPx(280), ViewGroup.LayoutParams.MATCH_PARENT);
+        menuParams.gravity = Gravity.START;
+        menuPanel.setLayoutParams(menuParams);
         menuPanel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {}
@@ -213,9 +230,17 @@ public class MainActivity extends Activity {
         root.addView(mainLayout);
         root.addView(menuOverlay);
 
+        setupConfigModal(root);
+        setupPesoAvisoModal(root);
+        setupConfirmModal(root);
+
+        setContentView(root);
+    }
+
+    private void setupConfigModal(FrameLayout root) {
         configModal = new FrameLayout(this);
         configModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        configModal.setBackgroundColor(Color.parseColor("#00000000"));
+        configModal.setBackgroundColor(Color.parseColor("#88000000"));
         configModal.setVisibility(View.GONE);
 
         LinearLayout configBox = new LinearLayout(this);
@@ -276,10 +301,12 @@ public class MainActivity extends Activity {
             public void onClick(View v) {}
         });
         root.addView(configModal);
+    }
 
+    private void setupPesoAvisoModal(FrameLayout root) {
         pesoAvisoModal = new FrameLayout(this);
         pesoAvisoModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        pesoAvisoModal.setBackgroundColor(Color.parseColor("#00000000"));
+        pesoAvisoModal.setBackgroundColor(Color.parseColor("#88000000"));
         pesoAvisoModal.setVisibility(View.GONE);
         LinearLayout avisoBox = new LinearLayout(this);
         avisoBox.setOrientation(LinearLayout.VERTICAL);
@@ -339,10 +366,12 @@ public class MainActivity extends Activity {
             public void onClick(View v) {}
         });
         root.addView(pesoAvisoModal);
+    }
 
+    private void setupConfirmModal(FrameLayout root) {
         confirmModal = new FrameLayout(this);
         confirmModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        confirmModal.setBackgroundColor(Color.parseColor("#00000000"));
+        confirmModal.setBackgroundColor(Color.parseColor("#88000000"));
         confirmModal.setVisibility(View.GONE);
         LinearLayout confirmBox = new LinearLayout(this);
         confirmBox.setOrientation(LinearLayout.VERTICAL);
@@ -376,53 +405,66 @@ public class MainActivity extends Activity {
             public void onClick(View v) {}
         });
         root.addView(confirmModal);
-
-        setContentView(root);
-        carregarEstadoBotao();
     }
 
     private void toggleMenu(boolean open) {
-        menuOverlay.setVisibility(open ? View.VISIBLE : View.GONE);
+        if (menuOverlay != null) {
+            menuOverlay.setVisibility(open ? View.VISIBLE : View.GONE);
+        }
     }
 
     private void openConfig(boolean viewOnly) {
-        configModal.setVisibility(View.VISIBLE);
-        renderConfig(viewOnly);
+        if (configModal != null) {
+            configModal.setVisibility(View.VISIBLE);
+            renderConfig(viewOnly);
+        }
     }
 
     private void closeConfig() {
-        configModal.setVisibility(View.GONE);
+        if (configModal != null) {
+            configModal.setVisibility(View.GONE);
+        }
     }
 
     private void loadConfig() {
         try {
             String json = prefs.getString("academia_data", null);
-            if (json != null) {
+            if (json != null && !json.isEmpty()) {
                 configData = new JSONObject(json);
             } else {
-                configData = new JSONObject();
-                JSONObject academia = new JSONObject();
-                academia.put("inicio", JSONObject.NULL);
-                JSONObject peso = new JSONObject();
-                peso.put("atual", JSONObject.NULL);
-                peso.put("historico", new JSONArray());
-                peso.put("meta", JSONObject.NULL);
-                peso.put("intervalo", 7);
-                peso.put("ultimoRegistro", JSONObject.NULL);
-                academia.put("peso", peso);
-                academia.put("diasDescanso", new JSONArray());
-                academia.put("objetivos", new JSONArray());
-                JSONObject roupas = new JSONObject();
-                roupas.put("camisas", new JSONArray());
-                roupas.put("calcas", new JSONArray());
-                roupas.put("tenis", new JSONArray());
-                academia.put("roupas", roupas);
-                academia.put("combinacoes", new JSONObject());
-                academia.put("treinos", new JSONArray());
-                academia.put("treinoConcluido", new JSONObject());
-                academia.put("botaoAtivo", false);
-                configData.put("academia", academia);
+                createDefaultConfig();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            createDefaultConfig();
+        }
+    }
+
+    private void createDefaultConfig() {
+        try {
+            configData = new JSONObject();
+            JSONObject academia = new JSONObject();
+            academia.put("inicio", JSONObject.NULL);
+            JSONObject peso = new JSONObject();
+            peso.put("atual", JSONObject.NULL);
+            peso.put("historico", new JSONArray());
+            peso.put("meta", JSONObject.NULL);
+            peso.put("intervalo", 7);
+            peso.put("ultimoRegistro", JSONObject.NULL);
+            academia.put("peso", peso);
+            academia.put("diasDescanso", new JSONArray());
+            academia.put("objetivos", new JSONArray());
+            JSONObject roupas = new JSONObject();
+            roupas.put("camisas", new JSONArray());
+            roupas.put("calcas", new JSONArray());
+            roupas.put("tenis", new JSONArray());
+            academia.put("roupas", roupas);
+            academia.put("combinacoes", new JSONObject());
+            academia.put("treinos", new JSONArray());
+            academia.put("treinoConcluido", new JSONObject());
+            academia.put("botaoAtivo", false);
+            configData.put("academia", academia);
+            saveConfig();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -430,7 +472,9 @@ public class MainActivity extends Activity {
 
     private void saveConfig() {
         try {
-            prefs.edit().putString("academia_data", configData.toString()).apply();
+            if (configData != null) {
+                prefs.edit().putString("academia_data", configData.toString()).apply();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -438,16 +482,25 @@ public class MainActivity extends Activity {
 
     private String getTodayName() {
         String[] names = {"Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
-        return names[new Date().getDay()];
+        try {
+            return names[new Date().getDay()];
+        } catch (Exception e) {
+            return "Segunda";
+        }
     }
 
     private String getTodayKey() {
-        Date d = new Date();
-        return String.format(Locale.getDefault(), "%02d/%02d/%d", d.getDate(), d.getMonth() + 1, d.getYear() + 1900);
+        try {
+            Date d = new Date();
+            return String.format(Locale.getDefault(), "%02d/%02d/%d", d.getDate(), d.getMonth() + 1, d.getYear() + 1900);
+        } catch (Exception e) {
+            return "01/01/2024";
+        }
     }
 
     private JSONArray getTodayTreinos() {
         try {
+            if (configData == null) return new JSONArray();
             String hoje = getTodayName();
             JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
             JSONArray result = new JSONArray();
@@ -487,6 +540,7 @@ public class MainActivity extends Activity {
 
     private void iniciarTreino() {
         try {
+            if (configData == null) return;
             final String hojeKey = getTodayKey();
             final JSONObject treinoConcluido = configData.getJSONObject("academia").getJSONObject("treinoConcluido");
             if (treinoConcluido.optBoolean(hojeKey, false)) {
@@ -509,6 +563,7 @@ public class MainActivity extends Activity {
                 exercicioAtualIndex = 0;
                 todayCard.setVisibility(View.VISIBLE);
                 mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+                mainBtn.setText("PARAR");
                 isActive = true;
                 configData.getJSONObject("academia").put("botaoAtivo", true);
                 saveConfig();
@@ -543,6 +598,7 @@ public class MainActivity extends Activity {
             exercicioAtualIndex = 0;
             todayCard.setVisibility(View.VISIBLE);
             mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+            mainBtn.setText("PARAR");
             isActive = true;
             configData.getJSONObject("academia").put("botaoAtivo", true);
             configData.getJSONObject("academia").put("treino_" + getTodayKey(), treinoAtual);
@@ -557,13 +613,16 @@ public class MainActivity extends Activity {
     private void pararTreino() {
         try {
             mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+            mainBtn.setText("INICIAR");
             isActive = false;
             todayCard.setVisibility(View.GONE);
             treinoAtual = null;
             limparTimer();
-            configData.getJSONObject("academia").put("treino_" + getTodayKey(), JSONObject.NULL);
-            configData.getJSONObject("academia").put("botaoAtivo", false);
-            saveConfig();
+            if (configData != null) {
+                configData.getJSONObject("academia").put("treino_" + getTodayKey(), JSONObject.NULL);
+                configData.getJSONObject("academia").put("botaoAtivo", false);
+                saveConfig();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -571,6 +630,7 @@ public class MainActivity extends Activity {
 
     private void carregarEstadoBotao() {
         try {
+            if (configData == null) return;
             String hojeKey = getTodayKey();
             JSONObject academia = configData.getJSONObject("academia");
             boolean temTreino = !academia.isNull("treino_" + hojeKey);
@@ -597,17 +657,20 @@ public class MainActivity extends Activity {
                     academia.put("botaoAtivo", false);
                     saveConfig();
                     mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                    mainBtn.setText("INICIAR");
                     isActive = false;
                     todayCard.setVisibility(View.GONE);
                     treinoAtual = null;
                 } else {
                     mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+                    mainBtn.setText("PARAR");
                     isActive = true;
                     todayCard.setVisibility(View.VISIBLE);
                     renderTreinoCard();
                 }
             } else {
                 mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                mainBtn.setText("INICIAR");
                 isActive = false;
                 todayCard.setVisibility(View.GONE);
                 treinoAtual = null;
@@ -623,6 +686,7 @@ public class MainActivity extends Activity {
 
     private void renderTreinoCard() {
         try {
+            if (exercisesContainer == null || timerContainer == null) return;
             exercisesContainer.removeAllViews();
             timerContainer.removeAllViews();
             if (treinoAtual == null || !treinoAtual.has("exercicios")) return;
@@ -738,7 +802,7 @@ public class MainActivity extends Activity {
         try {
             final FrameLayout overlay = new FrameLayout(this);
             overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            overlay.setBackgroundColor(Color.parseColor("#00000000"));
+            overlay.setBackgroundColor(Color.parseColor("#88000000"));
             overlay.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {}
@@ -841,6 +905,7 @@ public class MainActivity extends Activity {
 
     private void salvarProgressoEAtualizar(int idx) {
         try {
+            if (configData == null) return;
             String hojeKey = getTodayKey();
             configData.getJSONObject("academia").put("treino_" + hojeKey, treinoAtual);
             saveConfig();
@@ -892,6 +957,7 @@ public class MainActivity extends Activity {
 
     private void concluirTreinoCompleto() {
         try {
+            if (configData == null) return;
             String hojeKey = getTodayKey();
             configData.getJSONObject("academia").getJSONObject("treinoConcluido").put(hojeKey, true);
             configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
@@ -901,6 +967,7 @@ public class MainActivity extends Activity {
                 @Override
                 public void onConfirm(boolean ok) {
                     mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                    mainBtn.setText("INICIAR");
                     isActive = false;
                     todayCard.setVisibility(View.GONE);
                     treinoAtual = null;
@@ -972,6 +1039,7 @@ public class MainActivity extends Activity {
 
     private boolean verificarPeso() {
         try {
+            if (configData == null) return false;
             JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
             if (peso.isNull("ultimoRegistro")) return false;
             String ultimoStr = peso.getString("ultimoRegistro");
@@ -987,6 +1055,7 @@ public class MainActivity extends Activity {
 
     private void mostrarAvisoPeso() {
         try {
+            if (configData == null || pesoAvisoModal == null) return;
             JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
             String ultimoStr = peso.optString("ultimoRegistro", "");
             String dataFormatada = "Nunca";
@@ -999,11 +1068,8 @@ public class MainActivity extends Activity {
                 Date ultimo = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(ultimoStr);
                 if (ultimo != null) diff = (new Date().getTime() - ultimo.getTime()) / (1000 * 60 * 60 * 24);
             }
-            TextView avisoText = pesoAvisoModal.findViewById(android.R.id.text1);
-            if (avisoText == null) {
-                LinearLayout box = (LinearLayout) pesoAvisoModal.getChildAt(0);
-                avisoText = (TextView) box.getChildAt(1);
-            }
+            LinearLayout box = (LinearLayout) pesoAvisoModal.getChildAt(0);
+            TextView avisoText = (TextView) box.getChildAt(1);
             avisoText.setText("Já faz " + diff + " dias desde a última pesagem (" + dataFormatada + "). Registre seu novo peso.");
             pesoAvisoModal.setVisibility(View.VISIBLE);
         } catch (Exception e) {
@@ -1013,6 +1079,7 @@ public class MainActivity extends Activity {
 
     private void registrarPeso(double val) {
         try {
+            if (configData == null) return;
             JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
             JSONArray hist = peso.getJSONArray("historico");
             String hoje = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
@@ -1030,8 +1097,9 @@ public class MainActivity extends Activity {
     }
 
     private void renderConfig(final boolean viewOnly) {
-        configContent.removeAllViews();
         try {
+            if (configContent == null || configData == null) return;
+            configContent.removeAllViews();
             final JSONObject academia = configData.getJSONObject("academia");
             TextView sectionTitle = new TextView(this);
             sectionTitle.setText("Resumo");
@@ -1065,7 +1133,7 @@ public class MainActivity extends Activity {
                         
                         final FrameLayout overlay = new FrameLayout(MainActivity.this);
                         overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                        overlay.setBackgroundColor(Color.parseColor("#00000000"));
+                        overlay.setBackgroundColor(Color.parseColor("#88000000"));
                         overlay.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View ev) {}
@@ -1144,7 +1212,6 @@ public class MainActivity extends Activity {
                 diasContainer.addView(cb);
             }
             configContent.addView(diasContainer);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1161,18 +1228,14 @@ public class MainActivity extends Activity {
 
     private void mostrarConfirmacao(String titulo, String msg, final ConfirmCallback callback, boolean unicoBotao) {
         try {
-            final TextView titleView = confirmModal.findViewById(android.R.id.text1);
-            final TextView msgView = confirmModal.findViewById(android.R.id.text2);
-            if (titleView == null) {
-                LinearLayout box = (LinearLayout) confirmModal.getChildAt(0);
-                titleView.setText(titulo);
-                msgView.setText(msg);
-            } else {
-                titleView.setText(titulo);
-                msgView.setText(msg);
-            }
+            if (confirmModal == null) return;
+            LinearLayout box = (LinearLayout) confirmModal.getChildAt(0);
+            TextView titleView = (TextView) box.getChildAt(0);
+            TextView msgView = (TextView) box.getChildAt(1);
+            LinearLayout btnRow = (LinearLayout) box.getChildAt(2);
             
-            LinearLayout btnRow = (LinearLayout) ((LinearLayout) confirmModal.getChildAt(0)).getChildAt(2);
+            titleView.setText(titulo);
+            msgView.setText(msg);
             btnRow.removeAllViews();
             
             if (unicoBotao) {
