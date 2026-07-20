@@ -1,9 +1,7 @@
-mkdir -p src/main/java/com/academia/app
 cat > src/main/java/com/academia/app/MainActivity.java << 'EOF'
 package com.academia.app;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -11,9 +9,7 @@ import java.io.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDate;
-import java.time.DayOfWeek;
 import java.util.*;
-import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -32,7 +28,7 @@ public class MainActivity extends JFrame {
     private boolean modoConfig = false;
     private boolean isActive = false;
     private boolean aguardandoTimer = false;
-    private Timer timer;
+    private javax.swing.Timer timer;
     private int timerRestante = 0;
     private JSONObject configData;
     private JSONObject treinoAtual;
@@ -450,6 +446,35 @@ public class MainActivity extends JFrame {
         title.setText(titulo);
         msgLabel.setText(msg);
         pendingConfirmAction = onConfirm;
+        JPanel btnRow = (JPanel) ((JPanel) panel.getComponent(0)).getComponent(2);
+        btnRow.removeAll();
+        JButton btnSim = new JButton("Sim");
+        btnSim.setBackground(new Color(58, 26, 26));
+        btnSim.setForeground(new Color(255, 138, 138));
+        btnSim.setBorder(BorderFactory.createLineBorder(new Color(90, 42, 42)));
+        btnSim.setFocusPainted(false);
+        btnSim.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSim.addActionListener(e -> {
+            confirmModal.setVisible(false);
+            if (pendingConfirmAction != null) {
+                pendingConfirmAction.run();
+                pendingConfirmAction = null;
+            }
+        });
+        JButton btnNao = new JButton("Não");
+        btnNao.setBackground(new Color(42, 42, 42));
+        btnNao.setForeground(new Color(204, 204, 204));
+        btnNao.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
+        btnNao.setFocusPainted(false);
+        btnNao.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnNao.addActionListener(e -> {
+            confirmModal.setVisible(false);
+            pendingConfirmAction = null;
+        });
+        btnRow.add(btnNao);
+        btnRow.add(btnSim);
+        btnRow.revalidate();
+        btnRow.repaint();
     }
 
     private void mostrarConfirmacaoUnico(String titulo, String msg) {
@@ -524,7 +549,7 @@ public class MainActivity extends JFrame {
         timerPanel.revalidate();
         timerPanel.repaint();
 
-        timer = new Timer(1000, e -> {
+        timer = new javax.swing.Timer(1000, e -> {
             timerRestante--;
             if (timerRestante <= 0) {
                 limparTimer();
