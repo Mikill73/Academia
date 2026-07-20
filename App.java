@@ -1,329 +1,184 @@
-cat > src/main/java/com/academia/app/AcademiaApp.java << 'EOF'
+mkdir -p src/main/java/com/academia/app
+cat > src/main/java/com/academia/app/MainActivity.java << 'EOF'
 package com.academia.app;
 
-import javax.swing.*;
-import javax.swing.border.*;
-import java.awt.*;
-import java.awt.event.*;
+import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.*;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.text.InputType;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.os.Handler;
 import java.io.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.LocalDate;
-import java.util.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
+import java.util.*;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+import android.view.inputmethod.EditorInfo;
+import android.text.TextWatcher;
+import android.text.Editable;
 
-public class AcademiaApp extends JFrame {
-    private JPanel mainPanel;
-    private JButton btnPrincipal;
-    private JPanel cardTreinoPanel;
-    private JPanel exerciciosContainer;
-    private JPanel dadosContainer;
-    private JPanel timerPanel;
-    private JProgressBar progressBar;
-    private JLabel progressText;
-    private JLabel timerLabel;
-    private JLabel cardTitle;
-    private JButton configBtn;
+public class MainActivity extends Activity {
+    private LinearLayout mainLayout;
+    private Button btnPrincipal;
+    private LinearLayout cardTreinoPanel;
+    private LinearLayout exerciciosContainer;
+    private LinearLayout dadosContainer;
+    private LinearLayout timerPanel;
+    private ProgressBar progressBar;
+    private TextView progressText;
+    private TextView timerLabel;
+    private TextView cardTitle;
+    private Button configBtn;
     private boolean modoConfig = false;
     private boolean isActive = false;
     private boolean aguardandoTimer = false;
-    private javax.swing.Timer timer;
+    private Handler timerHandler;
+    private Runnable timerRunnable;
     private int timerRestante = 0;
     private JSONObject configData;
     private JSONObject treinoAtual;
     private int exercicioAtualIndex = 0;
     private static final String ARQUIVO_DADOS = "academia_dados.json";
     private String[] DIAS_SEMANA = {"Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"};
-    private JFrame subModal;
-    private JPanel subModalBox;
-    private JFrame confirmModal;
-    private JFrame pesoAviso;
-    private int pendingConfirmIndex = -1;
+    private AlertDialog subModal;
+    private AlertDialog confirmModal;
+    private AlertDialog pesoAviso;
     private Runnable pendingConfirmAction;
+    private Context context;
 
-    public AcademiaApp() {
-        setTitle("Sistema de Academia");
-        setSize(900, 700);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
-        getContentPane().setBackground(new Color(13, 13, 13));
-
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        context = this;
         carregarDados();
-
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        topPanel.setOpaque(false);
-        topPanel.setBorder(BorderFactory.createEmptyBorder(20, 10, 10, 10));
-
-        btnPrincipal = new JButton();
-        btnPrincipal.setPreferredSize(new Dimension(130, 130));
-        btnPrincipal.setMaximumSize(new Dimension(130, 130));
-        btnPrincipal.setMinimumSize(new Dimension(90, 90));
-        btnPrincipal.setBackground(new Color(255, 0, 0));
-        btnPrincipal.setOpaque(true);
-        btnPrincipal.setBorderPainted(false);
-        btnPrincipal.setFocusPainted(false);
-        btnPrincipal.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnPrincipal.addActionListener(e -> toggleTreino());
-        topPanel.add(btnPrincipal);
-
-        add(topPanel, BorderLayout.NORTH);
-
-        JPanel centerPanel = new JPanel();
-        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
-        centerPanel.setOpaque(false);
-        centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
-
-        cardTreinoPanel = new JPanel();
-        cardTreinoPanel.setLayout(new BoxLayout(cardTreinoPanel, BoxLayout.Y_AXIS));
-        cardTreinoPanel.setBackground(new Color(26, 26, 26));
-        cardTreinoPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(42, 42, 42)),
-            BorderFactory.createEmptyBorder(16, 14, 16, 14)
-        ));
-        cardTreinoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cardTreinoPanel.setMaximumSize(new Dimension(430, 600));
-        cardTreinoPanel.setVisible(false);
-
-        cardTitle = new JLabel("Treino de Hoje");
-        cardTitle.setForeground(new Color(170, 170, 170));
-        cardTitle.setFont(new Font("Arial", Font.BOLD, 14));
-        cardTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cardTreinoPanel.add(cardTitle);
-        cardTreinoPanel.add(Box.createRigidArea(new Dimension(0, 8)));
-
-        exerciciosContainer = new JPanel();
-        exerciciosContainer.setLayout(new BoxLayout(exerciciosContainer, BoxLayout.Y_AXIS));
-        exerciciosContainer.setOpaque(false);
-        exerciciosContainer.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cardTreinoPanel.add(exerciciosContainer);
-
-        timerPanel = new JPanel();
-        timerPanel.setLayout(new BoxLayout(timerPanel, BoxLayout.Y_AXIS));
-        timerPanel.setOpaque(false);
-        timerPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        timerPanel.setVisible(false);
-        cardTreinoPanel.add(timerPanel);
-
-        JPanel progressPanel = new JPanel();
-        progressPanel.setLayout(new BoxLayout(progressPanel, BoxLayout.Y_AXIS));
-        progressPanel.setOpaque(false);
-        progressPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        progressPanel.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
-
-        progressBar = new JProgressBar(0, 100);
-        progressBar.setPreferredSize(new Dimension(400, 5));
-        progressBar.setMaximumSize(new Dimension(400, 5));
-        progressBar.setBackground(new Color(13, 13, 13));
-        progressBar.setForeground(new Color(139, 195, 74));
-        progressBar.setValue(0);
-        progressPanel.add(progressBar);
-
-        progressText = new JLabel("0/0 concluídos");
-        progressText.setForeground(new Color(136, 136, 136));
-        progressText.setFont(new Font("Arial", Font.PLAIN, 11));
-        progressText.setAlignmentX(Component.CENTER_ALIGNMENT);
-        progressPanel.add(progressText);
-
-        cardTreinoPanel.add(progressPanel);
-
-        centerPanel.add(cardTreinoPanel);
-        centerPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        dadosContainer = new JPanel();
-        dadosContainer.setLayout(new BoxLayout(dadosContainer, BoxLayout.Y_AXIS));
-        dadosContainer.setOpaque(false);
-        dadosContainer.setAlignmentX(Component.CENTER_ALIGNMENT);
-        dadosContainer.setMaximumSize(new Dimension(430, Integer.MAX_VALUE));
-
-        JScrollPane scrollDados = new JScrollPane(dadosContainer);
-        scrollDados.setOpaque(false);
-        scrollDados.getViewport().setOpaque(false);
-        scrollDados.setBorder(null);
-        scrollDados.setAlignmentX(Component.CENTER_ALIGNMENT);
-        scrollDados.setMaximumSize(new Dimension(430, 500));
-
-        centerPanel.add(scrollDados);
-
-        add(centerPanel, BorderLayout.CENTER);
-
+        setupUI();
         criarModais();
-
         carregarEstadoBotao();
         renderDados();
+    }
 
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                salvarDados();
-                System.exit(0);
-            }
-        });
+    private void setupUI() {
+        mainLayout = new LinearLayout(this);
+        mainLayout.setOrientation(LinearLayout.VERTICAL);
+        mainLayout.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        mainLayout.setPadding(20, 20, 20, 20);
 
-        setVisible(true);
+        LinearLayout topPanel = new LinearLayout(this);
+        topPanel.setOrientation(LinearLayout.VERTICAL);
+        topPanel.setGravity(android.view.Gravity.CENTER);
+        topPanel.setPadding(0, 20, 0, 10);
+
+        btnPrincipal = new Button(this);
+        btnPrincipal.setText("");
+        LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130));
+        btnPrincipal.setLayoutParams(btnParams);
+        GradientDrawable circle = new GradientDrawable();
+        circle.setShape(GradientDrawable.OVAL);
+        circle.setColor(Color.parseColor("#ff0000"));
+        btnPrincipal.setBackground(circle);
+        btnPrincipal.setClickable(true);
+        btnPrincipal.setOnClickListener(v -> toggleTreino());
+        topPanel.addView(btnPrincipal);
+
+        mainLayout.addView(topPanel);
+
+        LinearLayout centerPanel = new LinearLayout(this);
+        centerPanel.setOrientation(LinearLayout.VERTICAL);
+        centerPanel.setPadding(0, 0, 0, 0);
+
+        cardTreinoPanel = new LinearLayout(this);
+        cardTreinoPanel.setOrientation(LinearLayout.VERTICAL);
+        cardTreinoPanel.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        cardTreinoPanel.setPadding(dpToPx(14), dpToPx(16), dpToPx(14), dpToPx(16));
+        GradientDrawable border = new GradientDrawable();
+        border.setStroke(1, Color.parseColor("#2a2a2a"));
+        border.setColor(Color.parseColor("#1a1a1a"));
+        cardTreinoPanel.setBackground(border);
+        cardTreinoPanel.setVisibility(View.GONE);
+
+        cardTitle = new TextView(this);
+        cardTitle.setText("Treino de Hoje");
+        cardTitle.setTextColor(Color.parseColor("#aaaaaa"));
+        cardTitle.setTextSize(14);
+        cardTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+        cardTitle.setGravity(android.view.Gravity.CENTER);
+        cardTreinoPanel.addView(cardTitle);
+
+        exerciciosContainer = new LinearLayout(this);
+        exerciciosContainer.setOrientation(LinearLayout.VERTICAL);
+        exerciciosContainer.setPadding(0, dpToPx(8), 0, 0);
+        cardTreinoPanel.addView(exerciciosContainer);
+
+        timerPanel = new LinearLayout(this);
+        timerPanel.setOrientation(LinearLayout.VERTICAL);
+        timerPanel.setVisibility(View.GONE);
+        cardTreinoPanel.addView(timerPanel);
+
+        LinearLayout progressPanel = new LinearLayout(this);
+        progressPanel.setOrientation(LinearLayout.VERTICAL);
+        progressPanel.setPadding(0, dpToPx(6), 0, 0);
+
+        progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progressBar.setMax(100);
+        progressBar.setProgress(0);
+        progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#8bc34a")));
+        progressPanel.addView(progressBar);
+
+        progressText = new TextView(this);
+        progressText.setText("0/0 concluídos");
+        progressText.setTextColor(Color.parseColor("#888888"));
+        progressText.setTextSize(11);
+        progressText.setGravity(android.view.Gravity.CENTER);
+        progressPanel.addView(progressText);
+
+        cardTreinoPanel.addView(progressPanel);
+
+        centerPanel.addView(cardTreinoPanel);
+
+        dadosContainer = new LinearLayout(this);
+        dadosContainer.setOrientation(LinearLayout.VERTICAL);
+        dadosContainer.setPadding(0, dpToPx(10), 0, 0);
+
+        ScrollView scrollDados = new ScrollView(this);
+        scrollDados.addView(dadosContainer);
+        centerPanel.addView(scrollDados);
+
+        mainLayout.addView(centerPanel);
+        setContentView(mainLayout);
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 
     private void criarModais() {
-        subModal = new JFrame();
-        subModal.setUndecorated(true);
-        subModal.setSize(420, 500);
-        subModal.setLocationRelativeTo(this);
-        subModal.setBackground(new Color(0, 0, 0, 200));
-        subModal.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setCancelable(false);
+        subModal = builder.create();
 
-        JPanel modalPanel = new JPanel(new BorderLayout());
-        modalPanel.setBackground(new Color(26, 26, 26));
-        modalPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(42, 42, 42)),
-            BorderFactory.createEmptyBorder(16, 14, 16, 14)
-        ));
+        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(this);
+        confirmBuilder.setCancelable(false);
+        confirmModal = confirmBuilder.create();
 
-        subModalBox = new JPanel();
-        subModalBox.setLayout(new BoxLayout(subModalBox, BoxLayout.Y_AXIS));
-        subModalBox.setOpaque(false);
-        JScrollPane scrollSub = new JScrollPane(subModalBox);
-        scrollSub.setOpaque(false);
-        scrollSub.getViewport().setOpaque(false);
-        scrollSub.setBorder(null);
-        modalPanel.add(scrollSub, BorderLayout.CENTER);
-
-        subModal.add(modalPanel);
-
-        confirmModal = new JFrame();
-        confirmModal.setUndecorated(true);
-        confirmModal.setSize(340, 180);
-        confirmModal.setLocationRelativeTo(this);
-        confirmModal.setBackground(new Color(0, 0, 0, 200));
-        confirmModal.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-        JPanel confirmPanel = new JPanel();
-        confirmPanel.setLayout(new BoxLayout(confirmPanel, BoxLayout.Y_AXIS));
-        confirmPanel.setBackground(new Color(26, 26, 26));
-        confirmPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(42, 42, 42)),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
-        confirmPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel confirmTitle = new JLabel("Confirmar");
-        confirmTitle.setForeground(new Color(238, 238, 238));
-        confirmTitle.setFont(new Font("Arial", Font.PLAIN, 16));
-        confirmTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        confirmPanel.add(confirmTitle);
-
-        JLabel confirmMsg = new JLabel("Tem certeza?");
-        confirmMsg.setForeground(new Color(170, 170, 170));
-        confirmMsg.setFont(new Font("Arial", Font.PLAIN, 13));
-        confirmMsg.setAlignmentX(Component.CENTER_ALIGNMENT);
-        confirmPanel.add(confirmMsg);
-
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 10));
-        btnRow.setOpaque(false);
-
-        JButton btnSim = new JButton("Sim");
-        btnSim.setBackground(new Color(58, 26, 26));
-        btnSim.setForeground(new Color(255, 138, 138));
-        btnSim.setBorder(BorderFactory.createLineBorder(new Color(90, 42, 42)));
-        btnSim.setFocusPainted(false);
-        btnSim.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnSim.addActionListener(e -> {
-            confirmModal.setVisible(false);
-            if (pendingConfirmAction != null) {
-                pendingConfirmAction.run();
-                pendingConfirmAction = null;
-            }
-        });
-
-        JButton btnNao = new JButton("Não");
-        btnNao.setBackground(new Color(42, 42, 42));
-        btnNao.setForeground(new Color(204, 204, 204));
-        btnNao.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        btnNao.setFocusPainted(false);
-        btnNao.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnNao.addActionListener(e -> {
-            confirmModal.setVisible(false);
-            pendingConfirmAction = null;
-        });
-
-        btnRow.add(btnNao);
-        btnRow.add(btnSim);
-        confirmPanel.add(btnRow);
-        confirmModal.add(confirmPanel);
-
-        pesoAviso = new JFrame();
-        pesoAviso.setUndecorated(true);
-        pesoAviso.setSize(340, 220);
-        pesoAviso.setLocationRelativeTo(this);
-        pesoAviso.setBackground(new Color(0, 0, 0, 200));
-        pesoAviso.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-        JPanel pesoPanel = new JPanel();
-        pesoPanel.setLayout(new BoxLayout(pesoPanel, BoxLayout.Y_AXIS));
-        pesoPanel.setBackground(new Color(26, 26, 26));
-        pesoPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(42, 42, 42)),
-            BorderFactory.createEmptyBorder(20, 20, 20, 20)
-        ));
-        pesoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel pesoTitle = new JLabel("Hora de Pesar!");
-        pesoTitle.setForeground(new Color(255, 138, 138));
-        pesoTitle.setFont(new Font("Arial", Font.PLAIN, 16));
-        pesoTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pesoPanel.add(pesoTitle);
-
-        JLabel pesoText = new JLabel("Registre seu novo peso.");
-        pesoText.setForeground(new Color(204, 204, 204));
-        pesoText.setFont(new Font("Arial", Font.PLAIN, 13));
-        pesoText.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pesoPanel.add(pesoText);
-
-        JTextField pesoInput = new JTextField(10);
-        pesoInput.setMaximumSize(new Dimension(200, 30));
-        pesoInput.setBackground(new Color(10, 10, 10));
-        pesoInput.setForeground(new Color(221, 221, 221));
-        pesoInput.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        pesoInput.setHorizontalAlignment(JTextField.CENTER);
-        pesoPanel.add(pesoInput);
-
-        JButton pesoBtn = new JButton("Registrar");
-        pesoBtn.setBackground(new Color(26, 58, 26));
-        pesoBtn.setForeground(new Color(139, 195, 74));
-        pesoBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-        pesoBtn.setFocusPainted(false);
-        pesoBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        pesoBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pesoBtn.addActionListener(e -> {
-            try {
-                double val = Double.parseDouble(pesoInput.getText().trim());
-                if (val <= 0) throw new NumberFormatException();
-                String hoje = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-                JSONArray historico = configData.getJSONObject("academia").getJSONObject("peso").getJSONArray("historico");
-                JSONObject novo = new JSONObject();
-                novo.put("peso", val);
-                novo.put("data", hoje);
-                historico.put(novo);
-                configData.getJSONObject("academia").getJSONObject("peso").put("atual", val);
-                configData.getJSONObject("academia").getJSONObject("peso").put("ultimoRegistro", LocalDateTime.now().toString());
-                salvarDados();
-                pesoAviso.setVisible(false);
-                pesoInput.setText("");
-                renderDados();
-                if (treinoAtual != null) renderTreinoCard();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, "Peso inválido.");
-            }
-        });
-        pesoPanel.add(pesoBtn);
-
-        pesoAviso.add(pesoPanel);
+        AlertDialog.Builder pesoBuilder = new AlertDialog.Builder(this);
+        pesoBuilder.setCancelable(false);
+        pesoAviso = pesoBuilder.create();
     }
 
     private void carregarDados() {
         try {
-            File file = new File(ARQUIVO_DADOS);
+            File file = new File(getFilesDir(), ARQUIVO_DADOS);
             if (file.exists()) {
                 StringBuilder sb = new StringBuilder();
                 try (BufferedReader br = new BufferedReader(new FileReader(file))) {
@@ -371,7 +226,7 @@ public class AcademiaApp extends JFrame {
 
     private void salvarDados() {
         try {
-            File file = new File(ARQUIVO_DADOS);
+            File file = new File(getFilesDir(), ARQUIVO_DADOS);
             try (FileWriter fw = new FileWriter(file)) {
                 fw.write(configData.toString(2));
             }
@@ -381,11 +236,13 @@ public class AcademiaApp extends JFrame {
     }
 
     private String getTodayName() {
-        return DIAS_SEMANA[LocalDate.now().getDayOfWeek().getValue() - 1];
+        SimpleDateFormat sdf = new SimpleDateFormat("EEEE", new Locale("pt", "BR"));
+        return sdf.format(new Date());
     }
 
     private String getTodayKey() {
-        return LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        return sdf.format(new Date());
     }
 
     private JSONArray getTodayTreinos() {
@@ -410,11 +267,13 @@ public class AcademiaApp extends JFrame {
             JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
             if (peso.isNull("ultimoRegistro")) return false;
             String ultimoStr = peso.getString("ultimoRegistro");
-            LocalDateTime ultimo = LocalDateTime.parse(ultimoStr);
-            long diff = java.time.Duration.between(ultimo, LocalDateTime.now()).toDays();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            Date ultimo = sdf.parse(ultimoStr);
+            long diff = System.currentTimeMillis() - ultimo.getTime();
+            long diffDays = diff / (24 * 60 * 60 * 1000);
             int intervalo = peso.getInt("intervalo");
-            return diff >= intervalo;
-        } catch (JSONException e) {
+            return diffDays >= intervalo;
+        } catch (Exception e) {
             return false;
         }
     }
@@ -423,9 +282,11 @@ public class AcademiaApp extends JFrame {
         try {
             JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
             if (peso.isNull("ultimoRegistro")) return 999;
-            LocalDateTime ultimo = LocalDateTime.parse(peso.getString("ultimoRegistro"));
-            return (int) java.time.Duration.between(ultimo, LocalDateTime.now()).toDays();
-        } catch (JSONException e) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            Date ultimo = sdf.parse(peso.getString("ultimoRegistro"));
+            long diff = System.currentTimeMillis() - ultimo.getTime();
+            return (int) (diff / (24 * 60 * 60 * 1000));
+        } catch (Exception e) {
             return 999;
         }
     }
@@ -434,9 +295,11 @@ public class AcademiaApp extends JFrame {
         try {
             JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
             if (peso.isNull("ultimoRegistro")) return "Nunca";
-            LocalDateTime ultimo = LocalDateTime.parse(peso.getString("ultimoRegistro"));
-            return ultimo.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-        } catch (JSONException e) {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            Date data = parser.parse(peso.getString("ultimoRegistro"));
+            return sdf.format(data);
+        } catch (Exception e) {
             return "Nunca";
         }
     }
@@ -446,8 +309,10 @@ public class AcademiaApp extends JFrame {
             JSONObject academia = configData.getJSONObject("academia");
             if (academia.isNull("inicio")) return 0;
             String inicioStr = academia.getString("inicio");
-            LocalDate inicio = LocalDate.parse(inicioStr);
-            return (int) java.time.Duration.between(inicio.atStartOfDay(), LocalDateTime.now()).toDays();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date inicio = sdf.parse(inicioStr);
+            long diff = System.currentTimeMillis() - inicio.getTime();
+            return (int) (diff / (24 * 60 * 60 * 1000));
         } catch (Exception e) {
             return 0;
         }
@@ -456,166 +321,157 @@ public class AcademiaApp extends JFrame {
     private String formatDataBR(String dataStr) {
         if (dataStr == null || dataStr.isEmpty()) return "";
         try {
-            LocalDate date = LocalDate.parse(dataStr);
-            return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            SimpleDateFormat sdfOut = new SimpleDateFormat("dd/MM/yyyy");
+            Date date = sdf.parse(dataStr);
+            return sdfOut.format(date);
         } catch (Exception e) {
             return dataStr;
         }
     }
 
     private void mostrarConfirmacao(String titulo, String msg, Runnable onConfirm) {
-        confirmModal.setVisible(true);
-        JPanel panel = (JPanel) confirmModal.getContentPane();
-        JLabel title = (JLabel) ((JPanel) panel.getComponent(0)).getComponent(0);
-        JLabel msgLabel = (JLabel) ((JPanel) panel.getComponent(0)).getComponent(1);
-        title.setText(titulo);
-        msgLabel.setText(msg);
-        pendingConfirmAction = onConfirm;
-        JPanel btnRow = (JPanel) ((JPanel) panel.getComponent(0)).getComponent(2);
-        btnRow.removeAll();
-        JButton btnSim = new JButton("Sim");
-        btnSim.setBackground(new Color(58, 26, 26));
-        btnSim.setForeground(new Color(255, 138, 138));
-        btnSim.setBorder(BorderFactory.createLineBorder(new Color(90, 42, 42)));
-        btnSim.setFocusPainted(false);
-        btnSim.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnSim.addActionListener(e -> {
-            confirmModal.setVisible(false);
-            if (pendingConfirmAction != null) {
-                pendingConfirmAction.run();
-                pendingConfirmAction = null;
-            }
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(titulo);
+        builder.setMessage(msg);
+        builder.setPositiveButton("Sim", (dialog, which) -> {
+            if (onConfirm != null) onConfirm.run();
         });
-        JButton btnNao = new JButton("Não");
-        btnNao.setBackground(new Color(42, 42, 42));
-        btnNao.setForeground(new Color(204, 204, 204));
-        btnNao.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        btnNao.setFocusPainted(false);
-        btnNao.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnNao.addActionListener(e -> {
-            confirmModal.setVisible(false);
-            pendingConfirmAction = null;
-        });
-        btnRow.add(btnNao);
-        btnRow.add(btnSim);
-        btnRow.revalidate();
-        btnRow.repaint();
+        builder.setNegativeButton("Não", null);
+        builder.show();
     }
 
     private void mostrarConfirmacaoUnico(String titulo, String msg) {
-        confirmModal.setVisible(true);
-        JPanel panel = (JPanel) confirmModal.getContentPane();
-        JLabel title = (JLabel) ((JPanel) panel.getComponent(0)).getComponent(0);
-        JLabel msgLabel = (JLabel) ((JPanel) panel.getComponent(0)).getComponent(1);
-        title.setText(titulo);
-        msgLabel.setText(msg);
-        pendingConfirmAction = null;
-        JPanel btnRow = (JPanel) ((JPanel) panel.getComponent(0)).getComponent(2);
-        btnRow.removeAll();
-        JButton btnOk = new JButton("OK");
-        btnOk.setBackground(new Color(26, 58, 26));
-        btnOk.setForeground(new Color(139, 195, 74));
-        btnOk.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-        btnOk.setFocusPainted(false);
-        btnOk.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnOk.addActionListener(e -> confirmModal.setVisible(false));
-        btnRow.add(btnOk);
-        btnRow.revalidate();
-        btnRow.repaint();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(titulo);
+        builder.setMessage(msg);
+        builder.setPositiveButton("OK", null);
+        builder.show();
     }
 
     private void mostrarAvisoPeso() {
-        pesoAviso.setVisible(true);
-        JPanel panel = (JPanel) pesoAviso.getContentPane();
-        JLabel text = (JLabel) ((JPanel) panel.getComponent(0)).getComponent(1);
-        text.setText("Já faz " + getDiasDesdePesagem() + " dias desde a última pesagem (" + getUltimaPesagemData() + "). Registre seu novo peso.");
-        JTextField input = (JTextField) ((JPanel) panel.getComponent(0)).getComponent(2);
-        input.requestFocus();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Hora de Pesar!");
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setHint("Peso atual (kg)");
+        builder.setView(input);
+        builder.setMessage("Já faz " + getDiasDesdePesagem() + " dias desde a última pesagem (" + getUltimaPesagemData() + "). Registre seu novo peso.");
+        builder.setPositiveButton("Registrar", (dialog, which) -> {
+            try {
+                double val = Double.parseDouble(input.getText().toString());
+                if (val <= 0) throw new NumberFormatException();
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                String hoje = sdf.format(new Date());
+                JSONArray historico = configData.getJSONObject("academia").getJSONObject("peso").getJSONArray("historico");
+                JSONObject novo = new JSONObject();
+                novo.put("peso", val);
+                novo.put("data", hoje);
+                historico.put(novo);
+                configData.getJSONObject("academia").getJSONObject("peso").put("atual", val);
+                SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                configData.getJSONObject("academia").getJSONObject("peso").put("ultimoRegistro", sdf2.format(new Date()));
+                salvarDados();
+                renderDados();
+                if (treinoAtual != null) renderTreinoCard();
+            } catch (Exception ex) {
+                Toast.makeText(this, "Peso inválido.", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
     }
 
     private void limparTimer() {
-        if (timer != null) {
-            timer.stop();
-            timer = null;
+        if (timerHandler != null && timerRunnable != null) {
+            timerHandler.removeCallbacks(timerRunnable);
+            timerHandler = null;
+            timerRunnable = null;
         }
         timerRestante = 0;
         aguardandoTimer = false;
-        timerPanel.setVisible(false);
+        timerPanel.setVisibility(View.GONE);
     }
 
     private void iniciarTimer(int segundos, Runnable callback) {
         limparTimer();
         timerRestante = segundos;
         aguardandoTimer = true;
-        timerPanel.setVisible(true);
-        timerPanel.removeAll();
-        JPanel display = new JPanel();
-        display.setLayout(new BoxLayout(display, BoxLayout.Y_AXIS));
-        display.setBackground(new Color(13, 13, 13));
-        display.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(42, 74, 42)),
-            BorderFactory.createEmptyBorder(8, 8, 8, 8)
-        ));
-        display.setAlignmentX(Component.CENTER_ALIGNMENT);
+        timerPanel.setVisibility(View.VISIBLE);
+        timerPanel.removeAllViews();
 
-        JLabel label = new JLabel("Descanso");
-        label.setForeground(new Color(136, 136, 136));
-        label.setFont(new Font("Arial", Font.PLAIN, 11));
-        label.setAlignmentX(Component.CENTER_ALIGNMENT);
-        display.add(label);
+        LinearLayout display = new LinearLayout(this);
+        display.setOrientation(LinearLayout.VERTICAL);
+        display.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        display.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
+        GradientDrawable border = new GradientDrawable();
+        border.setStroke(1, Color.parseColor("#2a4a2a"));
+        border.setColor(Color.parseColor("#0d0d0d"));
+        display.setBackground(border);
 
-        timerLabel = new JLabel(String.format("%02d:%02d", segundos/60, segundos%60));
-        timerLabel.setForeground(new Color(139, 195, 74));
-        timerLabel.setFont(new Font("Arial", Font.BOLD, 22));
-        timerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        display.add(timerLabel);
+        TextView label = new TextView(this);
+        label.setText("Descanso");
+        label.setTextColor(Color.parseColor("#888888"));
+        label.setTextSize(11);
+        label.setGravity(android.view.Gravity.CENTER);
+        display.addView(label);
 
-        timerPanel.add(display);
-        timerPanel.revalidate();
-        timerPanel.repaint();
+        timerLabel = new TextView(this);
+        timerLabel.setText(String.format("%02d:%02d", segundos/60, segundos%60));
+        timerLabel.setTextColor(Color.parseColor("#8bc34a"));
+        timerLabel.setTextSize(22);
+        timerLabel.setTypeface(null, android.graphics.Typeface.BOLD);
+        timerLabel.setGravity(android.view.Gravity.CENTER);
+        display.addView(timerLabel);
 
-        timer = new javax.swing.Timer(1000, e -> {
-            timerRestante--;
-            if (timerRestante <= 0) {
-                limparTimer();
-                if (callback != null) callback.run();
-            } else {
-                timerLabel.setText(String.format("%02d:%02d", timerRestante/60, timerRestante%60));
+        timerPanel.addView(display);
+
+        timerHandler = new Handler();
+        timerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                timerRestante--;
+                if (timerRestante <= 0) {
+                    limparTimer();
+                    if (callback != null) callback.run();
+                } else {
+                    timerLabel.setText(String.format("%02d:%02d", timerRestante/60, timerRestante%60));
+                    timerHandler.postDelayed(this, 1000);
+                }
             }
-        });
-        timer.start();
+        };
+        timerHandler.postDelayed(timerRunnable, 1000);
     }
 
     private void renderTreinoCard() {
         if (treinoAtual == null) {
-            exerciciosContainer.removeAll();
-            exerciciosContainer.revalidate();
-            exerciciosContainer.repaint();
+            exerciciosContainer.removeAllViews();
             return;
         }
 
         try {
             JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
             if (exercicios.length() == 0) {
-                exerciciosContainer.removeAll();
-                JLabel empty = new JLabel("Nenhum exercício definido.");
-                empty.setForeground(new Color(102, 102, 102));
-                empty.setAlignmentX(Component.CENTER_ALIGNMENT);
-                exerciciosContainer.add(empty);
-                exerciciosContainer.revalidate();
-                exerciciosContainer.repaint();
+                exerciciosContainer.removeAllViews();
+                TextView empty = new TextView(this);
+                empty.setText("Nenhum exercício definido.");
+                empty.setTextColor(Color.parseColor("#666666"));
+                empty.setGravity(android.view.Gravity.CENTER);
+                empty.setPadding(0, dpToPx(20), 0, dpToPx(20));
+                exerciciosContainer.addView(empty);
                 return;
             }
 
             if (exercicioAtualIndex >= exercicios.length()) {
-                exerciciosContainer.removeAll();
-                JLabel done = new JLabel("Treino concluído!");
-                done.setForeground(new Color(139, 195, 74));
-                done.setFont(new Font("Arial", Font.BOLD, 14));
-                done.setAlignmentX(Component.CENTER_ALIGNMENT);
-                exerciciosContainer.add(done);
-                exerciciosContainer.revalidate();
-                exerciciosContainer.repaint();
+                exerciciosContainer.removeAllViews();
+                TextView done = new TextView(this);
+                done.setText("Treino concluído!");
+                done.setTextColor(Color.parseColor("#8bc34a"));
+                done.setTextSize(14);
+                done.setTypeface(null, android.graphics.Typeface.BOLD);
+                done.setGravity(android.view.Gravity.CENTER);
+                done.setPadding(0, dpToPx(20), 0, dpToPx(20));
+                exerciciosContainer.addView(done);
                 return;
             }
 
@@ -625,58 +481,65 @@ public class AcademiaApp extends JFrame {
             boolean isDone = seriesFeitas >= totalSeries;
             String warmupText = ex.has("warmup") && ex.getBoolean("warmup") ? "Aquecimento" : "";
 
-            exerciciosContainer.removeAll();
-            JPanel card = new JPanel();
-            card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-            card.setBackground(new Color(13, 13, 13));
-            card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(14, 16, 14, 16)
-            ));
-            card.setAlignmentX(Component.CENTER_ALIGNMENT);
+            exerciciosContainer.removeAllViews();
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            card.setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14));
+            GradientDrawable border = new GradientDrawable();
+            border.setStroke(1, Color.parseColor("#2a2a2a"));
+            border.setColor(Color.parseColor("#0d0d0d"));
+            card.setBackground(border);
 
-            JLabel nameLabel = new JLabel(ex.getString("exercise") + " " + warmupText);
-            nameLabel.setForeground(new Color(238, 238, 238));
-            nameLabel.setFont(new Font("Arial", Font.BOLD, 18));
-            nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            card.add(nameLabel);
+            TextView nameLabel = new TextView(this);
+            nameLabel.setText(ex.getString("exercise") + " " + warmupText);
+            nameLabel.setTextColor(Color.parseColor("#eeeeee"));
+            nameLabel.setTextSize(18);
+            nameLabel.setTypeface(null, android.graphics.Typeface.BOLD);
+            nameLabel.setGravity(android.view.Gravity.CENTER);
+            card.addView(nameLabel);
 
-            JLabel details = new JLabel(ex.getInt("sets") + " séries x " + ex.getInt("reps") + " reps");
-            details.setForeground(new Color(170, 170, 170));
-            details.setFont(new Font("Arial", Font.PLAIN, 14));
-            details.setAlignmentX(Component.CENTER_ALIGNMENT);
-            card.add(details);
+            TextView details = new TextView(this);
+            details.setText(ex.getInt("sets") + " séries x " + ex.getInt("reps") + " reps");
+            details.setTextColor(Color.parseColor("#aaaaaa"));
+            details.setTextSize(14);
+            details.setGravity(android.view.Gravity.CENTER);
+            card.addView(details);
 
-            JLabel loadLabel = new JLabel("Carga: " + ex.getDouble("load") + "kg");
-            loadLabel.setForeground(new Color(139, 195, 74));
-            loadLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-            loadLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            card.add(loadLabel);
+            TextView loadLabel = new TextView(this);
+            loadLabel.setText("Carga: " + ex.getDouble("load") + "kg");
+            loadLabel.setTextColor(Color.parseColor("#8bc34a"));
+            loadLabel.setTextSize(14);
+            loadLabel.setGravity(android.view.Gravity.CENTER);
+            card.addView(loadLabel);
 
             if (ex.has("metaCarga") && !ex.isNull("metaCarga")) {
-                JLabel metaLabel = new JLabel("Meta: " + ex.getDouble("metaCarga") + "kg");
-                metaLabel.setForeground(new Color(255, 170, 0));
-                metaLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-                metaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                card.add(metaLabel);
+                TextView metaLabel = new TextView(this);
+                metaLabel.setText("Meta: " + ex.getDouble("metaCarga") + "kg");
+                metaLabel.setTextColor(Color.parseColor("#ffaa00"));
+                metaLabel.setTextSize(14);
+                metaLabel.setGravity(android.view.Gravity.CENTER);
+                card.addView(metaLabel);
             }
 
-            JLabel statusLabel = new JLabel(isDone ? "Concluído" : seriesFeitas + "/" + totalSeries + " séries");
-            statusLabel.setForeground(isDone ? new Color(139, 195, 74) : new Color(102, 102, 102));
-            statusLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            card.add(statusLabel);
+            TextView statusLabel = new TextView(this);
+            statusLabel.setText(isDone ? "Concluído" : seriesFeitas + "/" + totalSeries + " séries");
+            statusLabel.setTextColor(isDone ? Color.parseColor("#8bc34a") : Color.parseColor("#666666"));
+            statusLabel.setTextSize(12);
+            statusLabel.setGravity(android.view.Gravity.CENTER);
+            card.addView(statusLabel);
 
             if (!isDone && !aguardandoTimer) {
-                JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-                btnPanel.setOpaque(false);
-                JButton btnPronto = new JButton("PRONTO");
-                btnPronto.setBackground(new Color(26, 58, 26));
-                btnPronto.setForeground(new Color(139, 195, 74));
-                btnPronto.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-                btnPronto.setFocusPainted(false);
-                btnPronto.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                btnPronto.addActionListener(e -> {
+                LinearLayout btnPanel = new LinearLayout(this);
+                btnPanel.setOrientation(LinearLayout.HORIZONTAL);
+                btnPanel.setGravity(android.view.Gravity.CENTER);
+
+                Button btnPronto = new Button(this);
+                btnPronto.setText("PRONTO");
+                btnPronto.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                btnPronto.setTextColor(Color.parseColor("#8bc34a"));
+                btnPronto.setPadding(dpToPx(18), dpToPx(6), dpToPx(18), dpToPx(6));
+                btnPronto.setOnClickListener(v -> {
                     if (aguardandoTimer) return;
                     try {
                         JSONObject exAtual = treinoAtual.getJSONArray("exercicios").getJSONObject(exercicioAtualIndex);
@@ -701,25 +564,25 @@ public class AcademiaApp extends JFrame {
                         ex2.printStackTrace();
                     }
                 });
-                btnPanel.add(btnPronto);
-                card.add(btnPanel);
+                btnPanel.addView(btnPronto);
+                card.addView(btnPanel);
             } else if (isDone) {
-                JLabel doneLabel = new JLabel("Concluído");
-                doneLabel.setForeground(new Color(139, 195, 74));
-                doneLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-                doneLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                card.add(doneLabel);
+                TextView doneLabel = new TextView(this);
+                doneLabel.setText("Concluído");
+                doneLabel.setTextColor(Color.parseColor("#8bc34a"));
+                doneLabel.setTextSize(14);
+                doneLabel.setGravity(android.view.Gravity.CENTER);
+                card.addView(doneLabel);
             } else if (aguardandoTimer) {
-                JLabel waitLabel = new JLabel("Aguardando descanso...");
-                waitLabel.setForeground(new Color(255, 170, 0));
-                waitLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-                waitLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                card.add(waitLabel);
+                TextView waitLabel = new TextView(this);
+                waitLabel.setText("Aguardando descanso...");
+                waitLabel.setTextColor(Color.parseColor("#ffaa00"));
+                waitLabel.setTextSize(14);
+                waitLabel.setGravity(android.view.Gravity.CENTER);
+                card.addView(waitLabel);
             }
 
-            exerciciosContainer.add(card);
-            exerciciosContainer.revalidate();
-            exerciciosContainer.repaint();
+            exerciciosContainer.addView(card);
 
             int total = exercicios.length();
             int done = 0;
@@ -730,7 +593,7 @@ public class AcademiaApp extends JFrame {
                 if (f >= s) done++;
             }
             int pct = total > 0 ? (done * 100) / total : 0;
-            progressBar.setValue(pct);
+            progressBar.setProgress(pct);
             progressText.setText(done + "/" + total + " exercícios concluídos");
         } catch (JSONException e) {
             e.printStackTrace();
@@ -738,85 +601,52 @@ public class AcademiaApp extends JFrame {
     }
 
     private void mostrarEvolucaoDialog(int idx) {
-        JDialog dialog = new JDialog(this, "Evolução de Carga", true);
-        dialog.setSize(400, 300);
-        dialog.setLocationRelativeTo(this);
-        dialog.setLayout(new BorderLayout());
-        dialog.getContentPane().setBackground(new Color(26, 26, 26));
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Evolução de Carga");
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        JLabel title = new JLabel("Evolução de Carga");
-        title.setForeground(new Color(170, 170, 170));
-        title.setFont(new Font("Arial", Font.PLAIN, 16));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panel.add(title);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
         try {
             JSONObject ex = treinoAtual.getJSONArray("exercicios").getJSONObject(idx);
-            JLabel exName = new JLabel("Registre a evolução para " + ex.getString("exercise"));
-            exName.setForeground(new Color(170, 170, 170));
-            exName.setFont(new Font("Arial", Font.PLAIN, 13));
-            exName.setAlignmentX(Component.CENTER_ALIGNMENT);
-            panel.add(exName);
+            TextView exName = new TextView(this);
+            exName.setText("Registre a evolução para " + ex.getString("exercise"));
+            exName.setTextColor(Color.parseColor("#aaaaaa"));
+            exName.setTextSize(13);
+            layout.addView(exName);
 
-            JLabel loadLabel = new JLabel("Carga atual (kg)");
-            loadLabel.setForeground(new Color(136, 136, 136));
-            loadLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            loadLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            panel.add(loadLabel);
+            TextView loadLabel = new TextView(this);
+            loadLabel.setText("Carga atual (kg)");
+            loadLabel.setTextColor(Color.parseColor("#888888"));
+            loadLabel.setTextSize(12);
+            layout.addView(loadLabel);
 
-            JTextField loadField = new JTextField(String.valueOf(ex.getDouble("load")), 10);
-            loadField.setMaximumSize(new Dimension(200, 30));
-            loadField.setBackground(new Color(10, 10, 10));
-            loadField.setForeground(new Color(221, 221, 221));
-            loadField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            loadField.setHorizontalAlignment(JTextField.CENTER);
-            panel.add(loadField);
+            final EditText loadField = new EditText(this);
+            loadField.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            loadField.setText(String.valueOf(ex.getDouble("load")));
+            layout.addView(loadField);
 
-            JLabel repsLabel = new JLabel("Repetições atuais");
-            repsLabel.setForeground(new Color(136, 136, 136));
-            repsLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            repsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            panel.add(repsLabel);
+            TextView repsLabel = new TextView(this);
+            repsLabel.setText("Repetições atuais");
+            repsLabel.setTextColor(Color.parseColor("#888888"));
+            repsLabel.setTextSize(12);
+            layout.addView(repsLabel);
 
-            JTextField repsField = new JTextField(String.valueOf(ex.getInt("reps")), 10);
-            repsField.setMaximumSize(new Dimension(200, 30));
-            repsField.setBackground(new Color(10, 10, 10));
-            repsField.setForeground(new Color(221, 221, 221));
-            repsField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            repsField.setHorizontalAlignment(JTextField.CENTER);
-            panel.add(repsField);
+            final EditText repsField = new EditText(this);
+            repsField.setInputType(InputType.TYPE_CLASS_NUMBER);
+            repsField.setText(String.valueOf(ex.getInt("reps")));
+            layout.addView(repsField);
 
-            JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 10));
-            btnPanel.setOpaque(false);
+            builder.setView(layout);
 
-            JButton btnPular = new JButton("Pular");
-            btnPular.setBackground(new Color(42, 42, 42));
-            btnPular.setForeground(new Color(204, 204, 204));
-            btnPular.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-            btnPular.setFocusPainted(false);
-            btnPular.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            btnPular.addActionListener(e -> {
-                dialog.dispose();
-                salvarProgressoEAtualizar(idx);
-            });
-
-            JButton btnRegistrar = new JButton("Registrar");
-            btnRegistrar.setBackground(new Color(26, 58, 26));
-            btnRegistrar.setForeground(new Color(139, 195, 74));
-            btnRegistrar.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            btnRegistrar.setFocusPainted(false);
-            btnRegistrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            btnRegistrar.addActionListener(e -> {
+            builder.setPositiveButton("Registrar", (dialog, which) -> {
                 try {
-                    double load = Double.parseDouble(loadField.getText().trim());
-                    int reps = Integer.parseInt(repsField.getText().trim());
+                    double load = Double.parseDouble(loadField.getText().toString());
+                    int reps = Integer.parseInt(repsField.getText().toString());
                     if (load <= 0 || reps < 1) throw new NumberFormatException();
-                    String hoje = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                    String hoje = sdf.format(new Date());
                     JSONArray history;
                     if (ex.has("loadHistory")) {
                         history = ex.getJSONArray("loadHistory");
@@ -831,19 +661,17 @@ public class AcademiaApp extends JFrame {
                     history.put(novo);
                     ex.put("load", load);
                     ex.put("reps", reps);
-                    dialog.dispose();
                     salvarProgressoEAtualizar(idx);
                 } catch (Exception ex2) {
-                    JOptionPane.showMessageDialog(null, "Valores inválidos.");
+                    Toast.makeText(this, "Valores inválidos.", Toast.LENGTH_SHORT).show();
                 }
             });
 
-            btnPanel.add(btnPular);
-            btnPanel.add(btnRegistrar);
-            panel.add(btnPanel);
+            builder.setNegativeButton("Pular", (dialog, which) -> {
+                salvarProgressoEAtualizar(idx);
+            });
 
-            dialog.add(panel);
-            dialog.setVisible(true);
+            builder.show();
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -907,11 +735,14 @@ public class AcademiaApp extends JFrame {
                 configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
                 configData.getJSONObject("academia").put("botaoAtivo", false);
                 salvarDados();
-                SwingUtilities.invokeLater(() -> {
+                runOnUiThread(() -> {
                     mostrarConfirmacaoUnico("Treino Concluído", "Parabéns! Você concluiu o treino de hoje.");
-                    btnPrincipal.setBackground(new Color(255, 0, 0));
+                    GradientDrawable circle = new GradientDrawable();
+                    circle.setShape(GradientDrawable.OVAL);
+                    circle.setColor(Color.parseColor("#ff0000"));
+                    btnPrincipal.setBackground(circle);
                     isActive = false;
-                    cardTreinoPanel.setVisible(false);
+                    cardTreinoPanel.setVisibility(View.GONE);
                     treinoAtual = null;
                     limparTimer();
                     try {
@@ -951,9 +782,12 @@ public class AcademiaApp extends JFrame {
         JSONArray treinos = getTodayTreinos();
         if (treinos.length() == 0) {
             mostrarConfirmacaoUnico("Aviso", "Nenhum treino programado para hoje.");
-            btnPrincipal.setBackground(new Color(255, 0, 0));
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(Color.parseColor("#ff0000"));
+            btnPrincipal.setBackground(circle);
             isActive = false;
-            cardTreinoPanel.setVisible(false);
+            cardTreinoPanel.setVisibility(View.GONE);
             try {
                 configData.getJSONObject("academia").put("botaoAtivo", false);
             } catch (JSONException e) {}
@@ -1001,16 +835,22 @@ public class AcademiaApp extends JFrame {
                         configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
                         configData.getJSONObject("academia").put("botaoAtivo", false);
                         salvarDados();
-                        btnPrincipal.setBackground(new Color(255, 0, 0));
+                        GradientDrawable circle = new GradientDrawable();
+                        circle.setShape(GradientDrawable.OVAL);
+                        circle.setColor(Color.parseColor("#ff0000"));
+                        btnPrincipal.setBackground(circle);
                         isActive = false;
-                        cardTreinoPanel.setVisible(false);
+                        cardTreinoPanel.setVisibility(View.GONE);
                         treinoAtual = null;
                         limparTimer();
                         return;
                     }
                 }
-                cardTreinoPanel.setVisible(true);
-                btnPrincipal.setBackground(new Color(0, 204, 0));
+                cardTreinoPanel.setVisibility(View.VISIBLE);
+                GradientDrawable circle = new GradientDrawable();
+                circle.setShape(GradientDrawable.OVAL);
+                circle.setColor(Color.parseColor("#00cc00"));
+                btnPrincipal.setBackground(circle);
                 isActive = true;
                 configData.getJSONObject("academia").put("botaoAtivo", true);
                 salvarDados();
@@ -1047,8 +887,11 @@ public class AcademiaApp extends JFrame {
                 }
             }
             exercicioAtualIndex = 0;
-            cardTreinoPanel.setVisible(true);
-            btnPrincipal.setBackground(new Color(0, 204, 0));
+            cardTreinoPanel.setVisibility(View.VISIBLE);
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(Color.parseColor("#00cc00"));
+            btnPrincipal.setBackground(circle);
             isActive = true;
             configData.getJSONObject("academia").put("botaoAtivo", true);
             renderTreinoCard();
@@ -1077,9 +920,12 @@ public class AcademiaApp extends JFrame {
                     }
                     if (algumFeito) {
                         mostrarConfirmacao("Parar Treino", "Você já fez alguns exercícios. Deseja realmente parar?", () -> {
-                            btnPrincipal.setBackground(new Color(255, 0, 0));
+                            GradientDrawable circle = new GradientDrawable();
+                            circle.setShape(GradientDrawable.OVAL);
+                            circle.setColor(Color.parseColor("#ff0000"));
+                            btnPrincipal.setBackground(circle);
                             isActive = false;
-                            cardTreinoPanel.setVisible(false);
+                            cardTreinoPanel.setVisibility(View.GONE);
                             treinoAtual = null;
                             limparTimer();
                             String hojeKey = getTodayKey();
@@ -1094,9 +940,12 @@ public class AcademiaApp extends JFrame {
                     }
                 } catch (JSONException e) {}
             }
-            btnPrincipal.setBackground(new Color(255, 0, 0));
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(Color.parseColor("#ff0000"));
+            btnPrincipal.setBackground(circle);
             isActive = false;
-            cardTreinoPanel.setVisible(false);
+            cardTreinoPanel.setVisibility(View.GONE);
             treinoAtual = null;
             limparTimer();
             try {
@@ -1141,18 +990,24 @@ public class AcademiaApp extends JFrame {
                         }
                     }
                     if (todosConcluidos) {
-                        btnPrincipal.setBackground(new Color(255, 0, 0));
+                        GradientDrawable circle = new GradientDrawable();
+                        circle.setShape(GradientDrawable.OVAL);
+                        circle.setColor(Color.parseColor("#ff0000"));
+                        btnPrincipal.setBackground(circle);
                         isActive = false;
-                        cardTreinoPanel.setVisible(false);
+                        cardTreinoPanel.setVisibility(View.GONE);
                         treinoAtual = null;
                         limparTimer();
                         treinoConcluido.put(hojeKey, true);
                         configData.getJSONObject("academia").put("botaoAtivo", false);
                         salvarDados();
                     } else {
-                        btnPrincipal.setBackground(new Color(0, 204, 0));
+                        GradientDrawable circle = new GradientDrawable();
+                        circle.setShape(GradientDrawable.OVAL);
+                        circle.setColor(Color.parseColor("#00cc00"));
+                        btnPrincipal.setBackground(circle);
                         isActive = true;
-                        cardTreinoPanel.setVisible(true);
+                        cardTreinoPanel.setVisibility(View.VISIBLE);
                         treinoAtual = treino;
                         exercicioAtualIndex = 0;
                         for (int i = 0; i < exs.length(); i++) {
@@ -1168,9 +1023,12 @@ public class AcademiaApp extends JFrame {
                 }
             }
 
-            btnPrincipal.setBackground(new Color(255, 0, 0));
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(Color.parseColor("#ff0000"));
+            btnPrincipal.setBackground(circle);
             isActive = false;
-            cardTreinoPanel.setVisible(false);
+            cardTreinoPanel.setVisibility(View.GONE);
             treinoAtual = null;
             limparTimer();
             if (configData.getJSONObject("academia").getBoolean("botaoAtivo")) {
@@ -1178,58 +1036,63 @@ public class AcademiaApp extends JFrame {
                 salvarDados();
             }
         } catch (JSONException e) {
-            btnPrincipal.setBackground(new Color(255, 0, 0));
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(Color.parseColor("#ff0000"));
+            btnPrincipal.setBackground(circle);
             isActive = false;
-            cardTreinoPanel.setVisible(false);
+            cardTreinoPanel.setVisibility(View.GONE);
             treinoAtual = null;
             limparTimer();
         }
     }
 
     private void renderDados() {
-        dadosContainer.removeAll();
+        dadosContainer.removeAllViews();
 
-        JPanel box = new JPanel();
-        box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
-        box.setBackground(new Color(26, 26, 26));
-        box.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(42, 42, 42)),
-            BorderFactory.createEmptyBorder(16, 14, 16, 14)
-        ));
-        box.setAlignmentX(Component.CENTER_ALIGNMENT);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        box.setPadding(dpToPx(14), dpToPx(16), dpToPx(14), dpToPx(16));
+        GradientDrawable border = new GradientDrawable();
+        border.setStroke(1, Color.parseColor("#2a2a2a"));
+        border.setColor(Color.parseColor("#1a1a1a"));
+        box.setBackground(border);
 
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
-        JLabel title = new JLabel("Academia");
-        title.setForeground(new Color(170, 170, 170));
-        title.setFont(new Font("Arial", Font.PLAIN, 16));
-        header.add(title, BorderLayout.WEST);
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setWeightSum(2);
 
-        configBtn = new JButton(modoConfig ? "✅ Pronto" : "⚙️ Configurar");
-        configBtn.setBackground(new Color(42, 42, 42));
-        configBtn.setForeground(new Color(204, 204, 204));
-        configBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        configBtn.setFocusPainted(false);
-        configBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        configBtn.addActionListener(e -> {
+        TextView title = new TextView(this);
+        title.setText("Academia");
+        title.setTextColor(Color.parseColor("#aaaaaa"));
+        title.setTextSize(16);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+        title.setLayoutParams(titleParams);
+        header.addView(title);
+
+        configBtn = new Button(this);
+        configBtn.setText(modoConfig ? "✅ Pronto" : "⚙️ Configurar");
+        configBtn.setBackgroundColor(Color.parseColor("#2a2a2a"));
+        configBtn.setTextColor(Color.parseColor("#cccccc"));
+        configBtn.setPadding(dpToPx(14), dpToPx(5), dpToPx(14), dpToPx(5));
+        configBtn.setOnClickListener(v -> {
             modoConfig = !modoConfig;
             renderDados();
         });
         if (modoConfig) {
-            configBtn.setBackground(new Color(26, 58, 26));
-            configBtn.setForeground(new Color(139, 195, 74));
-            configBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
+            configBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+            configBtn.setTextColor(Color.parseColor("#8bc34a"));
         }
-        header.add(configBtn, BorderLayout.EAST);
+        header.addView(configBtn);
 
-        box.add(header);
+        box.addView(header);
 
-        JPanel separator = new JPanel();
-        separator.setBackground(new Color(42, 42, 42));
-        separator.setPreferredSize(new Dimension(400, 1));
-        separator.setMaximumSize(new Dimension(400, 1));
-        box.add(separator);
-        box.add(Box.createRigidArea(new Dimension(0, 12)));
+        View separator = new View(this);
+        separator.setBackgroundColor(Color.parseColor("#2a2a2a"));
+        separator.setMinimumHeight(1);
+        separator.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        box.addView(separator);
 
         if (modoConfig) {
             renderModoConfig(box);
@@ -1237,12 +1100,10 @@ public class AcademiaApp extends JFrame {
             renderModoVisualizacao(box);
         }
 
-        dadosContainer.add(box);
-        dadosContainer.revalidate();
-        dadosContainer.repaint();
+        dadosContainer.addView(box);
     }
 
-    private void renderModoVisualizacao(JPanel parent) {
+    private void renderModoVisualizacao(LinearLayout parent) {
         try {
             JSONObject academia = configData.getJSONObject("academia");
             JSONObject peso = academia.getJSONObject("peso");
@@ -1250,46 +1111,50 @@ public class AcademiaApp extends JFrame {
             String inicioDisplay = academia.isNull("inicio") ? "Não definida" : formatDataBR(academia.getString("inicio"));
 
             addLabel(parent, "Data de Início");
-            JPanel valueDisplay = new JPanel(new BorderLayout());
-            valueDisplay.setOpaque(false);
-            valueDisplay.setBackground(new Color(13, 13, 13));
-            valueDisplay.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(6, 10, 6, 10)
-            ));
-            JLabel info = new JLabel(inicioDisplay + (academia.has("inicio") && !academia.isNull("inicio") && diasFreq > 0 ? " (" + diasFreq + " dias)" : ""));
-            info.setForeground(new Color(238, 238, 238));
-            info.setFont(new Font("Arial", Font.PLAIN, 14));
-            valueDisplay.add(info, BorderLayout.WEST);
-            parent.add(valueDisplay);
+            LinearLayout valueDisplay = new LinearLayout(this);
+            valueDisplay.setOrientation(LinearLayout.HORIZONTAL);
+            valueDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            valueDisplay.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+            GradientDrawable border = new GradientDrawable();
+            border.setStroke(1, Color.parseColor("#2a2a2a"));
+            border.setColor(Color.parseColor("#0d0d0d"));
+            valueDisplay.setBackground(border);
+            TextView info = new TextView(this);
+            info.setText(inicioDisplay + (academia.has("inicio") && !academia.isNull("inicio") && diasFreq > 0 ? " (" + diasFreq + " dias)" : ""));
+            info.setTextColor(Color.parseColor("#eeeeee"));
+            info.setTextSize(14);
+            valueDisplay.addView(info);
+            parent.addView(valueDisplay);
 
-            parent.add(Box.createRigidArea(new Dimension(0, 10)));
+            LinearLayout subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line = new View(this);
+            line.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line.setMinimumHeight(1);
+            subSection.addView(line);
 
-            JPanel subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            TextView subTitle = new TextView(this);
+            subTitle.setText("Evolução do Peso");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
-            JLabel subTitle = new JLabel("Evolução do Peso");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            LinearLayout pesoDisplay = new LinearLayout(this);
+            pesoDisplay.setOrientation(LinearLayout.HORIZONTAL);
+            pesoDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            pesoDisplay.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+            GradientDrawable border2 = new GradientDrawable();
+            border2.setStroke(1, Color.parseColor("#2a2a2a"));
+            border2.setColor(Color.parseColor("#0d0d0d"));
+            pesoDisplay.setBackground(border2);
 
-            JPanel pesoDisplay = new JPanel(new BorderLayout());
-            pesoDisplay.setOpaque(false);
-            pesoDisplay.setBackground(new Color(13, 13, 13));
-            pesoDisplay.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(6, 10, 6, 10)
-            ));
             String pesoAtual = peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg";
-            JLabel pesoLabel = new JLabel("Peso Atual: " + pesoAtual);
-            pesoLabel.setForeground(new Color(238, 238, 238));
-            pesoLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-            pesoDisplay.add(pesoLabel, BorderLayout.WEST);
+            TextView pesoLabel = new TextView(this);
+            pesoLabel.setText("Peso Atual: " + pesoAtual);
+            pesoLabel.setTextColor(Color.parseColor("#eeeeee"));
+            pesoLabel.setTextSize(14);
+            pesoDisplay.addView(pesoLabel);
 
             String evolucaoTexto = "Sem dados";
             String evolucaoCor = "#aaaaaa";
@@ -1302,26 +1167,29 @@ public class AcademiaApp extends JFrame {
                 evolucaoTexto = (diff > 0 ? "+" : "") + String.format("%.1f", diff) + "kg (" + (pct > 0 ? "+" : "") + String.format("%.1f", pct) + "%)";
                 evolucaoCor = diff > 0 ? "#8bc34a" : (diff < 0 ? "#ff6b6b" : "#aaaaaa");
             }
-            JLabel evolucaoLabel = new JLabel(evolucaoTexto);
-            evolucaoLabel.setForeground(Color.decode(evolucaoCor));
-            evolucaoLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-            pesoDisplay.add(evolucaoLabel, BorderLayout.EAST);
+            TextView evolucaoLabel = new TextView(this);
+            evolucaoLabel.setText(evolucaoTexto);
+            evolucaoLabel.setTextColor(Color.parseColor(evolucaoCor));
+            evolucaoLabel.setTextSize(14);
+            pesoDisplay.addView(evolucaoLabel);
 
-            subSection.add(pesoDisplay);
+            subSection.addView(pesoDisplay);
 
-            JLabel ultimaPesagem = new JLabel("Última pesagem: " + getUltimaPesagemData());
-            ultimaPesagem.setForeground(new Color(102, 102, 102));
-            ultimaPesagem.setFont(new Font("Arial", Font.PLAIN, 11));
-            subSection.add(ultimaPesagem);
+            TextView ultimaPesagem = new TextView(this);
+            ultimaPesagem.setText("Última pesagem: " + getUltimaPesagemData());
+            ultimaPesagem.setTextColor(Color.parseColor("#666666"));
+            ultimaPesagem.setTextSize(11);
+            subSection.addView(ultimaPesagem);
 
             if (!peso.isNull("meta")) {
-                JLabel metaLabel = new JLabel("Meta: " + peso.getDouble("meta") + " kg");
-                metaLabel.setForeground(new Color(102, 102, 102));
-                metaLabel.setFont(new Font("Arial", Font.PLAIN, 11));
-                subSection.add(metaLabel);
+                TextView metaLabel = new TextView(this);
+                metaLabel.setText("Meta: " + peso.getDouble("meta") + " kg");
+                metaLabel.setTextColor(Color.parseColor("#666666"));
+                metaLabel.setTextSize(11);
+                subSection.addView(metaLabel);
             }
 
-            parent.add(subSection);
+            parent.addView(subSection);
 
             JSONArray treinos = academia.getJSONArray("treinos");
             JSONArray todosExercicios = new JSONArray();
@@ -1339,39 +1207,37 @@ public class AcademiaApp extends JFrame {
                 }
             }
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line2 = new View(this);
+            line2.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line2.setMinimumHeight(1);
+            subSection.addView(line2);
 
-            subTitle = new JLabel("Evolução de Carga");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subTitle = new TextView(this);
+            subTitle.setText("Evolução de Carga");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
-            JPanel tablePanel = new JPanel(new GridLayout(0, 3, 10, 5));
-            tablePanel.setOpaque(false);
-            tablePanel.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
-
-            JLabel h1 = new JLabel("Exercício");
-            h1.setForeground(new Color(136, 136, 136));
-            h1.setFont(new Font("Arial", Font.BOLD, 12));
-            tablePanel.add(h1);
-            JLabel h2 = new JLabel("Evolução");
-            h2.setForeground(new Color(136, 136, 136));
-            h2.setFont(new Font("Arial", Font.BOLD, 12));
-            tablePanel.add(h2);
-            JLabel h3 = new JLabel("Progresso");
-            h3.setForeground(new Color(136, 136, 136));
-            h3.setFont(new Font("Arial", Font.BOLD, 12));
-            tablePanel.add(h3);
+            LinearLayout tablePanel = new LinearLayout(this);
+            tablePanel.setOrientation(LinearLayout.VERTICAL);
+            tablePanel.setPadding(0, dpToPx(6), 0, dpToPx(6));
 
             if (todosExercicios.length() > 0) {
                 for (int i = 0; i < todosExercicios.length(); i++) {
                     JSONObject ex = todosExercicios.getJSONObject(i);
+                    LinearLayout row = new LinearLayout(this);
+                    row.setOrientation(LinearLayout.HORIZONTAL);
+
+                    TextView exName = new TextView(this);
+                    exName.setText(ex.getString("exercise"));
+                    exName.setTextColor(Color.parseColor("#cccccc"));
+                    exName.setTextSize(12);
+                    exName.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                    row.addView(exName);
+
                     String evolucao = "Sem dados";
                     String progresso = "0%";
                     String cor = "#aaaaaa";
@@ -1385,46 +1251,48 @@ public class AcademiaApp extends JFrame {
                         progresso = (pct > 0 ? "+" : "") + String.format("%.1f", pct) + "%";
                         cor = diff > 0 ? "#8bc34a" : (diff < 0 ? "#ff6b6b" : "#aaaaaa");
                     }
-                    JLabel exName = new JLabel(ex.getString("exercise"));
-                    exName.setForeground(new Color(204, 204, 204));
-                    exName.setFont(new Font("Arial", Font.PLAIN, 12));
-                    tablePanel.add(exName);
 
-                    JLabel exEvo = new JLabel(evolucao);
-                    exEvo.setForeground(Color.decode(cor));
-                    exEvo.setFont(new Font("Arial", Font.PLAIN, 12));
-                    tablePanel.add(exEvo);
+                    TextView exEvo = new TextView(this);
+                    exEvo.setText(evolucao);
+                    exEvo.setTextColor(Color.parseColor(cor));
+                    exEvo.setTextSize(12);
+                    exEvo.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                    row.addView(exEvo);
 
-                    JLabel exProg = new JLabel(progresso);
-                    exProg.setForeground(Color.decode(cor));
-                    exProg.setFont(new Font("Arial", Font.PLAIN, 12));
-                    tablePanel.add(exProg);
+                    TextView exProg = new TextView(this);
+                    exProg.setText(progresso);
+                    exProg.setTextColor(Color.parseColor(cor));
+                    exProg.setTextSize(12);
+                    exProg.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                    row.addView(exProg);
+
+                    tablePanel.addView(row);
                 }
             } else {
-                JLabel empty = new JLabel("Nenhum exercício com dados");
-                empty.setForeground(new Color(102, 102, 102));
-                empty.setFont(new Font("Arial", Font.PLAIN, 12));
-                empty.setHorizontalAlignment(SwingConstants.CENTER);
-                tablePanel.add(empty);
-                tablePanel.add(new JLabel());
-                tablePanel.add(new JLabel());
+                TextView empty = new TextView(this);
+                empty.setText("Nenhum exercício com dados");
+                empty.setTextColor(Color.parseColor("#666666"));
+                empty.setTextSize(12);
+                empty.setGravity(android.view.Gravity.CENTER);
+                tablePanel.addView(empty);
             }
 
-            subSection.add(tablePanel);
-            parent.add(subSection);
+            subSection.addView(tablePanel);
+            parent.addView(subSection);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line3 = new View(this);
+            line3.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line3.setMinimumHeight(1);
+            subSection.addView(line3);
 
-            subTitle = new JLabel("Resumo");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subTitle = new TextView(this);
+            subTitle.setText("Resumo");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
             String[] resumos = {
                 "Peso Atual: " + (peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg"),
@@ -1435,161 +1303,174 @@ public class AcademiaApp extends JFrame {
                 "Data de início: " + inicioDisplay
             };
             for (String s : resumos) {
-                JPanel line = new JPanel(new BorderLayout());
-                line.setOpaque(false);
-                line.setBackground(new Color(13, 13, 13));
-                line.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                    BorderFactory.createEmptyBorder(4, 10, 4, 10)
-                ));
-                JLabel lbl = new JLabel(s);
-                lbl.setForeground(new Color(238, 238, 238));
-                lbl.setFont(new Font("Arial", Font.PLAIN, 13));
-                line.add(lbl, BorderLayout.WEST);
-                subSection.add(line);
-                subSection.add(Box.createRigidArea(new Dimension(0, 3)));
+                LinearLayout lineLayout = new LinearLayout(this);
+                lineLayout.setOrientation(LinearLayout.HORIZONTAL);
+                lineLayout.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                lineLayout.setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4));
+                GradientDrawable border3 = new GradientDrawable();
+                border3.setStroke(1, Color.parseColor("#2a2a2a"));
+                border3.setColor(Color.parseColor("#0d0d0d"));
+                lineLayout.setBackground(border3);
+                TextView lbl = new TextView(this);
+                lbl.setText(s);
+                lbl.setTextColor(Color.parseColor("#eeeeee"));
+                lbl.setTextSize(13);
+                lineLayout.addView(lbl);
+                subSection.addView(lineLayout);
             }
 
-            parent.add(subSection);
+            parent.addView(subSection);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line4 = new View(this);
+            line4.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line4.setMinimumHeight(1);
+            subSection.addView(line4);
 
-            subTitle = new JLabel("Objetivos");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subTitle = new TextView(this);
+            subTitle.setText("Objetivos");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
             JSONArray objetivos = academia.getJSONArray("objetivos");
             if (objetivos.length() > 0) {
                 for (int i = 0; i < objetivos.length(); i++) {
-                    JPanel item = new JPanel(new BorderLayout());
-                    item.setOpaque(false);
-                    item.setBackground(new Color(13, 13, 13));
-                    item.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                        BorderFactory.createEmptyBorder(6, 10, 6, 10)
-                    ));
-                    JLabel lbl = new JLabel(objetivos.getString(i));
-                    lbl.setForeground(new Color(238, 238, 238));
-                    lbl.setFont(new Font("Arial", Font.PLAIN, 13));
-                    item.add(lbl, BorderLayout.WEST);
-                    subSection.add(item);
-                    subSection.add(Box.createRigidArea(new Dimension(0, 3)));
+                    LinearLayout item = new LinearLayout(this);
+                    item.setOrientation(LinearLayout.HORIZONTAL);
+                    item.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                    item.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+                    GradientDrawable border4 = new GradientDrawable();
+                    border4.setStroke(1, Color.parseColor("#2a2a2a"));
+                    border4.setColor(Color.parseColor("#0d0d0d"));
+                    item.setBackground(border4);
+                    TextView lbl = new TextView(this);
+                    lbl.setText(objetivos.getString(i));
+                    lbl.setTextColor(Color.parseColor("#eeeeee"));
+                    lbl.setTextSize(13);
+                    item.addView(lbl);
+                    subSection.addView(item);
                 }
             } else {
-                JLabel empty = new JLabel("Nenhum objetivo definido.");
-                empty.setForeground(new Color(102, 102, 102));
-                empty.setFont(new Font("Arial", Font.PLAIN, 11));
-                subSection.add(empty);
+                TextView empty = new TextView(this);
+                empty.setText("Nenhum objetivo definido.");
+                empty.setTextColor(Color.parseColor("#666666"));
+                empty.setTextSize(11);
+                subSection.addView(empty);
             }
 
-            parent.add(subSection);
+            parent.addView(subSection);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line5 = new View(this);
+            line5.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line5.setMinimumHeight(1);
+            subSection.addView(line5);
 
-            subTitle = new JLabel("Dias de Descanso");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subTitle = new TextView(this);
+            subTitle.setText("Dias de Descanso");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
-            JPanel diasPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 4));
-            diasPanel.setOpaque(false);
+            LinearLayout diasPanel = new LinearLayout(this);
+            diasPanel.setOrientation(LinearLayout.HORIZONTAL);
+            diasPanel.setPadding(0, dpToPx(4), 0, dpToPx(4));
             JSONArray diasDescanso = academia.getJSONArray("diasDescanso");
             if (diasDescanso.length() > 0) {
                 for (int i = 0; i < diasDescanso.length(); i++) {
-                    JLabel dia = new JLabel(diasDescanso.getString(i));
-                    dia.setForeground(new Color(204, 204, 204));
-                    dia.setFont(new Font("Arial", Font.PLAIN, 12));
-                    dia.setBackground(new Color(26, 26, 26));
-                    dia.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                        BorderFactory.createEmptyBorder(2, 8, 2, 8)
-                    ));
-                    dia.setOpaque(true);
-                    diasPanel.add(dia);
+                    TextView dia = new TextView(this);
+                    dia.setText(diasDescanso.getString(i));
+                    dia.setTextColor(Color.parseColor("#cccccc"));
+                    dia.setTextSize(12);
+                    dia.setBackgroundColor(Color.parseColor("#1a1a1a"));
+                    dia.setPadding(dpToPx(8), dpToPx(2), dpToPx(8), dpToPx(2));
+                    GradientDrawable border5 = new GradientDrawable();
+                    border5.setStroke(1, Color.parseColor("#2a2a2a"));
+                    border5.setColor(Color.parseColor("#1a1a1a"));
+                    dia.setBackground(border5);
+                    diasPanel.addView(dia);
                 }
             } else {
-                JLabel empty = new JLabel("Nenhum dia de descanso");
-                empty.setForeground(new Color(102, 102, 102));
-                empty.setFont(new Font("Arial", Font.PLAIN, 11));
-                diasPanel.add(empty);
+                TextView empty = new TextView(this);
+                empty.setText("Nenhum dia de descanso");
+                empty.setTextColor(Color.parseColor("#666666"));
+                empty.setTextSize(11);
+                diasPanel.addView(empty);
             }
-            subSection.add(diasPanel);
+            subSection.addView(diasPanel);
 
-            parent.add(subSection);
+            parent.addView(subSection);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line6 = new View(this);
+            line6.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line6.setMinimumHeight(1);
+            subSection.addView(line6);
 
-            subTitle = new JLabel("Roupas");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subTitle = new TextView(this);
+            subTitle.setText("Roupas");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
             JSONObject roupas = academia.getJSONObject("roupas");
             String[] cats = {"camisas", "calcas", "tenis"};
             String[] catLabels = {"Camisas", "Calças", "Tênis"};
             for (int c = 0; c < cats.length; c++) {
-                JLabel catLabel = new JLabel(catLabels[c]);
-                catLabel.setForeground(new Color(136, 136, 136));
-                catLabel.setFont(new Font("Arial", Font.PLAIN, 11));
-                subSection.add(catLabel);
+                TextView catLabel = new TextView(this);
+                catLabel.setText(catLabels[c]);
+                catLabel.setTextColor(Color.parseColor("#888888"));
+                catLabel.setTextSize(11);
+                subSection.addView(catLabel);
                 JSONArray items = roupas.getJSONArray(cats[c]);
                 if (items.length() > 0) {
                     for (int i = 0; i < items.length(); i++) {
-                        JPanel item = new JPanel(new BorderLayout());
-                        item.setOpaque(false);
-                        item.setBackground(new Color(13, 13, 13));
-                        item.setBorder(BorderFactory.createCompoundBorder(
-                            BorderFactory.createMatteBorder(0, 2, 0, 0, new Color(42, 42, 42)),
-                            BorderFactory.createEmptyBorder(3, 6, 3, 6)
-                        ));
-                        JLabel lbl = new JLabel(items.getString(i));
-                        lbl.setForeground(new Color(204, 204, 204));
-                        lbl.setFont(new Font("Arial", Font.PLAIN, 12));
-                        item.add(lbl, BorderLayout.WEST);
-                        subSection.add(item);
+                        LinearLayout item = new LinearLayout(this);
+                        item.setOrientation(LinearLayout.HORIZONTAL);
+                        item.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                        item.setPadding(dpToPx(6), dpToPx(3), dpToPx(6), dpToPx(3));
+                        GradientDrawable border7 = new GradientDrawable();
+                        border7.setStroke(0, 0, 0, 2, Color.parseColor("#2a2a2a"));
+                        border7.setColor(Color.parseColor("#0d0d0d"));
+                        item.setBackground(border7);
+                        TextView lbl = new TextView(this);
+                        lbl.setText(items.getString(i));
+                        lbl.setTextColor(Color.parseColor("#cccccc"));
+                        lbl.setTextSize(12);
+                        item.addView(lbl);
+                        subSection.addView(item);
                     }
                 } else {
-                    JLabel empty = new JLabel("Nenhuma " + catLabels[c].toLowerCase() + ".");
-                    empty.setForeground(new Color(102, 102, 102));
-                    empty.setFont(new Font("Arial", Font.PLAIN, 11));
-                    subSection.add(empty);
+                    TextView empty = new TextView(this);
+                    empty.setText("Nenhuma " + catLabels[c].toLowerCase() + ".");
+                    empty.setTextColor(Color.parseColor("#666666"));
+                    empty.setTextSize(11);
+                    subSection.addView(empty);
                 }
-                subSection.add(Box.createRigidArea(new Dimension(0, 3)));
             }
 
-            parent.add(subSection);
+            parent.addView(subSection);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line7 = new View(this);
+            line7.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line7.setMinimumHeight(1);
+            subSection.addView(line7);
 
-            subTitle = new JLabel("Combinações");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subTitle = new TextView(this);
+            subTitle.setText("Combinações");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
             JSONObject combinacoes = academia.getJSONObject("combinacoes");
             JSONArray workingDays = new JSONArray();
@@ -1607,200 +1488,214 @@ public class AcademiaApp extends JFrame {
             if (workingDays.length() > 0) {
                 for (int i = 0; i < workingDays.length(); i++) {
                     String day = workingDays.getString(i);
-                    JPanel dayPanel = new JPanel();
-                    dayPanel.setLayout(new BoxLayout(dayPanel, BoxLayout.Y_AXIS));
-                    dayPanel.setOpaque(false);
-                    dayPanel.setBackground(new Color(13, 13, 13));
-                    dayPanel.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(26, 26, 26)),
-                        BorderFactory.createEmptyBorder(4, 6, 4, 6)
-                    ));
+                    LinearLayout dayPanel = new LinearLayout(this);
+                    dayPanel.setOrientation(LinearLayout.VERTICAL);
+                    dayPanel.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                    dayPanel.setPadding(dpToPx(6), dpToPx(4), dpToPx(6), dpToPx(4));
+                    GradientDrawable border8 = new GradientDrawable();
+                    border8.setStroke(1, Color.parseColor("#1a1a1a"));
+                    border8.setColor(Color.parseColor("#0d0d0d"));
+                    dayPanel.setBackground(border8);
 
-                    JLabel dayTitle = new JLabel(day);
-                    dayTitle.setForeground(new Color(170, 170, 170));
-                    dayTitle.setFont(new Font("Arial", Font.BOLD, 12));
-                    dayPanel.add(dayTitle);
+                    TextView dayTitle = new TextView(this);
+                    dayTitle.setText(day);
+                    dayTitle.setTextColor(Color.parseColor("#aaaaaa"));
+                    dayTitle.setTextSize(12);
+                    dayTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+                    dayPanel.addView(dayTitle);
 
                     JSONArray combos = combinacoes.has(day) ? combinacoes.getJSONArray(day) : new JSONArray();
                     if (combos.length() > 0) {
                         for (int j = 0; j < combos.length(); j++) {
-                            JPanel comboItem = new JPanel(new BorderLayout());
-                            comboItem.setOpaque(false);
-                            JLabel comboText = new JLabel(combos.getString(j));
-                            comboText.setForeground(new Color(204, 204, 204));
-                            comboText.setFont(new Font("Arial", Font.PLAIN, 12));
-                            comboItem.add(comboText, BorderLayout.WEST);
-                            dayPanel.add(comboItem);
+                            LinearLayout comboItem = new LinearLayout(this);
+                            comboItem.setOrientation(LinearLayout.HORIZONTAL);
+                            TextView comboText = new TextView(this);
+                            comboText.setText(combos.getString(j));
+                            comboText.setTextColor(Color.parseColor("#cccccc"));
+                            comboText.setTextSize(12);
+                            comboItem.addView(comboText);
+                            dayPanel.addView(comboItem);
                         }
                     } else {
-                        JLabel empty = new JLabel("Nenhuma combinação.");
-                        empty.setForeground(new Color(102, 102, 102));
-                        empty.setFont(new Font("Arial", Font.PLAIN, 11));
-                        dayPanel.add(empty);
+                        TextView empty = new TextView(this);
+                        empty.setText("Nenhuma combinação.");
+                        empty.setTextColor(Color.parseColor("#666666"));
+                        empty.setTextSize(11);
+                        dayPanel.addView(empty);
                     }
-                    subSection.add(dayPanel);
-                    subSection.add(Box.createRigidArea(new Dimension(0, 3)));
+                    subSection.addView(dayPanel);
                 }
             } else {
-                JLabel empty = new JLabel("Nenhum dia disponível.");
-                empty.setForeground(new Color(102, 102, 102));
-                empty.setFont(new Font("Arial", Font.PLAIN, 11));
-                subSection.add(empty);
+                TextView empty = new TextView(this);
+                empty.setText("Nenhum dia disponível.");
+                empty.setTextColor(Color.parseColor("#666666"));
+                empty.setTextSize(11);
+                subSection.addView(empty);
             }
 
-            parent.add(subSection);
+            parent.addView(subSection);
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
-    private void renderModoConfig(JPanel parent) {
+    private void renderModoConfig(LinearLayout parent) {
         try {
             JSONObject academia = configData.getJSONObject("academia");
             JSONObject peso = academia.getJSONObject("peso");
             int diasFreq = getDiasFrequentados();
             String inicioDisplay = academia.isNull("inicio") ? "Não definida" : formatDataBR(academia.getString("inicio"));
 
-            JPanel subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
+            LinearLayout subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
 
-            JLabel subTitle = new JLabel("Data de Início");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            TextView subTitle = new TextView(this);
+            subTitle.setText("Data de Início");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
-            JPanel valueDisplay = new JPanel(new BorderLayout());
-            valueDisplay.setOpaque(false);
-            valueDisplay.setBackground(new Color(13, 13, 13));
-            valueDisplay.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(6, 10, 6, 10)
-            ));
-            JLabel info = new JLabel(inicioDisplay + (academia.has("inicio") && !academia.isNull("inicio") && diasFreq > 0 ? " (" + diasFreq + " dias)" : ""));
-            info.setForeground(new Color(238, 238, 238));
-            info.setFont(new Font("Arial", Font.PLAIN, 14));
-            valueDisplay.add(info, BorderLayout.WEST);
+            LinearLayout valueDisplay = new LinearLayout(this);
+            valueDisplay.setOrientation(LinearLayout.HORIZONTAL);
+            valueDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            valueDisplay.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+            GradientDrawable border = new GradientDrawable();
+            border.setStroke(1, Color.parseColor("#2a2a2a"));
+            border.setColor(Color.parseColor("#0d0d0d"));
+            valueDisplay.setBackground(border);
 
-            JButton editBtn = new JButton(academia.isNull("inicio") ? "Definir" : "Editar");
-            editBtn.setBackground(new Color(26, 58, 26));
-            editBtn.setForeground(new Color(139, 195, 74));
-            editBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            editBtn.setFocusPainted(false);
-            editBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            editBtn.addActionListener(e -> mostrarEditarInicio());
-            valueDisplay.add(editBtn, BorderLayout.EAST);
+            TextView info = new TextView(this);
+            info.setText(inicioDisplay + (academia.has("inicio") && !academia.isNull("inicio") && diasFreq > 0 ? " (" + diasFreq + " dias)" : ""));
+            info.setTextColor(Color.parseColor("#eeeeee"));
+            info.setTextSize(14);
+            valueDisplay.addView(info);
 
-            subSection.add(valueDisplay);
-            parent.add(subSection);
-            parent.add(Box.createRigidArea(new Dimension(0, 10)));
+            Button editBtn = new Button(this);
+            editBtn.setText(academia.isNull("inicio") ? "Definir" : "Editar");
+            editBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+            editBtn.setTextColor(Color.parseColor("#8bc34a"));
+            editBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
+            editBtn.setOnClickListener(v -> mostrarEditarInicio());
+            valueDisplay.addView(editBtn);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection.addView(valueDisplay);
+            parent.addView(subSection);
 
-            subTitle = new JLabel("Peso");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line = new View(this);
+            line.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line.setMinimumHeight(1);
+            subSection.addView(line);
 
-            JLabel pesoLabel = new JLabel("Peso Atual");
-            pesoLabel.setForeground(new Color(136, 136, 136));
-            pesoLabel.setFont(new Font("Arial", Font.PLAIN, 11));
-            subSection.add(pesoLabel);
+            subTitle = new TextView(this);
+            subTitle.setText("Peso");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
-            JPanel pesoDisplay = new JPanel(new BorderLayout());
-            pesoDisplay.setOpaque(false);
-            pesoDisplay.setBackground(new Color(13, 13, 13));
-            pesoDisplay.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(6, 10, 6, 10)
-            ));
+            TextView pesoLabel = new TextView(this);
+            pesoLabel.setText("Peso Atual");
+            pesoLabel.setTextColor(Color.parseColor("#888888"));
+            pesoLabel.setTextSize(11);
+            subSection.addView(pesoLabel);
+
+            LinearLayout pesoDisplay = new LinearLayout(this);
+            pesoDisplay.setOrientation(LinearLayout.HORIZONTAL);
+            pesoDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            pesoDisplay.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+            GradientDrawable border2 = new GradientDrawable();
+            border2.setStroke(1, Color.parseColor("#2a2a2a"));
+            border2.setColor(Color.parseColor("#0d0d0d"));
+            pesoDisplay.setBackground(border2);
+
             String pesoAtual = peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg";
-            JLabel atualLabel = new JLabel(pesoAtual);
-            atualLabel.setForeground(new Color(238, 238, 238));
-            atualLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-            pesoDisplay.add(atualLabel, BorderLayout.WEST);
+            TextView atualLabel = new TextView(this);
+            atualLabel.setText(pesoAtual);
+            atualLabel.setTextColor(Color.parseColor("#eeeeee"));
+            atualLabel.setTextSize(14);
+            pesoDisplay.addView(atualLabel);
 
-            JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
-            btnPanel.setOpaque(false);
-            JButton addPesoBtn = new JButton("Registrar");
-            addPesoBtn.setBackground(new Color(26, 58, 26));
-            addPesoBtn.setForeground(new Color(139, 195, 74));
-            addPesoBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            addPesoBtn.setFocusPainted(false);
-            addPesoBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            addPesoBtn.addActionListener(e -> mostrarRegistrarPeso());
-            btnPanel.add(addPesoBtn);
+            LinearLayout btnPanel = new LinearLayout(this);
+            btnPanel.setOrientation(LinearLayout.HORIZONTAL);
 
-            JButton histBtn = new JButton("Histórico");
-            histBtn.setBackground(new Color(42, 42, 42));
-            histBtn.setForeground(new Color(204, 204, 204));
-            histBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-            histBtn.setFocusPainted(false);
-            histBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            histBtn.addActionListener(e -> mostrarHistoricoPeso());
-            btnPanel.add(histBtn);
-            pesoDisplay.add(btnPanel, BorderLayout.EAST);
+            Button addPesoBtn = new Button(this);
+            addPesoBtn.setText("Registrar");
+            addPesoBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+            addPesoBtn.setTextColor(Color.parseColor("#8bc34a"));
+            addPesoBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
+            addPesoBtn.setOnClickListener(v -> mostrarRegistrarPeso());
+            btnPanel.addView(addPesoBtn);
 
-            subSection.add(pesoDisplay);
+            Button histBtn = new Button(this);
+            histBtn.setText("Histórico");
+            histBtn.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            histBtn.setTextColor(Color.parseColor("#cccccc"));
+            histBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
+            histBtn.setOnClickListener(v -> mostrarHistoricoPeso());
+            btnPanel.addView(histBtn);
 
-            JLabel intervaloLabel = new JLabel("Intervalo para Pesagem (dias)");
-            intervaloLabel.setForeground(new Color(136, 136, 136));
-            intervaloLabel.setFont(new Font("Arial", Font.PLAIN, 11));
-            subSection.add(intervaloLabel);
+            pesoDisplay.addView(btnPanel);
+            subSection.addView(pesoDisplay);
 
-            JPanel intervaloDisplay = new JPanel(new BorderLayout());
-            intervaloDisplay.setOpaque(false);
-            intervaloDisplay.setBackground(new Color(13, 13, 13));
-            intervaloDisplay.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(6, 10, 6, 10)
-            ));
-            JLabel intervaloVal = new JLabel(peso.getInt("intervalo") + " dias");
-            intervaloVal.setForeground(new Color(238, 238, 238));
-            intervaloVal.setFont(new Font("Arial", Font.PLAIN, 14));
-            intervaloDisplay.add(intervaloVal, BorderLayout.WEST);
+            TextView intervaloLabel = new TextView(this);
+            intervaloLabel.setText("Intervalo para Pesagem (dias)");
+            intervaloLabel.setTextColor(Color.parseColor("#888888"));
+            intervaloLabel.setTextSize(11);
+            subSection.addView(intervaloLabel);
 
-            JButton editIntervaloBtn = new JButton("Editar");
-            editIntervaloBtn.setBackground(new Color(26, 58, 26));
-            editIntervaloBtn.setForeground(new Color(139, 195, 74));
-            editIntervaloBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            editIntervaloBtn.setFocusPainted(false);
-            editIntervaloBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            editIntervaloBtn.addActionListener(e -> mostrarEditarIntervalo());
-            intervaloDisplay.add(editIntervaloBtn, BorderLayout.EAST);
+            LinearLayout intervaloDisplay = new LinearLayout(this);
+            intervaloDisplay.setOrientation(LinearLayout.HORIZONTAL);
+            intervaloDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            intervaloDisplay.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+            GradientDrawable border3 = new GradientDrawable();
+            border3.setStroke(1, Color.parseColor("#2a2a2a"));
+            border3.setColor(Color.parseColor("#0d0d0d"));
+            intervaloDisplay.setBackground(border3);
 
-            subSection.add(intervaloDisplay);
+            TextView intervaloVal = new TextView(this);
+            intervaloVal.setText(peso.getInt("intervalo") + " dias");
+            intervaloVal.setTextColor(Color.parseColor("#eeeeee"));
+            intervaloVal.setTextSize(14);
+            intervaloDisplay.addView(intervaloVal);
+
+            Button editIntervaloBtn = new Button(this);
+            editIntervaloBtn.setText("Editar");
+            editIntervaloBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+            editIntervaloBtn.setTextColor(Color.parseColor("#8bc34a"));
+            editIntervaloBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
+            editIntervaloBtn.setOnClickListener(v -> mostrarEditarIntervalo());
+            intervaloDisplay.addView(editIntervaloBtn);
+
+            subSection.addView(intervaloDisplay);
 
             if (!peso.isNull("meta")) {
-                JLabel metaLabel = new JLabel("Meta: " + peso.getDouble("meta") + " kg");
-                metaLabel.setForeground(new Color(102, 102, 102));
-                metaLabel.setFont(new Font("Arial", Font.PLAIN, 11));
-                subSection.add(metaLabel);
+                TextView metaLabel = new TextView(this);
+                metaLabel.setText("Meta: " + peso.getDouble("meta") + " kg");
+                metaLabel.setTextColor(Color.parseColor("#666666"));
+                metaLabel.setTextSize(11);
+                subSection.addView(metaLabel);
             }
 
-            parent.add(subSection);
+            parent.addView(subSection);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line2 = new View(this);
+            line2.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line2.setMinimumHeight(1);
+            subSection.addView(line2);
 
-            subTitle = new JLabel("Dias de Descanso");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subTitle = new TextView(this);
+            subTitle.setText("Dias de Descanso");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
-            JPanel gridPanel = new JPanel(new GridLayout(0, 3, 10, 5));
-            gridPanel.setOpaque(false);
+            LinearLayout gridPanel = new LinearLayout(this);
+            gridPanel.setOrientation(LinearLayout.VERTICAL);
             JSONArray diasDescanso = academia.getJSONArray("diasDescanso");
             for (String d : DIAS_SEMANA) {
                 boolean checked = false;
@@ -1810,19 +1705,27 @@ public class AcademiaApp extends JFrame {
                         break;
                     }
                 }
-                JCheckBox cb = new JCheckBox(d);
-                cb.setSelected(checked);
-                cb.setForeground(new Color(170, 170, 170));
-                cb.setBackground(new Color(13, 13, 13));
-                cb.setFocusPainted(false);
-                cb.addActionListener(e -> {
+                LinearLayout row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                CheckBox cb = new CheckBox(this);
+                cb.setText(d);
+                cb.setChecked(checked);
+                cb.setTextColor(Color.parseColor("#aaaaaa"));
+                cb.setOnCheckedChangeListener((buttonView, isChecked) -> {
                     try {
                         JSONArray novos = new JSONArray();
-                        Component[] comps = ((JPanel) cb.getParent()).getComponents();
-                        for (Component comp : comps) {
-                            if (comp instanceof JCheckBox) {
-                                JCheckBox c = (JCheckBox) comp;
-                                if (c.isSelected()) novos.put(c.getText());
+                        LinearLayout parentLayout = (LinearLayout) buttonView.getParent().getParent();
+                        for (int j = 0; j < parentLayout.getChildCount(); j++) {
+                            View child = parentLayout.getChildAt(j);
+                            if (child instanceof LinearLayout) {
+                                LinearLayout rowLayout = (LinearLayout) child;
+                                for (int k = 0; k < rowLayout.getChildCount(); k++) {
+                                    View v = rowLayout.getChildAt(k);
+                                    if (v instanceof CheckBox) {
+                                        CheckBox c = (CheckBox) v;
+                                        if (c.isChecked()) novos.put(c.getText().toString());
+                                    }
+                                }
                             }
                         }
                         configData.getJSONObject("academia").put("diasDescanso", novos);
@@ -1830,57 +1733,59 @@ public class AcademiaApp extends JFrame {
                         renderDados();
                     } catch (JSONException ex) {}
                 });
-                gridPanel.add(cb);
+                row.addView(cb);
+                gridPanel.addView(row);
             }
-            subSection.add(gridPanel);
-            parent.add(subSection);
+            subSection.addView(gridPanel);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            parent.addView(subSection);
 
-            subTitle = new JLabel("Objetivos");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line3 = new View(this);
+            line3.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line3.setMinimumHeight(1);
+            subSection.addView(line3);
+
+            subTitle = new TextView(this);
+            subTitle.setText("Objetivos");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
             JSONArray objetivos = academia.getJSONArray("objetivos");
             for (int i = 0; i < objetivos.length(); i++) {
-                JPanel item = new JPanel(new BorderLayout());
-                item.setOpaque(false);
-                item.setBackground(new Color(13, 13, 13));
-                item.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                    BorderFactory.createEmptyBorder(6, 10, 6, 10)
-                ));
-                JLabel lbl = new JLabel(objetivos.getString(i));
-                lbl.setForeground(new Color(238, 238, 238));
-                lbl.setFont(new Font("Arial", Font.PLAIN, 13));
-                item.add(lbl, BorderLayout.WEST);
+                LinearLayout item = new LinearLayout(this);
+                item.setOrientation(LinearLayout.HORIZONTAL);
+                item.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                item.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+                GradientDrawable border4 = new GradientDrawable();
+                border4.setStroke(1, Color.parseColor("#2a2a2a"));
+                border4.setColor(Color.parseColor("#0d0d0d"));
+                item.setBackground(border4);
 
-                JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
-                actions.setOpaque(false);
-                JButton editObj = new JButton("✎");
-                editObj.setForeground(new Color(136, 170, 255));
-                editObj.setBackground(null);
-                editObj.setBorder(null);
-                editObj.setFocusPainted(false);
-                editObj.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                TextView lbl = new TextView(this);
+                lbl.setText(objetivos.getString(i));
+                lbl.setTextColor(Color.parseColor("#eeeeee"));
+                lbl.setTextSize(13));
+                item.addView(lbl);
+
+                LinearLayout actions = new LinearLayout(this);
+                actions.setOrientation(LinearLayout.HORIZONTAL);
                 int idx = i;
-                editObj.addActionListener(e -> mostrarEditarObjetivo(idx));
-                actions.add(editObj);
+                Button editObj = new Button(this);
+                editObj.setText("✎");
+                editObj.setTextColor(Color.parseColor("#88aaff"));
+                editObj.setBackground(null);
+                editObj.setOnClickListener(v -> mostrarEditarObjetivo(idx));
+                actions.addView(editObj);
 
-                JButton delObj = new JButton("✕");
-                delObj.setForeground(new Color(255, 102, 102));
+                Button delObj = new Button(this);
+                delObj.setText("✕");
+                delObj.setTextColor(Color.parseColor("#ff6666"));
                 delObj.setBackground(null);
-                delObj.setBorder(null);
-                delObj.setFocusPainted(false);
-                delObj.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                delObj.addActionListener(e -> {
+                delObj.setOnClickListener(v -> {
                     mostrarConfirmacao("Excluir Objetivo", "Tem certeza que deseja excluir este objetivo?", () -> {
                         try {
                             JSONArray objs = configData.getJSONObject("academia").getJSONArray("objetivos");
@@ -1890,73 +1795,73 @@ public class AcademiaApp extends JFrame {
                         } catch (JSONException ex) {}
                     });
                 });
-                actions.add(delObj);
-                item.add(actions, BorderLayout.EAST);
-                subSection.add(item);
+                actions.addView(delObj);
+
+                item.addView(actions);
+                subSection.addView(item);
             }
 
-            JButton addObjBtn = new JButton("+ Adicionar Objetivo");
-            addObjBtn.setBackground(new Color(26, 58, 26));
-            addObjBtn.setForeground(new Color(139, 195, 74));
-            addObjBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            addObjBtn.setFocusPainted(false);
-            addObjBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            addObjBtn.addActionListener(e -> mostrarAdicionarObjetivo());
-            subSection.add(addObjBtn);
+            Button addObjBtn = new Button(this);
+            addObjBtn.setText("+ Adicionar Objetivo");
+            addObjBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+            addObjBtn.setTextColor(Color.parseColor("#8bc34a"));
+            addObjBtn.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5));
+            addObjBtn.setOnClickListener(v -> mostrarAdicionarObjetivo());
+            subSection.addView(addObjBtn);
 
-            parent.add(subSection);
+            parent.addView(subSection);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line4 = new View(this);
+            line4.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line4.setMinimumHeight(1);
+            subSection.addView(line4);
 
-            subTitle = new JLabel("Treinos");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subTitle = new TextView(this);
+            subTitle.setText("Treinos");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
             JSONArray treinos = academia.getJSONArray("treinos");
             for (int i = 0; i < treinos.length(); i++) {
                 JSONObject treino = treinos.getJSONObject(i);
-                JPanel treinoPanel = new JPanel();
-                treinoPanel.setLayout(new BoxLayout(treinoPanel, BoxLayout.Y_AXIS));
-                treinoPanel.setOpaque(false);
-                treinoPanel.setBackground(new Color(13, 13, 13));
-                treinoPanel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                    BorderFactory.createEmptyBorder(6, 10, 6, 10)
-                ));
+                LinearLayout treinoPanel = new LinearLayout(this);
+                treinoPanel.setOrientation(LinearLayout.VERTICAL);
+                treinoPanel.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                treinoPanel.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+                GradientDrawable border5 = new GradientDrawable();
+                border5.setStroke(1, Color.parseColor("#2a2a2a"));
+                border5.setColor(Color.parseColor("#0d0d0d"));
+                treinoPanel.setBackground(border5);
 
-                JPanel headerPanel = new JPanel(new BorderLayout());
-                headerPanel.setOpaque(false);
-                JLabel nomeLabel = new JLabel(treino.getString("nome"));
-                nomeLabel.setForeground(new Color(238, 238, 238));
-                nomeLabel.setFont(new Font("Arial", Font.BOLD, 13));
-                headerPanel.add(nomeLabel, BorderLayout.WEST);
+                LinearLayout headerPanel = new LinearLayout(this);
+                headerPanel.setOrientation(LinearLayout.HORIZONTAL);
 
-                JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
-                actions.setOpaque(false);
-                JButton editTreino = new JButton("✎");
-                editTreino.setForeground(new Color(136, 170, 255));
-                editTreino.setBackground(null);
-                editTreino.setBorder(null);
-                editTreino.setFocusPainted(false);
-                editTreino.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                TextView nomeLabel = new TextView(this);
+                nomeLabel.setText(treino.getString("nome"));
+                nomeLabel.setTextColor(Color.parseColor("#eeeeee"));
+                nomeLabel.setTextSize(13);
+                nomeLabel.setTypeface(null, android.graphics.Typeface.BOLD);
+                headerPanel.addView(nomeLabel);
+
+                LinearLayout actions = new LinearLayout(this);
+                actions.setOrientation(LinearLayout.HORIZONTAL);
                 int treinoIdx = i;
-                editTreino.addActionListener(e -> mostrarEditarTreino(treinoIdx));
-                actions.add(editTreino);
+                Button editTreino = new Button(this);
+                editTreino.setText("✎");
+                editTreino.setTextColor(Color.parseColor("#88aaff"));
+                editTreino.setBackground(null);
+                editTreino.setOnClickListener(v -> mostrarEditarTreino(treinoIdx));
+                actions.addView(editTreino);
 
-                JButton delTreino = new JButton("✕");
-                delTreino.setForeground(new Color(255, 102, 102));
+                Button delTreino = new Button(this);
+                delTreino.setText("✕");
+                delTreino.setTextColor(Color.parseColor("#ff6666"));
                 delTreino.setBackground(null);
-                delTreino.setBorder(null);
-                delTreino.setFocusPainted(false);
-                delTreino.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                delTreino.addActionListener(e -> {
+                delTreino.setOnClickListener(v -> {
                     mostrarConfirmacao("Excluir Treino", "Tem certeza que deseja excluir este treino?", () -> {
                         try {
                             JSONArray ts = configData.getJSONObject("academia").getJSONArray("treinos");
@@ -1966,110 +1871,109 @@ public class AcademiaApp extends JFrame {
                         } catch (JSONException ex) {}
                     });
                 });
-                actions.add(delTreino);
-                headerPanel.add(actions, BorderLayout.EAST);
+                actions.addView(delTreino);
 
-                treinoPanel.add(headerPanel);
+                headerPanel.addView(actions);
+                treinoPanel.addView(headerPanel);
 
-                JLabel diaLabel = new JLabel("Dia: " + treino.getString("dia"));
-                diaLabel.setForeground(new Color(170, 170, 170));
-                diaLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-                treinoPanel.add(diaLabel);
+                TextView diaLabel = new TextView(this);
+                diaLabel.setText("Dia: " + treino.getString("dia"));
+                diaLabel.setTextColor(Color.parseColor("#aaaaaa"));
+                diaLabel.setTextSize(12);
+                treinoPanel.addView(diaLabel);
 
                 if (treino.has("objetivo") && !treino.isNull("objetivo") && !treino.getString("objetivo").isEmpty()) {
-                    JLabel objLabel = new JLabel("Objetivo: " + treino.getString("objetivo"));
-                    objLabel.setForeground(new Color(170, 170, 170));
-                    objLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-                    treinoPanel.add(objLabel);
+                    TextView objLabel = new TextView(this);
+                    objLabel.setText("Objetivo: " + treino.getString("objetivo"));
+                    objLabel.setTextColor(Color.parseColor("#aaaaaa"));
+                    objLabel.setTextSize(12);
+                    treinoPanel.addView(objLabel);
                 }
 
-                JPanel exContainer = new JPanel();
-                exContainer.setLayout(new BoxLayout(exContainer, BoxLayout.Y_AXIS));
-                exContainer.setOpaque(false);
-                treinoPanel.add(exContainer);
+                LinearLayout exContainer = new LinearLayout(this);
+                exContainer.setOrientation(LinearLayout.VERTICAL);
+                treinoPanel.addView(exContainer);
 
                 renderExerciciosLista(treinoIdx, exContainer);
 
-                JButton addExBtn = new JButton("+ Exercício");
-                addExBtn.setBackground(new Color(26, 58, 26));
-                addExBtn.setForeground(new Color(139, 195, 74));
-                addExBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-                addExBtn.setFocusPainted(false);
-                addExBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                addExBtn.addActionListener(e -> mostrarAdicionarExercicio(treinoIdx));
-                treinoPanel.add(addExBtn);
+                Button addExBtn = new Button(this);
+                addExBtn.setText("+ Exercício");
+                addExBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                addExBtn.setTextColor(Color.parseColor("#8bc34a"));
+                addExBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
+                addExBtn.setOnClickListener(v -> mostrarAdicionarExercicio(treinoIdx));
+                treinoPanel.addView(addExBtn);
 
-                subSection.add(treinoPanel);
-                subSection.add(Box.createRigidArea(new Dimension(0, 5)));
+                subSection.addView(treinoPanel);
             }
 
-            JButton addTreinoBtn = new JButton("+ Adicionar Treino");
-            addTreinoBtn.setBackground(new Color(26, 58, 26));
-            addTreinoBtn.setForeground(new Color(139, 195, 74));
-            addTreinoBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            addTreinoBtn.setFocusPainted(false);
-            addTreinoBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            addTreinoBtn.addActionListener(e -> mostrarAdicionarTreino());
-            subSection.add(addTreinoBtn);
+            Button addTreinoBtn = new Button(this);
+            addTreinoBtn.setText("+ Adicionar Treino");
+            addTreinoBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+            addTreinoBtn.setTextColor(Color.parseColor("#8bc34a"));
+            addTreinoBtn.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5));
+            addTreinoBtn.setOnClickListener(v -> mostrarAdicionarTreino());
+            subSection.addView(addTreinoBtn);
 
-            parent.add(subSection);
+            parent.addView(subSection);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line5 = new View(this);
+            line5.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line5.setMinimumHeight(1);
+            subSection.addView(line5);
 
-            subTitle = new JLabel("Roupas");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subTitle = new TextView(this);
+            subTitle.setText("Roupas");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
             JSONObject roupas = academia.getJSONObject("roupas");
-            String[] cats = {"camisas", "calcas", "tenis"};
-            String[] catLabels = {"Camisas", "Calças", "Tênis"};
-            for (int c = 0; c < cats.length; c++) {
-                JLabel catLabel = new JLabel(catLabels[c]);
-                catLabel.setForeground(new Color(136, 136, 136));
-                catLabel.setFont(new Font("Arial", Font.PLAIN, 11));
-                subSection.add(catLabel);
+            String[] cats2 = {"camisas", "calcas", "tenis"};
+            String[] catLabels2 = {"Camisas", "Calças", "Tênis"};
+            for (int c = 0; c < cats2.length; c++) {
+                TextView catLabel = new TextView(this);
+                catLabel.setText(catLabels2[c]);
+                catLabel.setTextColor(Color.parseColor("#888888"));
+                catLabel.setTextSize(11);
+                subSection.addView(catLabel);
 
-                JSONArray items = roupas.getJSONArray(cats[c]);
+                JSONArray items = roupas.getJSONArray(cats2[c]);
                 for (int i = 0; i < items.length(); i++) {
-                    JPanel item = new JPanel(new BorderLayout());
-                    item.setOpaque(false);
-                    item.setBackground(new Color(13, 13, 13));
-                    item.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 2, 0, 0, new Color(42, 42, 42)),
-                        BorderFactory.createEmptyBorder(3, 6, 3, 6)
-                    ));
-                    JLabel lbl = new JLabel(items.getString(i));
-                    lbl.setForeground(new Color(204, 204, 204));
-                    lbl.setFont(new Font("Arial", Font.PLAIN, 12));
-                    item.add(lbl, BorderLayout.WEST);
+                    LinearLayout item = new LinearLayout(this);
+                    item.setOrientation(LinearLayout.HORIZONTAL);
+                    item.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                    item.setPadding(dpToPx(6), dpToPx(3), dpToPx(6), dpToPx(3));
+                    GradientDrawable border6 = new GradientDrawable();
+                    border6.setStroke(0, 0, 0, 2, Color.parseColor("#2a2a2a"));
+                    border6.setColor(Color.parseColor("#0d0d0d"));
+                    item.setBackground(border6);
 
-                    JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
-                    actions.setOpaque(false);
-                    JButton editRoupa = new JButton("✎");
-                    editRoupa.setForeground(new Color(136, 170, 255));
-                    editRoupa.setBackground(null);
-                    editRoupa.setBorder(null);
-                    editRoupa.setFocusPainted(false);
-                    editRoupa.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    TextView lbl = new TextView(this);
+                    lbl.setText(items.getString(i));
+                    lbl.setTextColor(Color.parseColor("#cccccc"));
+                    lbl.setTextSize(12);
+                    item.addView(lbl);
+
+                    LinearLayout actions2 = new LinearLayout(this);
+                    actions2.setOrientation(LinearLayout.HORIZONTAL);
                     int roupaIdx = i;
-                    String catFinal = cats[c];
-                    editRoupa.addActionListener(e -> mostrarEditarRoupa(catFinal, roupaIdx));
-                    actions.add(editRoupa);
+                    String catFinal = cats2[c];
+                    Button editRoupa = new Button(this);
+                    editRoupa.setText("✎");
+                    editRoupa.setTextColor(Color.parseColor("#88aaff"));
+                    editRoupa.setBackground(null);
+                    editRoupa.setOnClickListener(v -> mostrarEditarRoupa(catFinal, roupaIdx));
+                    actions2.addView(editRoupa);
 
-                    JButton delRoupa = new JButton("✕");
-                    delRoupa.setForeground(new Color(255, 102, 102));
+                    Button delRoupa = new Button(this);
+                    delRoupa.setText("✕");
+                    delRoupa.setTextColor(Color.parseColor("#ff6666"));
                     delRoupa.setBackground(null);
-                    delRoupa.setBorder(null);
-                    delRoupa.setFocusPainted(false);
-                    delRoupa.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                    delRoupa.addActionListener(e -> {
+                    delRoupa.setOnClickListener(v -> {
                         mostrarConfirmacao("Excluir Roupa", "Tem certeza que deseja excluir esta roupa?", () -> {
                             try {
                                 JSONObject r = configData.getJSONObject("academia").getJSONObject("roupas");
@@ -2079,41 +1983,41 @@ public class AcademiaApp extends JFrame {
                             } catch (JSONException ex) {}
                         });
                     });
-                    actions.add(delRoupa);
-                    item.add(actions, BorderLayout.EAST);
-                    subSection.add(item);
+                    actions2.addView(delRoupa);
+
+                    item.addView(actions2);
+                    subSection.addView(item);
                 }
 
-                JButton addRoupaBtn = new JButton("+ Adicionar " + catLabels[c].toLowerCase());
-                addRoupaBtn.setBackground(new Color(26, 58, 26));
-                addRoupaBtn.setForeground(new Color(139, 195, 74));
-                addRoupaBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-                addRoupaBtn.setFocusPainted(false);
-                addRoupaBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                String catFinal2 = cats[c];
-                addRoupaBtn.addActionListener(e -> mostrarAdicionarRoupa(catFinal2));
-                subSection.add(addRoupaBtn);
-                subSection.add(Box.createRigidArea(new Dimension(0, 3)));
+                Button addRoupaBtn = new Button(this);
+                addRoupaBtn.setText("+ Adicionar " + catLabels2[c].toLowerCase());
+                addRoupaBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                addRoupaBtn.setTextColor(Color.parseColor("#8bc34a"));
+                addRoupaBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
+                String catFinal2 = cats2[c];
+                addRoupaBtn.setOnClickListener(v -> mostrarAdicionarRoupa(catFinal2));
+                subSection.addView(addRoupaBtn);
             }
 
-            parent.add(subSection);
+            parent.addView(subSection);
 
-            subSection = new JPanel();
-            subSection.setLayout(new BoxLayout(subSection, BoxLayout.Y_AXIS));
-            subSection.setOpaque(false);
-            subSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(42, 42, 42)),
-                BorderFactory.createEmptyBorder(10, 0, 10, 0)
-            ));
+            subSection = new LinearLayout(this);
+            subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            View line6 = new View(this);
+            line6.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line6.setMinimumHeight(1);
+            subSection.addView(line6);
 
-            subTitle = new JLabel("Combinações por Dia");
-            subTitle.setForeground(new Color(153, 153, 153));
-            subTitle.setFont(new Font("Arial", Font.PLAIN, 14));
-            subSection.add(subTitle);
+            subTitle = new TextView(this);
+            subTitle.setText("Combinações por Dia");
+            subTitle.setTextColor(Color.parseColor("#999999"));
+            subTitle.setTextSize(14);
+            subSection.addView(subTitle);
 
-            JSONObject combinacoes = academia.getJSONObject("combinacoes");
+            JSONObject combinacoes2 = academia.getJSONObject("combinacoes");
             JSONArray diasDescanso2 = academia.getJSONArray("diasDescanso");
-            JSONArray workingDays = new JSONArray();
+            JSONArray workingDays2 = new JSONArray();
             for (String d : DIAS_SEMANA) {
                 boolean isDescanso = false;
                 for (int i = 0; i < diasDescanso2.length(); i++) {
@@ -2122,44 +2026,46 @@ public class AcademiaApp extends JFrame {
                         break;
                     }
                 }
-                if (!isDescanso) workingDays.put(d);
+                if (!isDescanso) workingDays2.put(d);
             }
 
-            if (workingDays.length() > 0) {
-                for (int i = 0; i < workingDays.length(); i++) {
-                    String day = workingDays.getString(i);
-                    JPanel dayPanel = new JPanel();
-                    dayPanel.setLayout(new BoxLayout(dayPanel, BoxLayout.Y_AXIS));
-                    dayPanel.setOpaque(false);
-                    dayPanel.setBackground(new Color(13, 13, 13));
-                    dayPanel.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(26, 26, 26)),
-                        BorderFactory.createEmptyBorder(4, 6, 4, 6)
-                    ));
+            if (workingDays2.length() > 0) {
+                for (int i = 0; i < workingDays2.length(); i++) {
+                    String day = workingDays2.getString(i);
+                    LinearLayout dayPanel = new LinearLayout(this);
+                    dayPanel.setOrientation(LinearLayout.VERTICAL);
+                    dayPanel.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                    dayPanel.setPadding(dpToPx(6), dpToPx(4), dpToPx(6), dpToPx(4));
+                    GradientDrawable border7 = new GradientDrawable();
+                    border7.setStroke(1, Color.parseColor("#1a1a1a"));
+                    border7.setColor(Color.parseColor("#0d0d0d"));
+                    dayPanel.setBackground(border7);
 
-                    JLabel dayTitle = new JLabel(day);
-                    dayTitle.setForeground(new Color(170, 170, 170));
-                    dayTitle.setFont(new Font("Arial", Font.BOLD, 12));
-                    dayPanel.add(dayTitle);
+                    TextView dayTitle = new TextView(this);
+                    dayTitle.setText(day);
+                    dayTitle.setTextColor(Color.parseColor("#aaaaaa"));
+                    dayTitle.setTextSize(12);
+                    dayTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+                    dayPanel.addView(dayTitle);
 
-                    JSONArray combos = combinacoes.has(day) ? combinacoes.getJSONArray(day) : new JSONArray();
-                    for (int j = 0; j < combos.length(); j++) {
-                        JPanel comboItem = new JPanel(new BorderLayout());
-                        comboItem.setOpaque(false);
-                        JLabel comboText = new JLabel(combos.getString(j));
-                        comboText.setForeground(new Color(204, 204, 204));
-                        comboText.setFont(new Font("Arial", Font.PLAIN, 12));
-                        comboItem.add(comboText, BorderLayout.WEST);
+                    JSONArray combos2 = combinacoes2.has(day) ? combinacoes2.getJSONArray(day) : new JSONArray();
+                    for (int j = 0; j < combos2.length(); j++) {
+                        LinearLayout comboItem = new LinearLayout(this);
+                        comboItem.setOrientation(LinearLayout.HORIZONTAL);
 
-                        JButton delCombo = new JButton("✕");
-                        delCombo.setForeground(new Color(255, 102, 102));
-                        delCombo.setBackground(null);
-                        delCombo.setBorder(null);
-                        delCombo.setFocusPainted(false);
-                        delCombo.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                        TextView comboText = new TextView(this);
+                        comboText.setText(combos2.getString(j));
+                        comboText.setTextColor(Color.parseColor("#cccccc"));
+                        comboText.setTextSize(12);
+                        comboItem.addView(comboText);
+
                         int comboIdx = j;
                         String dayFinal = day;
-                        delCombo.addActionListener(e -> {
+                        Button delCombo = new Button(this);
+                        delCombo.setText("✕");
+                        delCombo.setTextColor(Color.parseColor("#ff6666"));
+                        delCombo.setBackground(null);
+                        delCombo.setOnClickListener(v -> {
                             mostrarConfirmacao("Excluir Combinação", "Tem certeza que deseja excluir esta combinação?", () -> {
                                 try {
                                     JSONObject comb = configData.getJSONObject("academia").getJSONObject("combinacoes");
@@ -2173,45 +2079,53 @@ public class AcademiaApp extends JFrame {
                                 } catch (JSONException ex) {}
                             });
                         });
-                        comboItem.add(delCombo, BorderLayout.EAST);
-                        dayPanel.add(comboItem);
+                        comboItem.addView(delCombo);
+                        dayPanel.addView(comboItem);
                     }
 
                     JSONObject roupas2 = academia.getJSONObject("roupas");
-                    JPanel comboSelects = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 3));
-                    comboSelects.setOpaque(false);
+                    LinearLayout comboSelects = new LinearLayout(this);
+                    comboSelects.setOrientation(LinearLayout.HORIZONTAL);
 
-                    JComboBox<String> camisaCombo = new JComboBox<>();
-                    camisaCombo.addItem("");
+                    Spinner camisaSpinner = new Spinner(this);
+                    ArrayAdapter<String> camisaAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+                    camisaAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    camisaAdapter.add("");
                     JSONArray camisas = roupas2.getJSONArray("camisas");
-                    for (int j = 0; j < camisas.length(); j++) camisaCombo.addItem(camisas.getString(j));
+                    for (int j = 0; j < camisas.length(); j++) camisaAdapter.add(camisas.getString(j));
+                    camisaSpinner.setAdapter(camisaAdapter);
 
-                    JComboBox<String> calcaCombo = new JComboBox<>();
-                    calcaCombo.addItem("");
+                    Spinner calcaSpinner = new Spinner(this);
+                    ArrayAdapter<String> calcaAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+                    calcaAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    calcaAdapter.add("");
                     JSONArray calcas = roupas2.getJSONArray("calcas");
-                    for (int j = 0; j < calcas.length(); j++) calcaCombo.addItem(calcas.getString(j));
+                    for (int j = 0; j < calcas.length(); j++) calcaAdapter.add(calcas.getString(j));
+                    calcaSpinner.setAdapter(calcaAdapter);
 
-                    JComboBox<String> tenisCombo = new JComboBox<>();
-                    tenisCombo.addItem("");
+                    Spinner tenisSpinner = new Spinner(this);
+                    ArrayAdapter<String> tenisAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+                    tenisAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    tenisAdapter.add("");
                     JSONArray tenis = roupas2.getJSONArray("tenis");
-                    for (int j = 0; j < tenis.length(); j++) tenisCombo.addItem(tenis.getString(j));
+                    for (int j = 0; j < tenis.length(); j++) tenisAdapter.add(tenis.getString(j));
+                    tenisSpinner.setAdapter(tenisAdapter);
 
-                    comboSelects.add(camisaCombo);
-                    comboSelects.add(calcaCombo);
-                    comboSelects.add(tenisCombo);
+                    comboSelects.addView(camisaSpinner);
+                    comboSelects.addView(calcaSpinner);
+                    comboSelects.addView(tenisSpinner);
 
-                    JButton addComboBtn = new JButton("Adicionar");
-                    addComboBtn.setBackground(new Color(26, 58, 26));
-                    addComboBtn.setForeground(new Color(139, 195, 74));
-                    addComboBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-                    addComboBtn.setFocusPainted(false);
-                    addComboBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    Button addComboBtn = new Button(this);
+                    addComboBtn.setText("Adicionar");
+                    addComboBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                    addComboBtn.setTextColor(Color.parseColor("#8bc34a"));
+                    addComboBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
                     String dayFinal2 = day;
-                    addComboBtn.addActionListener(e -> {
+                    addComboBtn.setOnClickListener(v -> {
                         try {
-                            String cam = (String) camisaCombo.getSelectedItem();
-                            String cal = (String) calcaCombo.getSelectedItem();
-                            String ten = (String) tenisCombo.getSelectedItem();
+                            String cam = camisaSpinner.getSelectedItem().toString();
+                            String cal = calcaSpinner.getSelectedItem().toString();
+                            String ten = tenisSpinner.getSelectedItem().toString();
                             String comboText = "";
                             if (!cam.isEmpty()) comboText += cam;
                             if (!cal.isEmpty()) {
@@ -2223,7 +2137,7 @@ public class AcademiaApp extends JFrame {
                                 comboText += ten;
                             }
                             if (comboText.isEmpty()) {
-                                JOptionPane.showMessageDialog(null, "Selecione pelo menos uma peça.");
+                                Toast.makeText(this, "Selecione pelo menos uma peça.", Toast.LENGTH_SHORT).show();
                                 return;
                             }
                             JSONObject comb = configData.getJSONObject("academia").getJSONObject("combinacoes");
@@ -2233,27 +2147,27 @@ public class AcademiaApp extends JFrame {
                             renderDados();
                         } catch (JSONException ex) {}
                     });
-                    comboSelects.add(addComboBtn);
-                    dayPanel.add(comboSelects);
+                    comboSelects.addView(addComboBtn);
 
-                    subSection.add(dayPanel);
-                    subSection.add(Box.createRigidArea(new Dimension(0, 3)));
+                    dayPanel.addView(comboSelects);
+                    subSection.addView(dayPanel);
                 }
             } else {
-                JLabel empty = new JLabel("Nenhum dia disponível. Defina os dias de descanso primeiro.");
-                empty.setForeground(new Color(102, 102, 102));
-                empty.setFont(new Font("Arial", Font.PLAIN, 11));
-                subSection.add(empty);
+                TextView empty = new TextView(this);
+                empty.setText("Nenhum dia disponível. Defina os dias de descanso primeiro.");
+                empty.setTextColor(Color.parseColor("#666666"));
+                empty.setTextSize(11);
+                subSection.addView(empty);
             }
 
-            parent.add(subSection);
+            parent.addView(subSection);
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
-    private void renderExerciciosLista(int treinoIdx, JPanel container) {
-        container.removeAll();
+    private void renderExerciciosLista(int treinoIdx, LinearLayout container) {
+        container.removeAllViews();
         try {
             JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
             JSONObject treino = treinos.getJSONObject(treinoIdx);
@@ -2262,42 +2176,40 @@ public class AcademiaApp extends JFrame {
             JSONArray exercicios = treino.getJSONArray("exercicios");
             for (int i = 0; i < exercicios.length(); i++) {
                 JSONObject ex = exercicios.getJSONObject(i);
-                JPanel exItem = new JPanel(new BorderLayout());
-                exItem.setOpaque(false);
-                exItem.setBackground(new Color(13, 13, 13));
-                exItem.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(42, 42, 42)),
-                    BorderFactory.createEmptyBorder(6, 10, 6, 10)
-                ));
+                LinearLayout exItem = new LinearLayout(this);
+                exItem.setOrientation(LinearLayout.HORIZONTAL);
+                exItem.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                exItem.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+                GradientDrawable border = new GradientDrawable();
+                border.setStroke(1, Color.parseColor("#2a2a2a"));
+                border.setColor(Color.parseColor("#0d0d0d"));
+                exItem.setBackground(border);
 
                 String details = ex.getString("exercise");
                 if (ex.has("sets")) details += " • " + ex.getInt("sets") + "x" + ex.getInt("reps");
                 if (ex.has("load")) details += " • " + ex.getDouble("load") + "kg";
 
-                JLabel info = new JLabel(details);
-                info.setForeground(new Color(204, 204, 204));
-                info.setFont(new Font("Arial", Font.PLAIN, 12));
-                exItem.add(info, BorderLayout.WEST);
+                TextView info = new TextView(this);
+                info.setText(details);
+                info.setTextColor(Color.parseColor("#cccccc"));
+                info.setTextSize(12);
+                exItem.addView(info);
 
-                JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
-                actions.setOpaque(false);
-                JButton editEx = new JButton("✎");
-                editEx.setForeground(new Color(136, 170, 255));
-                editEx.setBackground(null);
-                editEx.setBorder(null);
-                editEx.setFocusPainted(false);
-                editEx.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                LinearLayout actions = new LinearLayout(this);
+                actions.setOrientation(LinearLayout.HORIZONTAL);
                 int exIdx = i;
-                editEx.addActionListener(e -> mostrarEditarExercicio(treinoIdx, exIdx));
-                actions.add(editEx);
+                Button editEx = new Button(this);
+                editEx.setText("✎");
+                editEx.setTextColor(Color.parseColor("#88aaff"));
+                editEx.setBackground(null);
+                editEx.setOnClickListener(v -> mostrarEditarExercicio(treinoIdx, exIdx));
+                actions.addView(editEx);
 
-                JButton delEx = new JButton("✕");
-                delEx.setForeground(new Color(255, 102, 102));
+                Button delEx = new Button(this);
+                delEx.setText("✕");
+                delEx.setTextColor(Color.parseColor("#ff6666"));
                 delEx.setBackground(null);
-                delEx.setBorder(null);
-                delEx.setFocusPainted(false);
-                delEx.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                delEx.addActionListener(e -> {
+                delEx.setOnClickListener(v -> {
                     mostrarConfirmacao("Excluir Exercício", "Tem certeza que deseja excluir este exercício?", () -> {
                         try {
                             JSONArray ts = configData.getJSONObject("academia").getJSONArray("treinos");
@@ -2308,218 +2220,141 @@ public class AcademiaApp extends JFrame {
                         } catch (JSONException exc) {}
                     });
                 });
-                actions.add(delEx);
-                exItem.add(actions, BorderLayout.EAST);
+                actions.addView(delEx);
 
-                container.add(exItem);
-                container.add(Box.createRigidArea(new Dimension(0, 3)));
+                exItem.addView(actions);
+                container.addView(exItem);
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        container.revalidate();
-        container.repaint();
     }
 
-    private void addLabel(JPanel parent, String text) {
-        JLabel label = new JLabel(text);
-        label.setForeground(new Color(136, 136, 136));
-        label.setFont(new Font("Arial", Font.PLAIN, 11));
-        parent.add(label);
-        parent.add(Box.createRigidArea(new Dimension(0, 3)));
+    private void addLabel(LinearLayout parent, String text) {
+        TextView label = new TextView(this);
+        label.setText(text);
+        label.setTextColor(Color.parseColor("#888888"));
+        label.setTextSize(11);
+        parent.addView(label);
     }
 
     private void mostrarEditarInicio() {
-        subModalBox.removeAll();
-        JLabel title = new JLabel("Definir Data de Início");
-        title.setForeground(new Color(170, 170, 170));
-        title.setFont(new Font("Arial", Font.PLAIN, 16));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(title);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Definir Data de Início");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
         String current = "";
         try {
             current = configData.getJSONObject("academia").isNull("inicio") ? "" : configData.getJSONObject("academia").getString("inicio");
         } catch (JSONException e) {}
-        JTextField dateField = new JTextField(current);
-        dateField.setMaximumSize(new Dimension(300, 30));
-        dateField.setBackground(new Color(10, 10, 10));
-        dateField.setForeground(new Color(221, 221, 221));
-        dateField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        dateField.setHorizontalAlignment(JTextField.CENTER);
-        dateField.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(dateField);
-        subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        btnRow.setOpaque(false);
-        JButton cancelBtn = new JButton("Cancelar");
-        cancelBtn.setBackground(new Color(42, 42, 42));
-        cancelBtn.setForeground(new Color(204, 204, 204));
-        cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        cancelBtn.setFocusPainted(false);
-        cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        cancelBtn.addActionListener(e -> subModal.setVisible(false));
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setText(current);
+        input.setHint("aaaa-mm-dd");
+        layout.addView(input);
 
-        JButton saveBtn = new JButton("Salvar");
-        saveBtn.setBackground(new Color(26, 58, 26));
-        saveBtn.setForeground(new Color(139, 195, 74));
-        saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-        saveBtn.setFocusPainted(false);
-        saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        saveBtn.addActionListener(e -> {
-            String val = dateField.getText().trim();
+        builder.setView(layout);
+        builder.setPositiveButton("Salvar", (dialog, which) -> {
+            String val = input.getText().toString().trim();
             if (val.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Selecione uma data válida.");
+                Toast.makeText(this, "Selecione uma data válida.", Toast.LENGTH_SHORT).show();
                 return;
             }
             try {
                 configData.getJSONObject("academia").put("inicio", val);
                 salvarDados();
-                subModal.setVisible(false);
                 renderDados();
             } catch (JSONException ex) {}
         });
-
-        btnRow.add(cancelBtn);
-        btnRow.add(saveBtn);
-        subModalBox.add(btnRow);
-
-        subModal.pack();
-        subModal.setLocationRelativeTo(this);
-        subModal.setVisible(true);
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
     }
 
     private void mostrarEditarIntervalo() {
-        subModalBox.removeAll();
-        JLabel title = new JLabel("Intervalo para Pesagem");
-        title.setForeground(new Color(170, 170, 170));
-        title.setFont(new Font("Arial", Font.PLAIN, 16));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(title);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Intervalo para Pesagem");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
         int current = 7;
         try {
             current = configData.getJSONObject("academia").getJSONObject("peso").getInt("intervalo");
         } catch (JSONException e) {}
-        JTextField field = new JTextField(String.valueOf(current));
-        field.setMaximumSize(new Dimension(200, 30));
-        field.setBackground(new Color(10, 10, 10));
-        field.setForeground(new Color(221, 221, 221));
-        field.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        field.setHorizontalAlignment(JTextField.CENTER);
-        field.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(field);
 
-        JLabel note = new JLabel("A cada quantos dias você deve pesar?");
-        note.setForeground(new Color(102, 102, 102));
-        note.setFont(new Font("Arial", Font.PLAIN, 11));
-        note.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(note);
-        subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        input.setText(String.valueOf(current));
+        layout.addView(input);
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        btnRow.setOpaque(false);
-        JButton cancelBtn = new JButton("Cancelar");
-        cancelBtn.setBackground(new Color(42, 42, 42));
-        cancelBtn.setForeground(new Color(204, 204, 204));
-        cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        cancelBtn.setFocusPainted(false);
-        cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        cancelBtn.addActionListener(e -> subModal.setVisible(false));
+        TextView note = new TextView(this);
+        note.setText("A cada quantos dias você deve pesar?");
+        note.setTextColor(Color.parseColor("#666666"));
+        note.setTextSize(11);
+        layout.addView(note);
 
-        JButton saveBtn = new JButton("Salvar");
-        saveBtn.setBackground(new Color(26, 58, 26));
-        saveBtn.setForeground(new Color(139, 195, 74));
-        saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-        saveBtn.setFocusPainted(false);
-        saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        saveBtn.addActionListener(e -> {
+        builder.setView(layout);
+        builder.setPositiveButton("Salvar", (dialog, which) -> {
             try {
-                int val = Integer.parseInt(field.getText().trim());
+                int val = Integer.parseInt(input.getText().toString());
                 if (val < 1) throw new NumberFormatException();
                 configData.getJSONObject("academia").getJSONObject("peso").put("intervalo", val);
                 salvarDados();
-                subModal.setVisible(false);
                 renderDados();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, "Valor inválido.");
+                Toast.makeText(this, "Valor inválido.", Toast.LENGTH_SHORT).show();
             }
         });
-
-        btnRow.add(cancelBtn);
-        btnRow.add(saveBtn);
-        subModalBox.add(btnRow);
-
-        subModal.pack();
-        subModal.setLocationRelativeTo(this);
-        subModal.setVisible(true);
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
     }
 
     private void mostrarRegistrarPeso() {
-        subModalBox.removeAll();
-        JLabel title = new JLabel("Registrar Peso");
-        title.setForeground(new Color(170, 170, 170));
-        title.setFont(new Font("Arial", Font.PLAIN, 16));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(title);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Registrar Peso");
 
-        JLabel pesoLabel = new JLabel("Peso (kg)");
-        pesoLabel.setForeground(new Color(136, 136, 136));
-        pesoLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        pesoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(pesoLabel);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
-        JTextField pesoField = new JTextField(10);
-        pesoField.setMaximumSize(new Dimension(200, 30));
-        pesoField.setBackground(new Color(10, 10, 10));
-        pesoField.setForeground(new Color(221, 221, 221));
-        pesoField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        pesoField.setHorizontalAlignment(JTextField.CENTER);
-        pesoField.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(pesoField);
+        TextView pesoLabel = new TextView(this);
+        pesoLabel.setText("Peso (kg)");
+        pesoLabel.setTextColor(Color.parseColor("#888888"));
+        pesoLabel.setTextSize(12);
+        layout.addView(pesoLabel);
 
-        JLabel metaLabel = new JLabel("Meta (opcional)");
-        metaLabel.setForeground(new Color(136, 136, 136));
-        metaLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        metaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(metaLabel);
+        final EditText pesoInput = new EditText(this);
+        pesoInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        layout.addView(pesoInput);
+
+        TextView metaLabel = new TextView(this);
+        metaLabel.setText("Meta (opcional)");
+        metaLabel.setTextColor(Color.parseColor("#888888"));
+        metaLabel.setTextSize(12);
+        layout.addView(metaLabel);
 
         double currentMeta = 0;
         try {
             currentMeta = configData.getJSONObject("academia").getJSONObject("peso").isNull("meta") ? 0 : configData.getJSONObject("academia").getJSONObject("peso").getDouble("meta");
         } catch (JSONException e) {}
-        JTextField metaField = new JTextField(currentMeta > 0 ? String.valueOf(currentMeta) : "");
-        metaField.setMaximumSize(new Dimension(200, 30));
-        metaField.setBackground(new Color(10, 10, 10));
-        metaField.setForeground(new Color(221, 221, 221));
-        metaField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        metaField.setHorizontalAlignment(JTextField.CENTER);
-        metaField.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(metaField);
-        subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        btnRow.setOpaque(false);
-        JButton cancelBtn = new JButton("Cancelar");
-        cancelBtn.setBackground(new Color(42, 42, 42));
-        cancelBtn.setForeground(new Color(204, 204, 204));
-        cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        cancelBtn.setFocusPainted(false);
-        cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        cancelBtn.addActionListener(e -> subModal.setVisible(false));
+        final EditText metaInput = new EditText(this);
+        metaInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        metaInput.setText(currentMeta > 0 ? String.valueOf(currentMeta) : "");
+        layout.addView(metaInput);
 
-        JButton saveBtn = new JButton("Salvar");
-        saveBtn.setBackground(new Color(26, 58, 26));
-        saveBtn.setForeground(new Color(139, 195, 74));
-        saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-        saveBtn.setFocusPainted(false);
-        saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        saveBtn.addActionListener(e -> {
+        builder.setView(layout);
+        builder.setPositiveButton("Salvar", (dialog, which) -> {
             try {
-                double peso = Double.parseDouble(pesoField.getText().trim());
+                double peso = Double.parseDouble(pesoInput.getText().toString());
                 if (peso <= 0) throw new NumberFormatException();
-                String hoje = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                String hoje = sdf.format(new Date());
                 JSONObject pesoObj = configData.getJSONObject("academia").getJSONObject("peso");
                 JSONArray historico = pesoObj.getJSONArray("historico");
                 JSONObject novo = new JSONObject();
@@ -2527,301 +2362,111 @@ public class AcademiaApp extends JFrame {
                 novo.put("data", hoje);
                 historico.put(novo);
                 pesoObj.put("atual", peso);
-                pesoObj.put("ultimoRegistro", LocalDateTime.now().toString());
+                SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                pesoObj.put("ultimoRegistro", sdf2.format(new Date()));
 
-                String metaStr = metaField.getText().trim();
+                String metaStr = metaInput.getText().toString().trim();
                 if (!metaStr.isEmpty()) {
                     double meta = Double.parseDouble(metaStr);
                     if (meta > 0) pesoObj.put("meta", meta);
                 }
 
                 salvarDados();
-                subModal.setVisible(false);
                 renderDados();
                 if (treinoAtual != null) renderTreinoCard();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, "Peso inválido.");
+                Toast.makeText(this, "Peso inválido.", Toast.LENGTH_SHORT).show();
             }
         });
-
-        btnRow.add(cancelBtn);
-        btnRow.add(saveBtn);
-        subModalBox.add(btnRow);
-
-        subModal.pack();
-        subModal.setLocationRelativeTo(this);
-        subModal.setVisible(true);
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
     }
 
     private void mostrarHistoricoPeso() {
-        subModalBox.removeAll();
-        JLabel title = new JLabel("Histórico de Peso");
-        title.setForeground(new Color(170, 170, 170));
-        title.setFont(new Font("Arial", Font.PLAIN, 16));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(title);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Histórico de Peso");
 
-        JPanel listPanel = new JPanel();
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-        listPanel.setOpaque(false);
-        JScrollPane scroll = new JScrollPane(listPanel);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        scroll.setMaximumSize(new Dimension(380, 200));
-        scroll.setPreferredSize(new Dimension(380, 200));
-        scroll.setBorder(BorderFactory.createLineBorder(new Color(26, 26, 26)));
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
         try {
             JSONArray historico = configData.getJSONObject("academia").getJSONObject("peso").getJSONArray("historico");
-            for (int i = 0; i < historico.length(); i++) {
-                JSONObject item = historico.getJSONObject(i);
-                JPanel entry = new JPanel(new BorderLayout());
-                entry.setOpaque(false);
-                entry.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(26, 26, 26)),
-                    BorderFactory.createEmptyBorder(3, 6, 3, 6)
-                ));
-                JLabel info = new JLabel(item.getDouble("peso") + " kg (" + item.getString("data") + ")");
-                info.setForeground(new Color(187, 187, 187));
-                info.setFont(new Font("Arial", Font.PLAIN, 12));
-                entry.add(info, BorderLayout.WEST);
+            if (historico.length() == 0) {
+                TextView empty = new TextView(this);
+                empty.setText("Nenhum registro.");
+                empty.setTextColor(Color.parseColor("#666666"));
+                empty.setTextSize(11);
+                layout.addView(empty);
+            } else {
+                for (int i = 0; i < historico.length(); i++) {
+                    JSONObject item = historico.getJSONObject(i);
+                    LinearLayout entry = new LinearLayout(this);
+                    entry.setOrientation(LinearLayout.HORIZONTAL);
+                    entry.setPadding(0, dpToPx(3), 0, dpToPx(3));
 
-                JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
-                actions.setOpaque(false);
-                int idx = i;
-                JButton editBtn = new JButton("✎");
-                editBtn.setForeground(new Color(136, 170, 255));
-                editBtn.setBackground(null);
-                editBtn.setBorder(null);
-                editBtn.setFocusPainted(false);
-                editBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                editBtn.addActionListener(e -> mostrarEditarPeso(idx));
-                actions.add(editBtn);
+                    TextView info = new TextView(this);
+                    info.setText(item.getDouble("peso") + " kg (" + item.getString("data") + ")");
+                    info.setTextColor(Color.parseColor("#bbbbbb"));
+                    info.setTextSize(12);
+                    entry.addView(info);
 
-                JButton delBtn = new JButton("✕");
-                delBtn.setForeground(new Color(255, 102, 102));
-                delBtn.setBackground(null);
-                delBtn.setBorder(null);
-                delBtn.setFocusPainted(false);
-                delBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                delBtn.addActionListener(e -> {
-                    mostrarConfirmacao("Excluir Registro", "Tem certeza que deseja excluir este registro?", () -> {
-                        try {
-                            JSONArray hist = configData.getJSONObject("academia").getJSONObject("peso").getJSONArray("historico");
-                            hist.remove(idx);
-                            if (hist.length() > 0) {
-                                JSONObject last = hist.getJSONObject(hist.length() - 1);
-                                configData.getJSONObject("academia").getJSONObject("peso").put("atual", last.getDouble("peso"));
-                            } else {
-                                configData.getJSONObject("academia").getJSONObject("peso").put("atual", JSONObject.NULL);
-                            }
-                            salvarDados();
-                            subModal.setVisible(false);
-                            renderDados();
-                        } catch (JSONException ex) {}
+                    final int idx = i;
+                    Button delBtn = new Button(this);
+                    delBtn.setText("✕");
+                    delBtn.setTextColor(Color.parseColor("#ff6666"));
+                    delBtn.setBackground(null);
+                    delBtn.setOnClickListener(v -> {
+                        mostrarConfirmacao("Excluir Registro", "Tem certeza que deseja excluir este registro?", () -> {
+                            try {
+                                JSONArray hist = configData.getJSONObject("academia").getJSONObject("peso").getJSONArray("historico");
+                                hist.remove(idx);
+                                if (hist.length() > 0) {
+                                    JSONObject last = hist.getJSONObject(hist.length() - 1);
+                                    configData.getJSONObject("academia").getJSONObject("peso").put("atual", last.getDouble("peso"));
+                                } else {
+                                    configData.getJSONObject("academia").getJSONObject("peso").put("atual", JSONObject.NULL);
+                                }
+                                salvarDados();
+                                renderDados();
+                            } catch (JSONException ex) {}
+                        });
                     });
-                });
-                actions.add(delBtn);
-                entry.add(actions, BorderLayout.EAST);
+                    entry.addView(delBtn);
 
-                listPanel.add(entry);
+                    layout.addView(entry);
+                }
             }
         } catch (JSONException e) {}
 
-        if (listPanel.getComponentCount() == 0) {
-            JLabel empty = new JLabel("Nenhum registro.");
-            empty.setForeground(new Color(102, 102, 102));
-            empty.setFont(new Font("Arial", Font.PLAIN, 11));
-            empty.setAlignmentX(Component.CENTER_ALIGNMENT);
-            listPanel.add(empty);
-        }
-
-        subModalBox.add(scroll);
-
-        JButton delAllBtn = new JButton("Excluir Todo Histórico");
-        delAllBtn.setBackground(new Color(58, 26, 26));
-        delAllBtn.setForeground(new Color(255, 102, 102));
-        delAllBtn.setBorder(BorderFactory.createLineBorder(new Color(90, 42, 42)));
-        delAllBtn.setFocusPainted(false);
-        delAllBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        delAllBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-        delAllBtn.addActionListener(e -> {
-            mostrarConfirmacao("Excluir Histórico", "Tem certeza que deseja excluir todo o histórico de peso?", () -> {
-                try {
-                    JSONArray hist = new JSONArray();
-                    configData.getJSONObject("academia").getJSONObject("peso").put("historico", hist);
-                    configData.getJSONObject("academia").getJSONObject("peso").put("atual", JSONObject.NULL);
-                    configData.getJSONObject("academia").getJSONObject("peso").put("ultimoRegistro", JSONObject.NULL);
-                    salvarDados();
-                    subModal.setVisible(false);
-                    renderDados();
-                } catch (JSONException ex) {}
-            });
-        });
-        subModalBox.add(delAllBtn);
-        subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        btnRow.setOpaque(false);
-        JButton closeBtn = new JButton("Fechar");
-        closeBtn.setBackground(new Color(42, 42, 42));
-        closeBtn.setForeground(new Color(204, 204, 204));
-        closeBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        closeBtn.setFocusPainted(false);
-        closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        closeBtn.addActionListener(e -> subModal.setVisible(false));
-        btnRow.add(closeBtn);
-        subModalBox.add(btnRow);
-
-        subModal.pack();
-        subModal.setLocationRelativeTo(this);
-        subModal.setVisible(true);
-    }
-
-    private void mostrarEditarPeso(int idx) {
-        try {
-            JSONArray historico = configData.getJSONObject("academia").getJSONObject("peso").getJSONArray("historico");
-            JSONObject item = historico.getJSONObject(idx);
-
-            subModalBox.removeAll();
-            JLabel title = new JLabel("Editar Registro");
-            title.setForeground(new Color(170, 170, 170));
-            title.setFont(new Font("Arial", Font.PLAIN, 16));
-            title.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(title);
-
-            JLabel pesoLabel = new JLabel("Peso (kg)");
-            pesoLabel.setForeground(new Color(136, 136, 136));
-            pesoLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            pesoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(pesoLabel);
-
-            JTextField pesoField = new JTextField(String.valueOf(item.getDouble("peso")));
-            pesoField.setMaximumSize(new Dimension(200, 30));
-            pesoField.setBackground(new Color(10, 10, 10));
-            pesoField.setForeground(new Color(221, 221, 221));
-            pesoField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            pesoField.setHorizontalAlignment(JTextField.CENTER);
-            pesoField.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(pesoField);
-
-            JLabel dataLabel = new JLabel("Data");
-            dataLabel.setForeground(new Color(136, 136, 136));
-            dataLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            dataLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(dataLabel);
-
-            JTextField dataField = new JTextField(item.getString("data"));
-            dataField.setMaximumSize(new Dimension(200, 30));
-            dataField.setBackground(new Color(10, 10, 10));
-            dataField.setForeground(new Color(221, 221, 221));
-            dataField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            dataField.setHorizontalAlignment(JTextField.CENTER);
-            dataField.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(dataField);
-            subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
-
-            JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-            btnRow.setOpaque(false);
-            JButton cancelBtn = new JButton("Cancelar");
-            cancelBtn.setBackground(new Color(42, 42, 42));
-            cancelBtn.setForeground(new Color(204, 204, 204));
-            cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-            cancelBtn.setFocusPainted(false);
-            cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            cancelBtn.addActionListener(e -> subModal.setVisible(false));
-
-            JButton saveBtn = new JButton("Salvar");
-            saveBtn.setBackground(new Color(26, 58, 26));
-            saveBtn.setForeground(new Color(139, 195, 74));
-            saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            saveBtn.setFocusPainted(false);
-            saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            saveBtn.addActionListener(e -> {
-                try {
-                    double peso = Double.parseDouble(pesoField.getText().trim());
-                    String data = dataField.getText().trim();
-                    if (peso <= 0 || data.isEmpty()) throw new NumberFormatException();
-                    JSONArray hist = configData.getJSONObject("academia").getJSONObject("peso").getJSONArray("historico");
-                    JSONObject updated = hist.getJSONObject(idx);
-                    updated.put("peso", peso);
-                    updated.put("data", data);
-                    if (idx == hist.length() - 1) {
-                        configData.getJSONObject("academia").getJSONObject("peso").put("atual", peso);
-                    }
-                    salvarDados();
-                    subModal.setVisible(false);
-                    renderDados();
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(null, "Valores inválidos.");
-                }
-            });
-
-            btnRow.add(cancelBtn);
-            btnRow.add(saveBtn);
-            subModalBox.add(btnRow);
-
-            subModal.pack();
-            subModal.setLocationRelativeTo(this);
-            subModal.setVisible(true);
-        } catch (JSONException e) {}
+        builder.setView(layout);
+        builder.setPositiveButton("Fechar", null);
+        builder.show();
     }
 
     private void mostrarAdicionarObjetivo() {
-        subModalBox.removeAll();
-        JLabel title = new JLabel("Novo Objetivo");
-        title.setForeground(new Color(170, 170, 170));
-        title.setFont(new Font("Arial", Font.PLAIN, 16));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(title);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Novo Objetivo");
 
-        JTextField field = new JTextField(20);
-        field.setMaximumSize(new Dimension(300, 30));
-        field.setBackground(new Color(10, 10, 10));
-        field.setForeground(new Color(221, 221, 221));
-        field.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        field.setHorizontalAlignment(JTextField.CENTER);
-        field.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(field);
-        subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setHint("Digite o objetivo");
+        builder.setView(input);
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        btnRow.setOpaque(false);
-        JButton cancelBtn = new JButton("Cancelar");
-        cancelBtn.setBackground(new Color(42, 42, 42));
-        cancelBtn.setForeground(new Color(204, 204, 204));
-        cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        cancelBtn.setFocusPainted(false);
-        cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        cancelBtn.addActionListener(e -> subModal.setVisible(false));
-
-        JButton saveBtn = new JButton("Salvar");
-        saveBtn.setBackground(new Color(26, 58, 26));
-        saveBtn.setForeground(new Color(139, 195, 74));
-        saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-        saveBtn.setFocusPainted(false);
-        saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        saveBtn.addActionListener(e -> {
-            String val = field.getText().trim();
+        builder.setPositiveButton("Salvar", (dialog, which) -> {
+            String val = input.getText().toString().trim();
             if (val.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Digite um objetivo.");
+                Toast.makeText(this, "Digite um objetivo.", Toast.LENGTH_SHORT).show();
                 return;
             }
             try {
                 configData.getJSONObject("academia").getJSONArray("objetivos").put(val);
                 salvarDados();
-                subModal.setVisible(false);
                 renderDados();
             } catch (JSONException ex) {}
         });
-
-        btnRow.add(cancelBtn);
-        btnRow.add(saveBtn);
-        subModalBox.add(btnRow);
-
-        subModal.pack();
-        subModal.setLocationRelativeTo(this);
-        subModal.setVisible(true);
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
     }
 
     private void mostrarEditarObjetivo(int idx) {
@@ -2829,165 +2474,104 @@ public class AcademiaApp extends JFrame {
             JSONArray objetivos = configData.getJSONObject("academia").getJSONArray("objetivos");
             String current = objetivos.getString(idx);
 
-            subModalBox.removeAll();
-            JLabel title = new JLabel("Editar Objetivo");
-            title.setForeground(new Color(170, 170, 170));
-            title.setFont(new Font("Arial", Font.PLAIN, 16));
-            title.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(title);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Editar Objetivo");
 
-            JTextField field = new JTextField(current);
-            field.setMaximumSize(new Dimension(300, 30));
-            field.setBackground(new Color(10, 10, 10));
-            field.setForeground(new Color(221, 221, 221));
-            field.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            field.setHorizontalAlignment(JTextField.CENTER);
-            field.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(field);
-            subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
+            final EditText input = new EditText(this);
+            input.setInputType(InputType.TYPE_CLASS_TEXT);
+            input.setText(current);
+            builder.setView(input);
 
-            JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-            btnRow.setOpaque(false);
-            JButton cancelBtn = new JButton("Cancelar");
-            cancelBtn.setBackground(new Color(42, 42, 42));
-            cancelBtn.setForeground(new Color(204, 204, 204));
-            cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-            cancelBtn.setFocusPainted(false);
-            cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            cancelBtn.addActionListener(e -> subModal.setVisible(false));
-
-            JButton saveBtn = new JButton("Salvar");
-            saveBtn.setBackground(new Color(26, 58, 26));
-            saveBtn.setForeground(new Color(139, 195, 74));
-            saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            saveBtn.setFocusPainted(false);
-            saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            saveBtn.addActionListener(e -> {
-                String val = field.getText().trim();
+            builder.setPositiveButton("Salvar", (dialog, which) -> {
+                String val = input.getText().toString().trim();
                 if (val.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "Digite um objetivo.");
+                    Toast.makeText(this, "Digite um objetivo.", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 try {
                     JSONArray objs = configData.getJSONObject("academia").getJSONArray("objetivos");
                     objs.put(idx, val);
                     salvarDados();
-                    subModal.setVisible(false);
                     renderDados();
                 } catch (JSONException ex) {}
             });
-
-            btnRow.add(cancelBtn);
-            btnRow.add(saveBtn);
-            subModalBox.add(btnRow);
-
-            subModal.pack();
-            subModal.setLocationRelativeTo(this);
-            subModal.setVisible(true);
+            builder.setNegativeButton("Cancelar", null);
+            builder.show();
         } catch (JSONException e) {}
     }
 
     private void mostrarAdicionarTreino() {
-        subModalBox.removeAll();
-        JLabel title = new JLabel("Novo Treino");
-        title.setForeground(new Color(170, 170, 170));
-        title.setFont(new Font("Arial", Font.PLAIN, 16));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(title);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Novo Treino");
 
-        JLabel nomeLabel = new JLabel("Nome");
-        nomeLabel.setForeground(new Color(136, 136, 136));
-        nomeLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        nomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(nomeLabel);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
-        JTextField nomeField = new JTextField(20);
-        nomeField.setMaximumSize(new Dimension(300, 30));
-        nomeField.setBackground(new Color(10, 10, 10));
-        nomeField.setForeground(new Color(221, 221, 221));
-        nomeField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        nomeField.setHorizontalAlignment(JTextField.CENTER);
-        nomeField.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(nomeField);
+        TextView nomeLabel = new TextView(this);
+        nomeLabel.setText("Nome");
+        nomeLabel.setTextColor(Color.parseColor("#888888"));
+        nomeLabel.setTextSize(12);
+        layout.addView(nomeLabel);
 
-        JLabel diaLabel = new JLabel("Dia *");
-        diaLabel.setForeground(new Color(136, 136, 136));
-        diaLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        diaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(diaLabel);
+        final EditText nomeInput = new EditText(this);
+        nomeInput.setInputType(InputType.TYPE_CLASS_TEXT);
+        nomeInput.setHint("Nome do treino");
+        layout.addView(nomeInput);
 
-        JComboBox<String> diaCombo = new JComboBox<>();
-        diaCombo.addItem("");
-        for (String d : DIAS_SEMANA) diaCombo.addItem(d);
-        diaCombo.setMaximumSize(new Dimension(300, 30));
-        diaCombo.setBackground(new Color(10, 10, 10));
-        diaCombo.setForeground(new Color(221, 221, 221));
-        diaCombo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(diaCombo);
+        TextView diaLabel = new TextView(this);
+        diaLabel.setText("Dia *");
+        diaLabel.setTextColor(Color.parseColor("#888888"));
+        diaLabel.setTextSize(12);
+        layout.addView(diaLabel);
 
-        JLabel objLabel = new JLabel("Objetivo (opcional)");
-        objLabel.setForeground(new Color(136, 136, 136));
-        objLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        objLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(objLabel);
+        final Spinner diaSpinner = new Spinner(this);
+        ArrayAdapter<String> diaAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+        diaAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        diaAdapter.add("Selecione um dia");
+        for (String d : DIAS_SEMANA) diaAdapter.add(d);
+        diaSpinner.setAdapter(diaAdapter);
+        layout.addView(diaSpinner);
 
-        JComboBox<String> objCombo = new JComboBox<>();
-        objCombo.addItem("");
+        TextView objLabel = new TextView(this);
+        objLabel.setText("Objetivo (opcional)");
+        objLabel.setTextColor(Color.parseColor("#888888"));
+        objLabel.setTextSize(12);
+        layout.addView(objLabel);
+
+        final Spinner objSpinner = new Spinner(this);
+        ArrayAdapter<String> objAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+        objAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        objAdapter.add("Nenhum");
         try {
             JSONArray objetivos = configData.getJSONObject("academia").getJSONArray("objetivos");
-            for (int i = 0; i < objetivos.length(); i++) objCombo.addItem(objetivos.getString(i));
+            for (int i = 0; i < objetivos.length(); i++) objAdapter.add(objetivos.getString(i));
         } catch (JSONException e) {}
-        objCombo.setMaximumSize(new Dimension(300, 30));
-        objCombo.setBackground(new Color(10, 10, 10));
-        objCombo.setForeground(new Color(221, 221, 221));
-        objCombo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(objCombo);
-        subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
+        objSpinner.setAdapter(objAdapter);
+        layout.addView(objSpinner);
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        btnRow.setOpaque(false);
-        JButton cancelBtn = new JButton("Cancelar");
-        cancelBtn.setBackground(new Color(42, 42, 42));
-        cancelBtn.setForeground(new Color(204, 204, 204));
-        cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        cancelBtn.setFocusPainted(false);
-        cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        cancelBtn.addActionListener(e -> subModal.setVisible(false));
-
-        JButton saveBtn = new JButton("Salvar");
-        saveBtn.setBackground(new Color(26, 58, 26));
-        saveBtn.setForeground(new Color(139, 195, 74));
-        saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-        saveBtn.setFocusPainted(false);
-        saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        saveBtn.addActionListener(e -> {
-            String nome = nomeField.getText().trim();
-            String dia = (String) diaCombo.getSelectedItem();
-            String obj = (String) objCombo.getSelectedItem();
-            if (nome.isEmpty() || dia == null || dia.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Nome e dia são obrigatórios.");
+        builder.setView(layout);
+        builder.setPositiveButton("Salvar", (dialog, which) -> {
+            String nome = nomeInput.getText().toString().trim();
+            String dia = diaSpinner.getSelectedItem().toString();
+            String obj = objSpinner.getSelectedItem().toString();
+            if (nome.isEmpty() || dia.equals("Selecione um dia")) {
+                Toast.makeText(this, "Nome e dia são obrigatórios.", Toast.LENGTH_SHORT).show();
                 return;
             }
             try {
                 JSONObject treino = new JSONObject();
                 treino.put("nome", nome);
                 treino.put("dia", dia);
-                treino.put("objetivo", obj != null && !obj.isEmpty() ? obj : JSONObject.NULL);
+                treino.put("objetivo", obj.equals("Nenhum") ? JSONObject.NULL : obj);
                 treino.put("exercicios", new JSONArray());
                 configData.getJSONObject("academia").getJSONArray("treinos").put(treino);
                 salvarDados();
-                subModal.setVisible(false);
                 renderDados();
             } catch (JSONException ex) {}
         });
-
-        btnRow.add(cancelBtn);
-        btnRow.add(saveBtn);
-        subModalBox.add(btnRow);
-
-        subModal.pack();
-        subModal.setLocationRelativeTo(this);
-        subModal.setVisible(true);
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
     }
 
     private void mostrarEditarTreino(int idx) {
@@ -2995,257 +2579,194 @@ public class AcademiaApp extends JFrame {
             JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
             JSONObject treino = treinos.getJSONObject(idx);
 
-            subModalBox.removeAll();
-            JLabel title = new JLabel("Editar Treino");
-            title.setForeground(new Color(170, 170, 170));
-            title.setFont(new Font("Arial", Font.PLAIN, 16));
-            title.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(title);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Editar Treino");
 
-            JLabel nomeLabel = new JLabel("Nome");
-            nomeLabel.setForeground(new Color(136, 136, 136));
-            nomeLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            nomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(nomeLabel);
+            LinearLayout layout = new LinearLayout(this);
+            layout.setOrientation(LinearLayout.VERTICAL);
+            layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
-            JTextField nomeField = new JTextField(treino.getString("nome"));
-            nomeField.setMaximumSize(new Dimension(300, 30));
-            nomeField.setBackground(new Color(10, 10, 10));
-            nomeField.setForeground(new Color(221, 221, 221));
-            nomeField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            nomeField.setHorizontalAlignment(JTextField.CENTER);
-            nomeField.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(nomeField);
+            TextView nomeLabel = new TextView(this);
+            nomeLabel.setText("Nome");
+            nomeLabel.setTextColor(Color.parseColor("#888888"));
+            nomeLabel.setTextSize(12);
+            layout.addView(nomeLabel);
 
-            JLabel diaLabel = new JLabel("Dia *");
-            diaLabel.setForeground(new Color(136, 136, 136));
-            diaLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            diaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(diaLabel);
+            final EditText nomeInput = new EditText(this);
+            nomeInput.setInputType(InputType.TYPE_CLASS_TEXT);
+            nomeInput.setText(treino.getString("nome"));
+            layout.addView(nomeInput);
 
-            JComboBox<String> diaCombo = new JComboBox<>();
-            diaCombo.addItem("");
-            for (String d : DIAS_SEMANA) diaCombo.addItem(d);
-            diaCombo.setSelectedItem(treino.getString("dia"));
-            diaCombo.setMaximumSize(new Dimension(300, 30));
-            diaCombo.setBackground(new Color(10, 10, 10));
-            diaCombo.setForeground(new Color(221, 221, 221));
-            diaCombo.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(diaCombo);
+            TextView diaLabel = new TextView(this);
+            diaLabel.setText("Dia *");
+            diaLabel.setTextColor(Color.parseColor("#888888"));
+            diaLabel.setTextSize(12);
+            layout.addView(diaLabel);
 
-            JLabel objLabel = new JLabel("Objetivo (opcional)");
-            objLabel.setForeground(new Color(136, 136, 136));
-            objLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            objLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(objLabel);
+            final Spinner diaSpinner = new Spinner(this);
+            ArrayAdapter<String> diaAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+            diaAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            diaAdapter.add("Selecione um dia");
+            for (String d : DIAS_SEMANA) diaAdapter.add(d);
+            diaSpinner.setAdapter(diaAdapter);
+            diaSpinner.setSelection(diaAdapter.getPosition(treino.getString("dia")));
+            layout.addView(diaSpinner);
 
-            JComboBox<String> objCombo = new JComboBox<>();
-            objCombo.addItem("");
+            TextView objLabel = new TextView(this);
+            objLabel.setText("Objetivo (opcional)");
+            objLabel.setTextColor(Color.parseColor("#888888"));
+            objLabel.setTextSize(12);
+            layout.addView(objLabel);
+
+            final Spinner objSpinner = new Spinner(this);
+            ArrayAdapter<String> objAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+            objAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            objAdapter.add("Nenhum");
             try {
                 JSONArray objetivos = configData.getJSONObject("academia").getJSONArray("objetivos");
-                for (int i = 0; i < objetivos.length(); i++) objCombo.addItem(objetivos.getString(i));
+                for (int i = 0; i < objetivos.length(); i++) objAdapter.add(objetivos.getString(i));
             } catch (JSONException e) {}
+            objSpinner.setAdapter(objAdapter);
             if (treino.has("objetivo") && !treino.isNull("objetivo")) {
-                objCombo.setSelectedItem(treino.getString("objetivo"));
+                objSpinner.setSelection(objAdapter.getPosition(treino.getString("objetivo")));
             }
-            objCombo.setMaximumSize(new Dimension(300, 30));
-            objCombo.setBackground(new Color(10, 10, 10));
-            objCombo.setForeground(new Color(221, 221, 221));
-            objCombo.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(objCombo);
-            subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
+            layout.addView(objSpinner);
 
-            JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-            btnRow.setOpaque(false);
-            JButton cancelBtn = new JButton("Cancelar");
-            cancelBtn.setBackground(new Color(42, 42, 42));
-            cancelBtn.setForeground(new Color(204, 204, 204));
-            cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-            cancelBtn.setFocusPainted(false);
-            cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            cancelBtn.addActionListener(e -> subModal.setVisible(false));
-
-            JButton saveBtn = new JButton("Salvar");
-            saveBtn.setBackground(new Color(26, 58, 26));
-            saveBtn.setForeground(new Color(139, 195, 74));
-            saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            saveBtn.setFocusPainted(false);
-            saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            saveBtn.addActionListener(e -> {
-                String nome = nomeField.getText().trim();
-                String dia = (String) diaCombo.getSelectedItem();
-                String obj = (String) objCombo.getSelectedItem();
-                if (nome.isEmpty() || dia == null || dia.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "Nome e dia são obrigatórios.");
+            builder.setView(layout);
+            builder.setPositiveButton("Salvar", (dialog, which) -> {
+                String nome = nomeInput.getText().toString().trim();
+                String dia = diaSpinner.getSelectedItem().toString();
+                String obj = objSpinner.getSelectedItem().toString();
+                if (nome.isEmpty() || dia.equals("Selecione um dia")) {
+                    Toast.makeText(this, "Nome e dia são obrigatórios.", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 try {
                     treino.put("nome", nome);
                     treino.put("dia", dia);
-                    treino.put("objetivo", obj != null && !obj.isEmpty() ? obj : JSONObject.NULL);
+                    treino.put("objetivo", obj.equals("Nenhum") ? JSONObject.NULL : obj);
                     salvarDados();
-                    subModal.setVisible(false);
                     renderDados();
                 } catch (JSONException ex) {}
             });
-
-            btnRow.add(cancelBtn);
-            btnRow.add(saveBtn);
-            subModalBox.add(btnRow);
-
-            subModal.pack();
-            subModal.setLocationRelativeTo(this);
-            subModal.setVisible(true);
+            builder.setNegativeButton("Cancelar", null);
+            builder.show();
         } catch (JSONException e) {}
     }
 
     private void mostrarAdicionarExercicio(int treinoIdx) {
-        subModalBox.removeAll();
-        JLabel title = new JLabel("Adicionar Exercício");
-        title.setForeground(new Color(170, 170, 170));
-        title.setFont(new Font("Arial", Font.PLAIN, 16));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(title);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Adicionar Exercício");
 
-        JLabel exLabel = new JLabel("Exercício *");
-        exLabel.setForeground(new Color(136, 136, 136));
-        exLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        exLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(exLabel);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
-        JTextField exField = new JTextField(20);
-        exField.setMaximumSize(new Dimension(300, 30));
-        exField.setBackground(new Color(10, 10, 10));
-        exField.setForeground(new Color(221, 221, 221));
-        exField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        exField.setHorizontalAlignment(JTextField.CENTER);
-        exField.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(exField);
+        TextView exLabel = new TextView(this);
+        exLabel.setText("Exercício *");
+        exLabel.setTextColor(Color.parseColor("#888888"));
+        exLabel.setTextSize(12);
+        layout.addView(exLabel);
 
-        JPanel formRow = new JPanel(new GridLayout(1, 3, 6, 0));
-        formRow.setOpaque(false);
-        formRow.setMaximumSize(new Dimension(300, 30));
+        final EditText exInput = new EditText(this);
+        exInput.setInputType(InputType.TYPE_CLASS_TEXT);
+        exInput.setHint("Ex: Supino");
+        layout.addView(exInput);
 
-        JPanel setPanel = new JPanel();
-        setPanel.setLayout(new BoxLayout(setPanel, BoxLayout.Y_AXIS));
-        setPanel.setOpaque(false);
-        JLabel setLabel = new JLabel("Séries *");
-        setLabel.setForeground(new Color(136, 136, 136));
-        setLabel.setFont(new Font("Arial", Font.PLAIN, 10));
-        setLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        setPanel.add(setLabel);
-        JTextField setField = new JTextField("3");
-        setField.setBackground(new Color(10, 10, 10));
-        setField.setForeground(new Color(221, 221, 221));
-        setField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        setField.setHorizontalAlignment(JTextField.CENTER);
-        setPanel.add(setField);
-        formRow.add(setPanel);
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
 
-        JPanel repPanel = new JPanel();
-        repPanel.setLayout(new BoxLayout(repPanel, BoxLayout.Y_AXIS));
-        repPanel.setOpaque(false);
-        JLabel repLabel = new JLabel("Repetições *");
-        repLabel.setForeground(new Color(136, 136, 136));
-        repLabel.setFont(new Font("Arial", Font.PLAIN, 10));
-        repLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        repPanel.add(repLabel);
-        JTextField repField = new JTextField("10");
-        repField.setBackground(new Color(10, 10, 10));
-        repField.setForeground(new Color(221, 221, 221));
-        repField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        repField.setHorizontalAlignment(JTextField.CENTER);
-        repPanel.add(repField);
-        formRow.add(repPanel);
+        LinearLayout setPanel = new LinearLayout(this);
+        setPanel.setOrientation(LinearLayout.VERTICAL);
+        TextView setLabel = new TextView(this);
+        setLabel.setText("Séries *");
+        setLabel.setTextColor(Color.parseColor("#888888"));
+        setLabel.setTextSize(10);
+        setPanel.addView(setLabel);
+        final EditText setInput = new EditText(this);
+        setInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        setInput.setText("3");
+        setPanel.addView(setInput);
+        row1.addView(setPanel);
 
-        JPanel loadPanel = new JPanel();
-        loadPanel.setLayout(new BoxLayout(loadPanel, BoxLayout.Y_AXIS));
-        loadPanel.setOpaque(false);
-        JLabel loadLabel = new JLabel("Carga (kg) *");
-        loadLabel.setForeground(new Color(136, 136, 136));
-        loadLabel.setFont(new Font("Arial", Font.PLAIN, 10));
-        loadLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        loadPanel.add(loadLabel);
-        JTextField loadField = new JTextField("20");
-        loadField.setBackground(new Color(10, 10, 10));
-        loadField.setForeground(new Color(221, 221, 221));
-        loadField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        loadField.setHorizontalAlignment(JTextField.CENTER);
-        loadPanel.add(loadField);
-        formRow.add(loadPanel);
+        LinearLayout repPanel = new LinearLayout(this);
+        repPanel.setOrientation(LinearLayout.VERTICAL);
+        TextView repLabel = new TextView(this);
+        repLabel.setText("Repetições *");
+        repLabel.setTextColor(Color.parseColor("#888888"));
+        repLabel.setTextSize(10);
+        repPanel.addView(repLabel);
+        final EditText repInput = new EditText(this);
+        repInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        repInput.setText("10");
+        repPanel.addView(repInput);
+        row1.addView(repPanel);
 
-        subModalBox.add(formRow);
+        LinearLayout loadPanel = new LinearLayout(this);
+        loadPanel.setOrientation(LinearLayout.VERTICAL);
+        TextView loadLabel = new TextView(this);
+        loadLabel.setText("Carga (kg) *");
+        loadLabel.setTextColor(Color.parseColor("#888888"));
+        loadLabel.setTextSize(10);
+        loadPanel.addView(loadLabel);
+        final EditText loadInput = new EditText(this);
+        loadInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        loadInput.setText("20");
+        loadPanel.addView(loadInput);
+        row1.addView(loadPanel);
 
-        JLabel metaLabel = new JLabel("Meta de Carga (kg, opcional)");
-        metaLabel.setForeground(new Color(136, 136, 136));
-        metaLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        metaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(metaLabel);
+        layout.addView(row1);
 
-        JTextField metaField = new JTextField(20);
-        metaField.setMaximumSize(new Dimension(300, 30));
-        metaField.setBackground(new Color(10, 10, 10));
-        metaField.setForeground(new Color(221, 221, 221));
-        metaField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        metaField.setHorizontalAlignment(JTextField.CENTER);
-        metaField.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(metaField);
+        TextView metaLabel = new TextView(this);
+        metaLabel.setText("Meta de Carga (kg, opcional)");
+        metaLabel.setTextColor(Color.parseColor("#888888"));
+        metaLabel.setTextSize(12);
+        layout.addView(metaLabel);
 
-        JLabel descLabel = new JLabel("Descanso entre séries (opcional)");
-        descLabel.setForeground(new Color(136, 136, 136));
-        descLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(descLabel);
+        final EditText metaInput = new EditText(this);
+        metaInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        metaInput.setHint("Ex: 30");
+        layout.addView(metaInput);
 
-        JPanel descPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
-        descPanel.setOpaque(false);
-        JTextField descMinField = new JTextField(3);
-        descMinField.setPreferredSize(new Dimension(50, 25));
-        descMinField.setBackground(new Color(10, 10, 10));
-        descMinField.setForeground(new Color(221, 221, 221));
-        descMinField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        descMinField.setHorizontalAlignment(JTextField.CENTER);
-        descPanel.add(descMinField);
-        descPanel.add(new JLabel(":"));
-        JTextField descSecField = new JTextField(3);
-        descSecField.setPreferredSize(new Dimension(50, 25));
-        descSecField.setBackground(new Color(10, 10, 10));
-        descSecField.setForeground(new Color(221, 221, 221));
-        descSecField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        descSecField.setHorizontalAlignment(JTextField.CENTER);
-        descPanel.add(descSecField);
-        subModalBox.add(descPanel);
+        TextView descLabel = new TextView(this);
+        descLabel.setText("Descanso entre séries (opcional)");
+        descLabel.setTextColor(Color.parseColor("#888888"));
+        descLabel.setTextSize(12);
+        layout.addView(descLabel);
 
-        JCheckBox warmupCheck = new JCheckBox("Série de aquecimento");
-        warmupCheck.setForeground(new Color(170, 170, 170));
-        warmupCheck.setBackground(new Color(13, 13, 13));
-        warmupCheck.setFocusPainted(false);
-        warmupCheck.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(warmupCheck);
-        subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
+        LinearLayout descPanel = new LinearLayout(this);
+        descPanel.setOrientation(LinearLayout.HORIZONTAL);
+        final EditText descMinInput = new EditText(this);
+        descMinInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        descMinInput.setHint("Min");
+        descMinInput.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(50), ViewGroup.LayoutParams.WRAP_CONTENT));
+        descPanel.addView(descMinInput);
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        btnRow.setOpaque(false);
-        JButton cancelBtn = new JButton("Cancelar");
-        cancelBtn.setBackground(new Color(42, 42, 42));
-        cancelBtn.setForeground(new Color(204, 204, 204));
-        cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        cancelBtn.setFocusPainted(false);
-        cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        cancelBtn.addActionListener(e -> subModal.setVisible(false));
+        TextView colon = new TextView(this);
+        colon.setText(":");
+        colon.setTextColor(Color.parseColor("#888888"));
+        descPanel.addView(colon);
 
-        JButton saveBtn = new JButton("Salvar");
-        saveBtn.setBackground(new Color(26, 58, 26));
-        saveBtn.setForeground(new Color(139, 195, 74));
-        saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-        saveBtn.setFocusPainted(false);
-        saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        saveBtn.addActionListener(e -> {
+        final EditText descSecInput = new EditText(this);
+        descSecInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+        descSecInput.setHint("Seg");
+        descSecInput.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(50), ViewGroup.LayoutParams.WRAP_CONTENT));
+        descPanel.addView(descSecInput);
+
+        layout.addView(descPanel);
+
+        final CheckBox warmupCheck = new CheckBox(this);
+        warmupCheck.setText("Série de aquecimento");
+        warmupCheck.setTextColor(Color.parseColor("#aaaaaa"));
+        layout.addView(warmupCheck);
+
+        builder.setView(layout);
+        builder.setPositiveButton("Salvar", (dialog, which) -> {
             try {
-                String exercise = exField.getText().trim();
-                int sets = Integer.parseInt(setField.getText().trim());
-                int reps = Integer.parseInt(repField.getText().trim());
-                double load = Double.parseDouble(loadField.getText().trim());
+                String exercise = exInput.getText().toString().trim();
+                int sets = Integer.parseInt(setInput.getText().toString().trim());
+                int reps = Integer.parseInt(repInput.getText().toString().trim());
+                double load = Double.parseDouble(loadInput.getText().toString().trim());
                 if (exercise.isEmpty() || sets < 1 || reps < 1 || load <= 0) {
                     throw new NumberFormatException();
                 }
@@ -3255,18 +2776,18 @@ public class AcademiaApp extends JFrame {
                 exercicio.put("reps", reps);
                 exercicio.put("load", load);
 
-                String metaStr = metaField.getText().trim();
+                String metaStr = metaInput.getText().toString().trim();
                 if (!metaStr.isEmpty()) {
                     double meta = Double.parseDouble(metaStr);
                     if (meta > 0) exercicio.put("metaCarga", meta);
                 }
 
-                int descMin = descMinField.getText().trim().isEmpty() ? 0 : Integer.parseInt(descMinField.getText().trim());
-                int descSec = descSecField.getText().trim().isEmpty() ? 0 : Integer.parseInt(descSecField.getText().trim());
+                int descMin = descMinInput.getText().toString().trim().isEmpty() ? 0 : Integer.parseInt(descMinInput.getText().toString().trim());
+                int descSec = descSecInput.getText().toString().trim().isEmpty() ? 0 : Integer.parseInt(descSecInput.getText().toString().trim());
                 int descanso = descMin * 60 + descSec;
                 if (descanso > 0) exercicio.put("descanso", descanso);
 
-                exercicio.put("warmup", warmupCheck.isSelected());
+                exercicio.put("warmup", warmupCheck.isChecked());
                 exercicio.put("loadHistory", new JSONArray());
 
                 JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
@@ -3274,20 +2795,13 @@ public class AcademiaApp extends JFrame {
                 if (!treino.has("exercicios")) treino.put("exercicios", new JSONArray());
                 treino.getJSONArray("exercicios").put(exercicio);
                 salvarDados();
-                subModal.setVisible(false);
                 renderDados();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, "Valores inválidos. Verifique os campos.");
+                Toast.makeText(this, "Valores inválidos. Verifique os campos.", Toast.LENGTH_SHORT).show();
             }
         });
-
-        btnRow.add(cancelBtn);
-        btnRow.add(saveBtn);
-        subModalBox.add(btnRow);
-
-        subModal.pack();
-        subModal.setLocationRelativeTo(this);
-        subModal.setVisible(true);
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
     }
 
     private void mostrarEditarExercicio(int treinoIdx, int exIdx) {
@@ -3296,166 +2810,131 @@ public class AcademiaApp extends JFrame {
             JSONObject treino = treinos.getJSONObject(treinoIdx);
             JSONObject ex = treino.getJSONArray("exercicios").getJSONObject(exIdx);
 
-            subModalBox.removeAll();
-            JLabel title = new JLabel("Editar Exercício");
-            title.setForeground(new Color(170, 170, 170));
-            title.setFont(new Font("Arial", Font.PLAIN, 16));
-            title.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(title);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Editar Exercício");
 
-            JLabel exLabel = new JLabel("Exercício *");
-            exLabel.setForeground(new Color(136, 136, 136));
-            exLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            exLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(exLabel);
+            LinearLayout layout = new LinearLayout(this);
+            layout.setOrientation(LinearLayout.VERTICAL);
+            layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
-            JTextField exField = new JTextField(ex.getString("exercise"));
-            exField.setMaximumSize(new Dimension(300, 30));
-            exField.setBackground(new Color(10, 10, 10));
-            exField.setForeground(new Color(221, 221, 221));
-            exField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            exField.setHorizontalAlignment(JTextField.CENTER);
-            exField.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(exField);
+            TextView exLabel = new TextView(this);
+            exLabel.setText("Exercício *");
+            exLabel.setTextColor(Color.parseColor("#888888"));
+            exLabel.setTextSize(12);
+            layout.addView(exLabel);
 
-            JPanel formRow = new JPanel(new GridLayout(1, 3, 6, 0));
-            formRow.setOpaque(false);
-            formRow.setMaximumSize(new Dimension(300, 30));
+            final EditText exInput = new EditText(this);
+            exInput.setInputType(InputType.TYPE_CLASS_TEXT);
+            exInput.setText(ex.getString("exercise"));
+            layout.addView(exInput);
 
-            JPanel setPanel = new JPanel();
-            setPanel.setLayout(new BoxLayout(setPanel, BoxLayout.Y_AXIS));
-            setPanel.setOpaque(false);
-            JLabel setLabel = new JLabel("Séries *");
-            setLabel.setForeground(new Color(136, 136, 136));
-            setLabel.setFont(new Font("Arial", Font.PLAIN, 10));
-            setLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            setPanel.add(setLabel);
-            JTextField setField = new JTextField(String.valueOf(ex.getInt("sets")));
-            setField.setBackground(new Color(10, 10, 10));
-            setField.setForeground(new Color(221, 221, 221));
-            setField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            setField.setHorizontalAlignment(JTextField.CENTER);
-            setPanel.add(setField);
-            formRow.add(setPanel);
+            LinearLayout row1 = new LinearLayout(this);
+            row1.setOrientation(LinearLayout.HORIZONTAL);
 
-            JPanel repPanel = new JPanel();
-            repPanel.setLayout(new BoxLayout(repPanel, BoxLayout.Y_AXIS));
-            repPanel.setOpaque(false);
-            JLabel repLabel = new JLabel("Repetições *");
-            repLabel.setForeground(new Color(136, 136, 136));
-            repLabel.setFont(new Font("Arial", Font.PLAIN, 10));
-            repLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            repPanel.add(repLabel);
-            JTextField repField = new JTextField(String.valueOf(ex.getInt("reps")));
-            repField.setBackground(new Color(10, 10, 10));
-            repField.setForeground(new Color(221, 221, 221));
-            repField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            repField.setHorizontalAlignment(JTextField.CENTER);
-            repPanel.add(repField);
-            formRow.add(repPanel);
+            LinearLayout setPanel = new LinearLayout(this);
+            setPanel.setOrientation(LinearLayout.VERTICAL);
+            TextView setLabel = new TextView(this);
+            setLabel.setText("Séries *");
+            setLabel.setTextColor(Color.parseColor("#888888"));
+            setLabel.setTextSize(10);
+            setPanel.addView(setLabel);
+            final EditText setInput = new EditText(this);
+            setInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+            setInput.setText(String.valueOf(ex.getInt("sets")));
+            setPanel.addView(setInput);
+            row1.addView(setPanel);
 
-            JPanel loadPanel = new JPanel();
-            loadPanel.setLayout(new BoxLayout(loadPanel, BoxLayout.Y_AXIS));
-            loadPanel.setOpaque(false);
-            JLabel loadLabel = new JLabel("Carga (kg) *");
-            loadLabel.setForeground(new Color(136, 136, 136));
-            loadLabel.setFont(new Font("Arial", Font.PLAIN, 10));
-            loadLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            loadPanel.add(loadLabel);
-            JTextField loadField = new JTextField(String.valueOf(ex.getDouble("load")));
-            loadField.setBackground(new Color(10, 10, 10));
-            loadField.setForeground(new Color(221, 221, 221));
-            loadField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            loadField.setHorizontalAlignment(JTextField.CENTER);
-            loadPanel.add(loadField);
-            formRow.add(loadPanel);
+            LinearLayout repPanel = new LinearLayout(this);
+            repPanel.setOrientation(LinearLayout.VERTICAL);
+            TextView repLabel = new TextView(this);
+            repLabel.setText("Repetições *");
+            repLabel.setTextColor(Color.parseColor("#888888"));
+            repLabel.setTextSize(10);
+            repPanel.addView(repLabel);
+            final EditText repInput = new EditText(this);
+            repInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+            repInput.setText(String.valueOf(ex.getInt("reps")));
+            repPanel.addView(repInput);
+            row1.addView(repPanel);
 
-            subModalBox.add(formRow);
+            LinearLayout loadPanel = new LinearLayout(this);
+            loadPanel.setOrientation(LinearLayout.VERTICAL);
+            TextView loadLabel = new TextView(this);
+            loadLabel.setText("Carga (kg) *");
+            loadLabel.setTextColor(Color.parseColor("#888888"));
+            loadLabel.setTextSize(10);
+            loadPanel.addView(loadLabel);
+            final EditText loadInput = new EditText(this);
+            loadInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            loadInput.setText(String.valueOf(ex.getDouble("load")));
+            loadPanel.addView(loadInput);
+            row1.addView(loadPanel);
 
-            JLabel metaLabel = new JLabel("Meta de Carga (kg, opcional)");
-            metaLabel.setForeground(new Color(136, 136, 136));
-            metaLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            metaLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(metaLabel);
+            layout.addView(row1);
 
-            JTextField metaField = new JTextField(ex.has("metaCarga") && !ex.isNull("metaCarga") ? String.valueOf(ex.getDouble("metaCarga")) : "");
-            metaField.setMaximumSize(new Dimension(300, 30));
-            metaField.setBackground(new Color(10, 10, 10));
-            metaField.setForeground(new Color(221, 221, 221));
-            metaField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            metaField.setHorizontalAlignment(JTextField.CENTER);
-            metaField.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(metaField);
+            TextView metaLabel = new TextView(this);
+            metaLabel.setText("Meta de Carga (kg, opcional)");
+            metaLabel.setTextColor(Color.parseColor("#888888"));
+            metaLabel.setTextSize(12);
+            layout.addView(metaLabel);
 
-            JLabel descLabel = new JLabel("Descanso entre séries (opcional)");
-            descLabel.setForeground(new Color(136, 136, 136));
-            descLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(descLabel);
+            final EditText metaInput = new EditText(this);
+            metaInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            metaInput.setText(ex.has("metaCarga") && !ex.isNull("metaCarga") ? String.valueOf(ex.getDouble("metaCarga")) : "");
+            layout.addView(metaInput);
 
-            JPanel descPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
-            descPanel.setOpaque(false);
+            TextView descLabel = new TextView(this);
+            descLabel.setText("Descanso entre séries (opcional)");
+            descLabel.setTextColor(Color.parseColor("#888888"));
+            descLabel.setTextSize(12);
+            layout.addView(descLabel);
+
+            LinearLayout descPanel = new LinearLayout(this);
+            descPanel.setOrientation(LinearLayout.HORIZONTAL);
             int descanso = ex.has("descanso") && !ex.isNull("descanso") ? ex.getInt("descanso") : 0;
-            JTextField descMinField = new JTextField(String.valueOf(descanso / 60), 3);
-            descMinField.setPreferredSize(new Dimension(50, 25));
-            descMinField.setBackground(new Color(10, 10, 10));
-            descMinField.setForeground(new Color(221, 221, 221));
-            descMinField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            descMinField.setHorizontalAlignment(JTextField.CENTER);
-            descPanel.add(descMinField);
-            descPanel.add(new JLabel(":"));
-            JTextField descSecField = new JTextField(String.valueOf(descanso % 60), 3);
-            descSecField.setPreferredSize(new Dimension(50, 25));
-            descSecField.setBackground(new Color(10, 10, 10));
-            descSecField.setForeground(new Color(221, 221, 221));
-            descSecField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            descSecField.setHorizontalAlignment(JTextField.CENTER);
-            descPanel.add(descSecField);
-            subModalBox.add(descPanel);
+            final EditText descMinInput = new EditText(this);
+            descMinInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+            descMinInput.setText(String.valueOf(descanso / 60));
+            descMinInput.setHint("Min");
+            descMinInput.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(50), ViewGroup.LayoutParams.WRAP_CONTENT));
+            descPanel.addView(descMinInput);
 
-            JCheckBox warmupCheck = new JCheckBox("Série de aquecimento");
-            warmupCheck.setSelected(ex.has("warmup") && ex.getBoolean("warmup"));
-            warmupCheck.setForeground(new Color(170, 170, 170));
-            warmupCheck.setBackground(new Color(13, 13, 13));
-            warmupCheck.setFocusPainted(false);
-            warmupCheck.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(warmupCheck);
+            TextView colon = new TextView(this);
+            colon.setText(":");
+            colon.setTextColor(Color.parseColor("#888888"));
+            descPanel.addView(colon);
 
-            JButton histBtn = new JButton("Editar Histórico de Carga");
-            histBtn.setBackground(new Color(42, 42, 42));
-            histBtn.setForeground(new Color(204, 204, 204));
-            histBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-            histBtn.setFocusPainted(false);
-            histBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            histBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-            histBtn.addActionListener(e -> {
-                subModal.setVisible(false);
+            final EditText descSecInput = new EditText(this);
+            descSecInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+            descSecInput.setText(String.valueOf(descanso % 60));
+            descSecInput.setHint("Seg");
+            descSecInput.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(50), ViewGroup.LayoutParams.WRAP_CONTENT));
+            descPanel.addView(descSecInput);
+
+            layout.addView(descPanel);
+
+            final CheckBox warmupCheck = new CheckBox(this);
+            warmupCheck.setText("Série de aquecimento");
+            warmupCheck.setChecked(ex.has("warmup") && ex.getBoolean("warmup"));
+            warmupCheck.setTextColor(Color.parseColor("#aaaaaa"));
+            layout.addView(warmupCheck);
+
+            Button histBtn = new Button(this);
+            histBtn.setText("Editar Histórico de Carga");
+            histBtn.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            histBtn.setTextColor(Color.parseColor("#cccccc"));
+            histBtn.setOnClickListener(v -> {
                 mostrarHistoricoCarga(treinoIdx, exIdx);
             });
-            subModalBox.add(histBtn);
+            layout.addView(histBtn);
 
-            JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-            btnRow.setOpaque(false);
-            JButton cancelBtn = new JButton("Cancelar");
-            cancelBtn.setBackground(new Color(42, 42, 42));
-            cancelBtn.setForeground(new Color(204, 204, 204));
-            cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-            cancelBtn.setFocusPainted(false);
-            cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            cancelBtn.addActionListener(e -> subModal.setVisible(false));
-
-            JButton saveBtn = new JButton("Salvar");
-            saveBtn.setBackground(new Color(26, 58, 26));
-            saveBtn.setForeground(new Color(139, 195, 74));
-            saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            saveBtn.setFocusPainted(false);
-            saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            saveBtn.addActionListener(e -> {
+            builder.setView(layout);
+            builder.setPositiveButton("Salvar", (dialog, which) -> {
                 try {
-                    String exercise = exField.getText().trim();
-                    int sets = Integer.parseInt(setField.getText().trim());
-                    int reps = Integer.parseInt(repField.getText().trim());
-                    double load = Double.parseDouble(loadField.getText().trim());
+                    String exercise = exInput.getText().toString().trim();
+                    int sets = Integer.parseInt(setInput.getText().toString().trim());
+                    int reps = Integer.parseInt(repInput.getText().toString().trim());
+                    double load = Double.parseDouble(loadInput.getText().toString().trim());
                     if (exercise.isEmpty() || sets < 1 || reps < 1 || load <= 0) {
                         throw new NumberFormatException();
                     }
@@ -3464,7 +2943,7 @@ public class AcademiaApp extends JFrame {
                     ex.put("reps", reps);
                     ex.put("load", load);
 
-                    String metaStr = metaField.getText().trim();
+                    String metaStr = metaInput.getText().toString().trim();
                     if (!metaStr.isEmpty()) {
                         double meta = Double.parseDouble(metaStr);
                         if (meta > 0) ex.put("metaCarga", meta);
@@ -3473,29 +2952,22 @@ public class AcademiaApp extends JFrame {
                         ex.remove("metaCarga");
                     }
 
-                    int descMin = descMinField.getText().trim().isEmpty() ? 0 : Integer.parseInt(descMinField.getText().trim());
-                    int descSec = descSecField.getText().trim().isEmpty() ? 0 : Integer.parseInt(descSecField.getText().trim());
+                    int descMin = descMinInput.getText().toString().trim().isEmpty() ? 0 : Integer.parseInt(descMinInput.getText().toString().trim());
+                    int descSec = descSecInput.getText().toString().trim().isEmpty() ? 0 : Integer.parseInt(descSecInput.getText().toString().trim());
                     int descanso2 = descMin * 60 + descSec;
                     if (descanso2 > 0) ex.put("descanso", descanso2);
                     else ex.remove("descanso");
 
-                    ex.put("warmup", warmupCheck.isSelected());
+                    ex.put("warmup", warmupCheck.isChecked());
 
                     salvarDados();
-                    subModal.setVisible(false);
                     renderDados();
                 } catch (Exception ex2) {
-                    JOptionPane.showMessageDialog(null, "Valores inválidos. Verifique os campos.");
+                    Toast.makeText(this, "Valores inválidos. Verifique os campos.", Toast.LENGTH_SHORT).show();
                 }
             });
-
-            btnRow.add(cancelBtn);
-            btnRow.add(saveBtn);
-            subModalBox.add(btnRow);
-
-            subModal.pack();
-            subModal.setLocationRelativeTo(this);
-            subModal.setVisible(true);
+            builder.setNegativeButton("Cancelar", null);
+            builder.show();
         } catch (JSONException e) {}
     }
 
@@ -3505,305 +2977,99 @@ public class AcademiaApp extends JFrame {
             JSONObject treino = treinos.getJSONObject(treinoIdx);
             JSONObject ex = treino.getJSONArray("exercicios").getJSONObject(exIdx);
 
-            subModalBox.removeAll();
-            JLabel title = new JLabel("Histórico de Carga - " + ex.getString("exercise"));
-            title.setForeground(new Color(170, 170, 170));
-            title.setFont(new Font("Arial", Font.PLAIN, 16));
-            title.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(title);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Histórico de Carga - " + ex.getString("exercise"));
 
-            JPanel listPanel = new JPanel();
-            listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-            listPanel.setOpaque(false);
-            JScrollPane scroll = new JScrollPane(listPanel);
-            scroll.setOpaque(false);
-            scroll.getViewport().setOpaque(false);
-            scroll.setMaximumSize(new Dimension(380, 200));
-            scroll.setPreferredSize(new Dimension(380, 200));
-            scroll.setBorder(BorderFactory.createLineBorder(new Color(26, 26, 26)));
+            LinearLayout layout = new LinearLayout(this);
+            layout.setOrientation(LinearLayout.VERTICAL);
+            layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
             JSONArray history = ex.has("loadHistory") ? ex.getJSONArray("loadHistory") : new JSONArray();
-            for (int i = 0; i < history.length(); i++) {
-                JSONObject item = history.getJSONObject(i);
-                JPanel entry = new JPanel(new BorderLayout());
-                entry.setOpaque(false);
-                entry.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(26, 26, 26)),
-                    BorderFactory.createEmptyBorder(3, 6, 3, 6)
-                ));
-                String info = item.getDouble("load") + "kg x " + item.getInt("reps") + " reps";
-                if (item.has("date")) info += " (" + item.getString("date") + ")";
-                JLabel infoLabel = new JLabel(info);
-                infoLabel.setForeground(new Color(187, 187, 187));
-                infoLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-                entry.add(infoLabel, BorderLayout.WEST);
-
-                JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 0));
-                actions.setOpaque(false);
-                int idx = i;
-                JButton editBtn = new JButton("✎");
-                editBtn.setForeground(new Color(136, 170, 255));
-                editBtn.setBackground(null);
-                editBtn.setBorder(null);
-                editBtn.setFocusPainted(false);
-                editBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                editBtn.addActionListener(e -> {
-                    subModal.setVisible(false);
-                    mostrarEditarHistoricoCarga(treinoIdx, exIdx, idx);
-                });
-                actions.add(editBtn);
-
-                JButton delBtn = new JButton("✕");
-                delBtn.setForeground(new Color(255, 102, 102));
-                delBtn.setBackground(null);
-                delBtn.setBorder(null);
-                delBtn.setFocusPainted(false);
-                delBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                delBtn.addActionListener(e -> {
-                    mostrarConfirmacao("Excluir Registro", "Tem certeza que deseja excluir este registro?", () -> {
-                        try {
-                            JSONArray hist = ex.getJSONArray("loadHistory");
-                            hist.remove(idx);
-                            salvarDados();
-                            subModal.setVisible(false);
-                            renderDados();
-                        } catch (JSONException ex2) {}
-                    });
-                });
-                actions.add(delBtn);
-                entry.add(actions, BorderLayout.EAST);
-
-                listPanel.add(entry);
-            }
-
             if (history.length() == 0) {
-                JLabel empty = new JLabel("Nenhum registro.");
-                empty.setForeground(new Color(102, 102, 102));
-                empty.setFont(new Font("Arial", Font.PLAIN, 11));
-                empty.setAlignmentX(Component.CENTER_ALIGNMENT);
-                listPanel.add(empty);
+                TextView empty = new TextView(this);
+                empty.setText("Nenhum registro.");
+                empty.setTextColor(Color.parseColor("#666666"));
+                empty.setTextSize(11);
+                layout.addView(empty);
+            } else {
+                for (int i = 0; i < history.length(); i++) {
+                    JSONObject item = history.getJSONObject(i);
+                    LinearLayout entry = new LinearLayout(this);
+                    entry.setOrientation(LinearLayout.HORIZONTAL);
+                    entry.setPadding(0, dpToPx(3), 0, dpToPx(3));
+
+                    String info = item.getDouble("load") + "kg x " + item.getInt("reps") + " reps";
+                    if (item.has("date")) info += " (" + item.getString("date") + ")";
+                    TextView infoLabel = new TextView(this);
+                    infoLabel.setText(info);
+                    infoLabel.setTextColor(Color.parseColor("#bbbbbb"));
+                    infoLabel.setTextSize(12);
+                    entry.addView(infoLabel);
+
+                    final int idx = i;
+                    Button delBtn = new Button(this);
+                    delBtn.setText("✕");
+                    delBtn.setTextColor(Color.parseColor("#ff6666"));
+                    delBtn.setBackground(null);
+                    delBtn.setOnClickListener(v -> {
+                        mostrarConfirmacao("Excluir Registro", "Tem certeza que deseja excluir este registro?", () -> {
+                            try {
+                                JSONArray hist = ex.getJSONArray("loadHistory");
+                                hist.remove(idx);
+                                salvarDados();
+                                renderDados();
+                            } catch (JSONException ex2) {}
+                        });
+                    });
+                    entry.addView(delBtn);
+
+                    layout.addView(entry);
+                }
             }
 
-            subModalBox.add(scroll);
-
-            JButton delAllBtn = new JButton("Excluir Todo Histórico");
-            delAllBtn.setBackground(new Color(58, 26, 26));
-            delAllBtn.setForeground(new Color(255, 102, 102));
-            delAllBtn.setBorder(BorderFactory.createLineBorder(new Color(90, 42, 42)));
-            delAllBtn.setFocusPainted(false);
-            delAllBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            delAllBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-            delAllBtn.addActionListener(e -> {
-                mostrarConfirmacao("Excluir Histórico", "Tem certeza que deseja excluir todo o histórico de carga?", () -> {
-                    try {
-                        ex.put("loadHistory", new JSONArray());
-                        salvarDados();
-                        subModal.setVisible(false);
-                        renderDados();
-                    } catch (JSONException ex2) {}
-                });
-            });
-            subModalBox.add(delAllBtn);
-            subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
-
-            JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER));
-            btnRow.setOpaque(false);
-            JButton closeBtn = new JButton("Fechar");
-            closeBtn.setBackground(new Color(42, 42, 42));
-            closeBtn.setForeground(new Color(204, 204, 204));
-            closeBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-            closeBtn.setFocusPainted(false);
-            closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            closeBtn.addActionListener(e -> {
-                subModal.setVisible(false);
-                renderDados();
-            });
-            btnRow.add(closeBtn);
-            subModalBox.add(btnRow);
-
-            subModal.pack();
-            subModal.setLocationRelativeTo(this);
-            subModal.setVisible(true);
-        } catch (JSONException e) {}
-    }
-
-    private void mostrarEditarHistoricoCarga(int treinoIdx, int exIdx, int histIdx) {
-        try {
-            JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
-            JSONObject treino = treinos.getJSONObject(treinoIdx);
-            JSONObject ex = treino.getJSONArray("exercicios").getJSONObject(exIdx);
-            JSONObject item = ex.getJSONArray("loadHistory").getJSONObject(histIdx);
-
-            subModalBox.removeAll();
-            JLabel title = new JLabel("Editar Registro de Carga");
-            title.setForeground(new Color(170, 170, 170));
-            title.setFont(new Font("Arial", Font.PLAIN, 16));
-            title.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(title);
-
-            JLabel loadLabel = new JLabel("Carga (kg)");
-            loadLabel.setForeground(new Color(136, 136, 136));
-            loadLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            loadLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(loadLabel);
-
-            JTextField loadField = new JTextField(String.valueOf(item.getDouble("load")));
-            loadField.setMaximumSize(new Dimension(200, 30));
-            loadField.setBackground(new Color(10, 10, 10));
-            loadField.setForeground(new Color(221, 221, 221));
-            loadField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            loadField.setHorizontalAlignment(JTextField.CENTER);
-            loadField.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(loadField);
-
-            JLabel repsLabel = new JLabel("Repetições");
-            repsLabel.setForeground(new Color(136, 136, 136));
-            repsLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            repsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(repsLabel);
-
-            JTextField repsField = new JTextField(String.valueOf(item.getInt("reps")));
-            repsField.setMaximumSize(new Dimension(200, 30));
-            repsField.setBackground(new Color(10, 10, 10));
-            repsField.setForeground(new Color(221, 221, 221));
-            repsField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            repsField.setHorizontalAlignment(JTextField.CENTER);
-            repsField.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(repsField);
-
-            JLabel dataLabel = new JLabel("Data");
-            dataLabel.setForeground(new Color(136, 136, 136));
-            dataLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-            dataLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(dataLabel);
-
-            JTextField dataField = new JTextField(item.has("date") ? item.getString("date") : "");
-            dataField.setMaximumSize(new Dimension(200, 30));
-            dataField.setBackground(new Color(10, 10, 10));
-            dataField.setForeground(new Color(221, 221, 221));
-            dataField.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            dataField.setHorizontalAlignment(JTextField.CENTER);
-            dataField.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(dataField);
-            subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
-
-            JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-            btnRow.setOpaque(false);
-            JButton cancelBtn = new JButton("Cancelar");
-            cancelBtn.setBackground(new Color(42, 42, 42));
-            cancelBtn.setForeground(new Color(204, 204, 204));
-            cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-            cancelBtn.setFocusPainted(false);
-            cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            cancelBtn.addActionListener(e -> {
-                subModal.setVisible(false);
-                mostrarHistoricoCarga(treinoIdx, exIdx);
-            });
-
-            JButton saveBtn = new JButton("Salvar");
-            saveBtn.setBackground(new Color(26, 58, 26));
-            saveBtn.setForeground(new Color(139, 195, 74));
-            saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            saveBtn.setFocusPainted(false);
-            saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            saveBtn.addActionListener(e -> {
-                try {
-                    double load = Double.parseDouble(loadField.getText().trim());
-                    int reps = Integer.parseInt(repsField.getText().trim());
-                    String data = dataField.getText().trim();
-                    if (load <= 0 || reps < 1 || data.isEmpty()) {
-                        throw new NumberFormatException();
-                    }
-                    JSONObject updated = new JSONObject();
-                    updated.put("load", load);
-                    updated.put("reps", reps);
-                    updated.put("date", data);
-                    JSONArray hist = ex.getJSONArray("loadHistory");
-                    hist.put(histIdx, updated);
-                    salvarDados();
-                    subModal.setVisible(false);
-                    renderDados();
-                } catch (Exception ex2) {
-                    JOptionPane.showMessageDialog(null, "Valores inválidos.");
-                }
-            });
-
-            btnRow.add(cancelBtn);
-            btnRow.add(saveBtn);
-            subModalBox.add(btnRow);
-
-            subModal.pack();
-            subModal.setLocationRelativeTo(this);
-            subModal.setVisible(true);
+            builder.setView(layout);
+            builder.setPositiveButton("Fechar", null);
+            builder.show();
         } catch (JSONException e) {}
     }
 
     private void mostrarAdicionarRoupa(String categoria) {
         String label = categoria.equals("camisas") ? "Camisa" : categoria.equals("calcas") ? "Calça" : "Tênis";
 
-        subModalBox.removeAll();
-        JLabel title = new JLabel("Nova " + label);
-        title.setForeground(new Color(170, 170, 170));
-        title.setFont(new Font("Arial", Font.PLAIN, 16));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(title);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Nova " + label);
 
-        JTextField field = new JTextField(20);
-        field.setMaximumSize(new Dimension(300, 30));
-        field.setBackground(new Color(10, 10, 10));
-        field.setForeground(new Color(221, 221, 221));
-        field.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-        field.setHorizontalAlignment(JTextField.CENTER);
-        field.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(field);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
-        JCheckBox sweatCheck = new JCheckBox("Marca suor");
-        sweatCheck.setForeground(new Color(170, 170, 170));
-        sweatCheck.setBackground(new Color(13, 13, 13));
-        sweatCheck.setFocusPainted(false);
-        sweatCheck.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subModalBox.add(sweatCheck);
-        subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setHint("Nome da " + label.toLowerCase());
+        layout.addView(input);
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        btnRow.setOpaque(false);
-        JButton cancelBtn = new JButton("Cancelar");
-        cancelBtn.setBackground(new Color(42, 42, 42));
-        cancelBtn.setForeground(new Color(204, 204, 204));
-        cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-        cancelBtn.setFocusPainted(false);
-        cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        cancelBtn.addActionListener(e -> subModal.setVisible(false));
+        final CheckBox sweatCheck = new CheckBox(this);
+        sweatCheck.setText("Marca suor");
+        sweatCheck.setTextColor(Color.parseColor("#aaaaaa"));
+        layout.addView(sweatCheck);
 
-        JButton saveBtn = new JButton("Salvar");
-        saveBtn.setBackground(new Color(26, 58, 26));
-        saveBtn.setForeground(new Color(139, 195, 74));
-        saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-        saveBtn.setFocusPainted(false);
-        saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        saveBtn.addActionListener(e -> {
-            String val = field.getText().trim();
+        builder.setView(layout);
+        builder.setPositiveButton("Salvar", (dialog, which) -> {
+            String val = input.getText().toString().trim();
             if (val.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Nome é obrigatório.");
+                Toast.makeText(this, "Nome é obrigatório.", Toast.LENGTH_SHORT).show();
                 return;
             }
-            if (sweatCheck.isSelected()) val += " (suor)";
+            if (sweatCheck.isChecked()) val += " (suor)";
             try {
                 JSONObject roupas = configData.getJSONObject("academia").getJSONObject("roupas");
                 roupas.getJSONArray(categoria).put(val);
                 salvarDados();
-                subModal.setVisible(false);
                 renderDados();
             } catch (JSONException ex) {}
         });
-
-        btnRow.add(cancelBtn);
-        btnRow.add(saveBtn);
-        subModalBox.add(btnRow);
-
-        subModal.pack();
-        subModal.setLocationRelativeTo(this);
-        subModal.setVisible(true);
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
     }
 
     private void mostrarEditarRoupa(String categoria, int idx) {
@@ -3813,82 +3079,48 @@ public class AcademiaApp extends JFrame {
             boolean isSweat = item.contains("(suor)");
             String cleanName = item.replace(" (suor)", "");
 
-            subModalBox.removeAll();
-            JLabel title = new JLabel("Editar Roupa");
-            title.setForeground(new Color(170, 170, 170));
-            title.setFont(new Font("Arial", Font.PLAIN, 16));
-            title.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(title);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Editar Roupa");
 
-            JTextField field = new JTextField(cleanName);
-            field.setMaximumSize(new Dimension(300, 30));
-            field.setBackground(new Color(10, 10, 10));
-            field.setForeground(new Color(221, 221, 221));
-            field.setBorder(BorderFactory.createLineBorder(new Color(42, 42, 42)));
-            field.setHorizontalAlignment(JTextField.CENTER);
-            field.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(field);
+            LinearLayout layout = new LinearLayout(this);
+            layout.setOrientation(LinearLayout.VERTICAL);
+            layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
-            JCheckBox sweatCheck = new JCheckBox("Marca suor");
-            sweatCheck.setSelected(isSweat);
-            sweatCheck.setForeground(new Color(170, 170, 170));
-            sweatCheck.setBackground(new Color(13, 13, 13));
-            sweatCheck.setFocusPainted(false);
-            sweatCheck.setAlignmentX(Component.CENTER_ALIGNMENT);
-            subModalBox.add(sweatCheck);
-            subModalBox.add(Box.createRigidArea(new Dimension(0, 10)));
+            final EditText input = new EditText(this);
+            input.setInputType(InputType.TYPE_CLASS_TEXT);
+            input.setText(cleanName);
+            layout.addView(input);
 
-            JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-            btnRow.setOpaque(false);
-            JButton cancelBtn = new JButton("Cancelar");
-            cancelBtn.setBackground(new Color(42, 42, 42));
-            cancelBtn.setForeground(new Color(204, 204, 204));
-            cancelBtn.setBorder(BorderFactory.createLineBorder(new Color(58, 58, 58)));
-            cancelBtn.setFocusPainted(false);
-            cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            cancelBtn.addActionListener(e -> subModal.setVisible(false));
+            final CheckBox sweatCheck = new CheckBox(this);
+            sweatCheck.setText("Marca suor");
+            sweatCheck.setChecked(isSweat);
+            sweatCheck.setTextColor(Color.parseColor("#aaaaaa"));
+            layout.addView(sweatCheck);
 
-            JButton saveBtn = new JButton("Salvar");
-            saveBtn.setBackground(new Color(26, 58, 26));
-            saveBtn.setForeground(new Color(139, 195, 74));
-            saveBtn.setBorder(BorderFactory.createLineBorder(new Color(42, 90, 42)));
-            saveBtn.setFocusPainted(false);
-            saveBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            saveBtn.addActionListener(e -> {
-                String val = field.getText().trim();
+            builder.setView(layout);
+            builder.setPositiveButton("Salvar", (dialog, which) -> {
+                String val = input.getText().toString().trim();
                 if (val.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "Nome é obrigatório.");
+                    Toast.makeText(this, "Nome é obrigatório.", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                if (sweatCheck.isSelected()) val += " (suor)";
+                if (sweatCheck.isChecked()) val += " (suor)";
                 try {
                     JSONObject r = configData.getJSONObject("academia").getJSONObject("roupas");
                     r.getJSONArray(categoria).put(idx, val);
                     salvarDados();
-                    subModal.setVisible(false);
                     renderDados();
                 } catch (JSONException ex) {}
             });
-
-            btnRow.add(cancelBtn);
-            btnRow.add(saveBtn);
-            subModalBox.add(btnRow);
-
-            subModal.pack();
-            subModal.setLocationRelativeTo(this);
-            subModal.setVisible(true);
+            builder.setNegativeButton("Cancelar", null);
+            builder.show();
         } catch (JSONException e) {}
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            new AcademiaApp();
-        });
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        salvarDados();
     }
 }
 EOF
