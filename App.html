@@ -73,16 +73,26 @@ public class MainActivity extends Activity {
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        Button hamburger = new Button(this);
-        hamburger.setText("☰");
-        hamburger.setTextColor(Color.WHITE);
-        hamburger.setTextSize(28);
-        hamburger.setBackgroundColor(Color.TRANSPARENT);
-        LinearLayout.LayoutParams hamburgerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        hamburgerParams.setMargins(16, 16, 0, 0);
-        hamburger.setLayoutParams(hamburgerParams);
-        hamburger.setOnClickListener(v -> toggleMenu(true));
-        mainLayout.addView(hamburger);
+Button hamburger = new Button(this);
+hamburger.setText("☰");
+hamburger.setTextColor(Color.WHITE);
+hamburger.setTextSize(28);
+hamburger.setBackgroundColor(Color.TRANSPARENT);
+LinearLayout.LayoutParams hamburgerParams = new LinearLayout.LayoutParams(
+    ViewGroup.LayoutParams.WRAP_CONTENT, 
+    ViewGroup.LayoutParams.WRAP_CONTENT
+);
+hamburgerParams.setMargins(16, 16, 0, 0);
+hamburger.setLayoutParams(hamburgerParams);
+
+hamburger.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        toggleMenu(true);
+    }
+});
+
+mainLayout.addView(hamburger);
 
         mainBtn = new Button(this);
         mainBtn.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130), Gravity.CENTER));
