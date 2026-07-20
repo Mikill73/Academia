@@ -1,10 +1,8 @@
-mkdir -p src/main/java/com/academia/app
 cat > src/main/java/com/academia/app/MainActivity.java << 'EOF'
 package com.academia.app;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.*;
@@ -14,7 +12,6 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.text.InputType;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.Handler;
 import java.io.*;
 import org.json.JSONArray;
@@ -23,9 +20,6 @@ import org.json.JSONException;
 import java.util.*;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
-import android.view.inputmethod.EditorInfo;
-import android.text.TextWatcher;
-import android.text.Editable;
 
 public class MainActivity extends Activity {
     private LinearLayout mainLayout;
@@ -50,10 +44,6 @@ public class MainActivity extends Activity {
     private int exercicioAtualIndex = 0;
     private static final String ARQUIVO_DADOS = "academia_dados.json";
     private String[] DIAS_SEMANA = {"Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"};
-    private AlertDialog subModal;
-    private AlertDialog confirmModal;
-    private AlertDialog pesoAviso;
-    private Runnable pendingConfirmAction;
     private Context context;
 
     @Override
@@ -62,7 +52,6 @@ public class MainActivity extends Activity {
         context = this;
         carregarDados();
         setupUI();
-        criarModais();
         carregarEstadoBotao();
         renderDados();
     }
@@ -71,12 +60,12 @@ public class MainActivity extends Activity {
         mainLayout = new LinearLayout(this);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setBackgroundColor(Color.parseColor("#0d0d0d"));
-        mainLayout.setPadding(20, 20, 20, 20);
+        mainLayout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
         LinearLayout topPanel = new LinearLayout(this);
         topPanel.setOrientation(LinearLayout.VERTICAL);
         topPanel.setGravity(android.view.Gravity.CENTER);
-        topPanel.setPadding(0, 20, 0, 10);
+        topPanel.setPadding(0, dpToPx(20), 0, dpToPx(10));
 
         btnPrincipal = new Button(this);
         btnPrincipal.setText("");
@@ -160,20 +149,6 @@ public class MainActivity extends Activity {
     private int dpToPx(int dp) {
         float density = getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
-    }
-
-    private void criarModais() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setCancelable(false);
-        subModal = builder.create();
-
-        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(this);
-        confirmBuilder.setCancelable(false);
-        confirmModal = confirmBuilder.create();
-
-        AlertDialog.Builder pesoBuilder = new AlertDialog.Builder(this);
-        pesoBuilder.setCancelable(false);
-        pesoAviso = pesoBuilder.create();
     }
 
     private void carregarDados() {
@@ -1768,7 +1743,7 @@ public class MainActivity extends Activity {
                 TextView lbl = new TextView(this);
                 lbl.setText(objetivos.getString(i));
                 lbl.setTextColor(Color.parseColor("#eeeeee"));
-                lbl.setTextSize(13));
+                lbl.setTextSize(13);
                 item.addView(lbl);
 
                 LinearLayout actions = new LinearLayout(this);
