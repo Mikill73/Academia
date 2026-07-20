@@ -352,20 +352,20 @@ public class MainActivity extends Activity {
         confirmParams.setMargins(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
         confirmBox.setLayoutParams(confirmParams);
 
-        TextView confirmTitle = new TextView(this);
+        final TextView confirmTitle = new TextView(this);
         confirmTitle.setTextColor(Color.parseColor("#eee"));
         confirmTitle.setTextSize(18);
         confirmTitle.setGravity(Gravity.CENTER);
         confirmBox.addView(confirmTitle);
 
-        TextView confirmMsg = new TextView(this);
+        final TextView confirmMsg = new TextView(this);
         confirmMsg.setTextColor(Color.parseColor("#aaa"));
         confirmMsg.setTextSize(14);
         confirmMsg.setGravity(Gravity.CENTER);
         confirmMsg.setPadding(0, dpToPx(10), 0, dpToPx(14));
         confirmBox.addView(confirmMsg);
 
-        LinearLayout confirmBtnRow = new LinearLayout(this);
+        final LinearLayout confirmBtnRow = new LinearLayout(this);
         confirmBtnRow.setOrientation(LinearLayout.HORIZONTAL);
         confirmBtnRow.setGravity(Gravity.CENTER);
         confirmBtnRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -626,7 +626,7 @@ public class MainActivity extends Activity {
             exercisesContainer.removeAllViews();
             timerContainer.removeAllViews();
             if (treinoAtual == null || !treinoAtual.has("exercicios")) return;
-            JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
+            final JSONArray exercicios = treinoAtual.getJSONArray("exercicios");
             if (exercicioAtualIndex >= exercicios.length()) {
                 TextView doneText = new TextView(this);
                 doneText.setText("Treino concluído!");
@@ -1161,15 +1161,16 @@ public class MainActivity extends Activity {
 
     private void mostrarConfirmacao(String titulo, String msg, final ConfirmCallback callback, boolean unicoBotao) {
         try {
-            TextView titleView = confirmModal.findViewById(android.R.id.text1);
-            TextView msgView = confirmModal.findViewById(android.R.id.text2);
+            final TextView titleView = confirmModal.findViewById(android.R.id.text1);
+            final TextView msgView = confirmModal.findViewById(android.R.id.text2);
             if (titleView == null) {
                 LinearLayout box = (LinearLayout) confirmModal.getChildAt(0);
-                titleView = (TextView) box.getChildAt(0);
-                msgView = (TextView) box.getChildAt(1);
+                titleView.setText(titulo);
+                msgView.setText(msg);
+            } else {
+                titleView.setText(titulo);
+                msgView.setText(msg);
             }
-            titleView.setText(titulo);
-            msgView.setText(msg);
             
             LinearLayout btnRow = (LinearLayout) ((LinearLayout) confirmModal.getChildAt(0)).getChildAt(2);
             btnRow.removeAllViews();
