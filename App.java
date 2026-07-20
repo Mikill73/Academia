@@ -41,9 +41,8 @@ public class MainActivity extends Activity {
     private int timerRestante = 0;
 
     private LinearLayout mainLayout;
-    private FrameLayout configModal;
-    private LinearLayout configContent;
-    private FrameLayout pesoAvisoModal;
+    private FrameLayout overlayModal;
+    private LinearLayout overlayContent;
     private FrameLayout confirmModal;
     private LinearLayout todayCard;
     private LinearLayout exercisesContainer;
@@ -51,6 +50,9 @@ public class MainActivity extends Activity {
     private View progressFill;
     private TextView progressText;
     private Button mainBtn;
+    private Button academiaBtn;
+    private Button configBtn;
+    private boolean isConfigViewOnly = true;
 
     private static final String[] DIAS_SEMANA = {"Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"};
 
@@ -66,7 +68,7 @@ public class MainActivity extends Activity {
     private static final int COR_AMARELO = Color.rgb(255, 170, 0);
     private static final int COR_VERMELHO_CLARO = Color.rgb(255, 138, 138);
     private static final int COR_VERDE_ESCURO = Color.rgb(26, 58, 26);
-    private static final int COR_FUNDO_OVERLAY = Color.argb(136, 0, 0, 0);
+    private static final int COR_FUNDO_OVERLAY = Color.argb(180, 0, 0, 0);
     private static final int COR_FUNDO_TRANSPARENTE = Color.argb(0, 0, 0, 0);
     private static final int COR_CINZA_MAIS_CLARO = Color.rgb(238, 238, 238);
     private static final int COR_FUNDO_INPUT = Color.rgb(10, 10, 10);
@@ -94,11 +96,12 @@ public class MainActivity extends Activity {
         mainLayout = new LinearLayout(this);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        mainLayout.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
 
         mainBtn = new Button(this);
         LinearLayout.LayoutParams mainParams = new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130));
         mainParams.gravity = Gravity.CENTER_HORIZONTAL;
-        mainParams.topMargin = dpToPx(60);
+        mainParams.topMargin = dpToPx(20);
         mainBtn.setLayoutParams(mainParams);
         mainBtn.setBackgroundDrawable(new ShapeDrawable(new OvalShape()));
         mainBtn.setBackgroundColor(COR_VERMELHO);
@@ -113,53 +116,50 @@ public class MainActivity extends Activity {
         });
         mainLayout.addView(mainBtn);
 
-        LinearLayout botoesLayout = new LinearLayout(this);
-        botoesLayout.setOrientation(LinearLayout.HORIZONTAL);
-        botoesLayout.setGravity(Gravity.CENTER);
-        botoesLayout.setPadding(0, dpToPx(30), 0, 0);
-        LinearLayout.LayoutParams botoesParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        botoesLayout.setLayoutParams(botoesParams);
+        LinearLayout btnRow = new LinearLayout(this);
+        btnRow.setOrientation(LinearLayout.HORIZONTAL);
+        btnRow.setGravity(Gravity.CENTER);
+        btnRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        btnRow.setPadding(0, dpToPx(20), 0, 0);
 
-        Button btnAcademia = new Button(this);
-        btnAcademia.setText("Academia");
-        btnAcademia.setTextColor(COR_BRANCO);
-        btnAcademia.setBackgroundColor(COR_CARD);
-        btnAcademia.setPadding(dpToPx(20), dpToPx(10), dpToPx(20), dpToPx(10));
-        LinearLayout.LayoutParams btnAcadParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
-        btnAcadParams.setMargins(dpToPx(10), 0, dpToPx(5), 0);
-        btnAcademia.setLayoutParams(btnAcadParams);
-        btnAcademia.setOnClickListener(new View.OnClickListener() {
+        academiaBtn = new Button(this);
+        academiaBtn.setText("Academia");
+        academiaBtn.setTextColor(COR_BRANCO);
+        academiaBtn.setBackgroundColor(COR_CARD);
+        academiaBtn.setPadding(dpToPx(20), dpToPx(12), dpToPx(20), dpToPx(12));
+        academiaBtn.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        academiaBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                openConfig(true);
+                isConfigViewOnly = true;
+                openOverlay();
             }
         });
-        botoesLayout.addView(btnAcademia);
+        btnRow.addView(academiaBtn);
 
-        Button btnConfig = new Button(this);
-        btnConfig.setText("Configurações");
-        btnConfig.setTextColor(COR_BRANCO);
-        btnConfig.setBackgroundColor(COR_CARD);
-        btnConfig.setPadding(dpToPx(20), dpToPx(10), dpToPx(20), dpToPx(10));
-        LinearLayout.LayoutParams btnConfParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
-        btnConfParams.setMargins(dpToPx(5), 0, dpToPx(10), 0);
-        btnConfig.setLayoutParams(btnConfParams);
-        btnConfig.setOnClickListener(new View.OnClickListener() {
+        configBtn = new Button(this);
+        configBtn.setText("Configurações");
+        configBtn.setTextColor(COR_BRANCO);
+        configBtn.setBackgroundColor(COR_CARD);
+        configBtn.setPadding(dpToPx(20), dpToPx(12), dpToPx(20), dpToPx(12));
+        configBtn.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        configBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                openConfig(false);
+                isConfigViewOnly = false;
+                openOverlay();
             }
         });
-        botoesLayout.addView(btnConfig);
+        btnRow.addView(configBtn);
 
-        mainLayout.addView(botoesLayout);
+        mainLayout.addView(btnRow);
 
         todayCard = new LinearLayout(this);
         todayCard.setOrientation(LinearLayout.VERTICAL);
         todayCard.setBackgroundColor(COR_CARD);
         todayCard.setPadding(dpToPx(14), dpToPx(16), dpToPx(14), dpToPx(16));
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        cardParams.setMargins(dpToPx(10), dpToPx(20), dpToPx(10), 0);
+        cardParams.setMargins(0, dpToPx(20), 0, 0);
         todayCard.setLayoutParams(cardParams);
         todayCard.setVisibility(View.GONE);
 
@@ -198,144 +198,76 @@ public class MainActivity extends Activity {
 
         mainLayout.addView(todayCard);
 
-        root.addView(mainLayout);
-
-        setupConfigModal(root);
-        setupPesoAvisoModal(root);
-        setupConfirmModal(root);
-
-        setContentView(root);
-    }
-
-    private void setupConfigModal(FrameLayout root) {
-        configModal = new FrameLayout(this);
-        configModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        configModal.setBackgroundColor(COR_FUNDO_OVERLAY);
-        configModal.setVisibility(View.GONE);
-
-        LinearLayout configBox = new LinearLayout(this);
-        configBox.setOrientation(LinearLayout.VERTICAL);
-        configBox.setBackgroundColor(COR_CARD);
-        FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        boxParams.setMargins(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
-        configBox.setLayoutParams(boxParams);
-
-        LinearLayout configHeader = new LinearLayout(this);
-        configHeader.setOrientation(LinearLayout.HORIZONTAL);
-        configHeader.setGravity(Gravity.CENTER_VERTICAL);
-        configHeader.setPadding(dpToPx(14), dpToPx(8), dpToPx(14), dpToPx(8));
-
-        Button backBtn = new Button(this);
-        backBtn.setText("←");
-        backBtn.setTextColor(COR_CINZA_ESCURO);
-        backBtn.setTextSize(28);
-        backBtn.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
-        backBtn.setOnClickListener(new View.OnClickListener() {
+        overlayModal = new FrameLayout(this);
+        overlayModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        overlayModal.setBackgroundColor(COR_FUNDO_OVERLAY);
+        overlayModal.setVisibility(View.GONE);
+        overlayModal.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                closeConfig();
+                closeOverlay();
             }
         });
-        configHeader.addView(backBtn);
 
-        TextView configTitleView = new TextView(this);
-        configTitleView.setText("Academia");
-        configTitleView.setTextColor(COR_CINZA_MEDIO);
-        configTitleView.setTextSize(18);
+        overlayContent = new LinearLayout(this);
+        overlayContent.setOrientation(LinearLayout.VERTICAL);
+        overlayContent.setBackgroundColor(COR_CARD);
+        FrameLayout.LayoutParams overlayParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        overlayParams.gravity = Gravity.CENTER;
+        overlayParams.setMargins(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+        overlayContent.setLayoutParams(overlayParams);
+        overlayContent.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {}
+        });
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(dpToPx(14), dpToPx(8), dpToPx(14), dpToPx(8));
+
+        Button closeBtn = new Button(this);
+        closeBtn.setText("✕");
+        closeBtn.setTextColor(COR_CINZA_ESCURO);
+        closeBtn.setTextSize(28);
+        closeBtn.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
+        closeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                closeOverlay();
+            }
+        });
+        header.addView(closeBtn);
+
+        TextView overlayTitle = new TextView(this);
+        overlayTitle.setText("Academia");
+        overlayTitle.setTextColor(COR_CINZA_MEDIO);
+        overlayTitle.setTextSize(18);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
         titleParams.gravity = Gravity.CENTER;
-        configTitleView.setLayoutParams(titleParams);
-        configHeader.addView(configTitleView);
+        overlayTitle.setLayoutParams(titleParams);
+        header.addView(overlayTitle);
 
         View spacer = new View(this);
         spacer.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(30), ViewGroup.LayoutParams.WRAP_CONTENT));
-        configHeader.addView(spacer);
-        configBox.addView(configHeader);
+        header.addView(spacer);
 
-        ScrollView configScroll = new ScrollView(this);
-        configScroll.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
-        configContent = new LinearLayout(this);
-        configContent.setOrientation(LinearLayout.VERTICAL);
-        configContent.setPadding(dpToPx(14), 0, dpToPx(14), dpToPx(14));
-        configScroll.addView(configContent);
-        configBox.addView(configScroll);
-        configModal.addView(configBox);
-        configModal.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                closeConfig();
-            }
-        });
-        configBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {}
-        });
-        root.addView(configModal);
-    }
+        overlayContent.addView(header);
 
-    private void setupPesoAvisoModal(FrameLayout root) {
-        pesoAvisoModal = new FrameLayout(this);
-        pesoAvisoModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        pesoAvisoModal.setBackgroundColor(COR_FUNDO_OVERLAY);
-        pesoAvisoModal.setVisibility(View.GONE);
-        LinearLayout avisoBox = new LinearLayout(this);
-        avisoBox.setOrientation(LinearLayout.VERTICAL);
-        avisoBox.setBackgroundColor(COR_CARD);
-        avisoBox.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
-        FrameLayout.LayoutParams avisoParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
-        avisoParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
-        avisoBox.setLayoutParams(avisoParams);
+        ScrollView scroll = new ScrollView(this);
+        scroll.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+        final LinearLayout contentContainer = new LinearLayout(this);
+        contentContainer.setOrientation(LinearLayout.VERTICAL);
+        contentContainer.setPadding(dpToPx(14), 0, dpToPx(14), dpToPx(14));
+        scroll.addView(contentContainer);
+        overlayContent.addView(scroll);
+        overlayModal.addView(overlayContent);
+        root.addView(mainLayout);
+        root.addView(overlayModal);
 
-        TextView avisoTitle = new TextView(this);
-        avisoTitle.setText("Hora de Pesar!");
-        avisoTitle.setTextColor(COR_VERMELHO_CLARO);
-        avisoTitle.setTextSize(18);
-        avisoTitle.setGravity(Gravity.CENTER);
-        avisoBox.addView(avisoTitle);
+        setupConfirmModal(root);
 
-        final TextView avisoText = new TextView(this);
-        avisoText.setTextColor(COR_CINZA_CLARO);
-        avisoText.setTextSize(14);
-        avisoText.setGravity(Gravity.CENTER);
-        avisoText.setPadding(0, dpToPx(10), 0, dpToPx(10));
-        avisoBox.addView(avisoText);
-
-        final EditText pesoInput = new EditText(this);
-        pesoInput.setHint("Peso atual (kg)");
-        pesoInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        pesoInput.setTextColor(COR_CINZA_CLARO);
-        pesoInput.setHintTextColor(COR_CINZA_ESCURO);
-        pesoInput.setBackgroundColor(COR_FUNDO_INPUT);
-        pesoInput.setPadding(dpToPx(6), dpToPx(6), dpToPx(6), dpToPx(6));
-        avisoBox.addView(pesoInput);
-
-        Button pesoBtn = new Button(this);
-        pesoBtn.setText("Registrar");
-        pesoBtn.setTextColor(COR_VERDE_CLARO);
-        pesoBtn.setBackgroundColor(COR_VERDE_ESCURO);
-        pesoBtn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        pesoBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String valStr = pesoInput.getText().toString();
-                if (!valStr.isEmpty()) {
-                    try {
-                        double val = Double.parseDouble(valStr);
-                        registrarPeso(val);
-                        pesoAvisoModal.setVisibility(View.GONE);
-                    } catch (Exception e) {
-                        Toast.makeText(MainActivity.this, "Peso inválido", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-        });
-        avisoBox.addView(pesoBtn);
-        pesoAvisoModal.addView(avisoBox);
-        pesoAvisoModal.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {}
-        });
-        root.addView(pesoAvisoModal);
+        setContentView(root);
     }
 
     private void setupConfirmModal(FrameLayout root) {
@@ -377,17 +309,185 @@ public class MainActivity extends Activity {
         root.addView(confirmModal);
     }
 
-    private void openConfig(boolean viewOnly) {
-        if (configModal != null) {
-            configModal.setVisibility(View.VISIBLE);
-            renderConfig(viewOnly);
+    private void openOverlay() {
+        if (overlayModal != null && overlayContent != null) {
+            overlayModal.setVisibility(View.VISIBLE);
+            renderOverlayContent();
         }
     }
 
-    private void closeConfig() {
-        if (configModal != null) {
-            configModal.setVisibility(View.GONE);
+    private void closeOverlay() {
+        if (overlayModal != null) {
+            overlayModal.setVisibility(View.GONE);
         }
+    }
+
+    private void renderOverlayContent() {
+        try {
+            ScrollView scroll = (ScrollView) overlayContent.getChildAt(1);
+            LinearLayout container = (LinearLayout) scroll.getChildAt(0);
+            container.removeAllViews();
+
+            if (configData == null) {
+                TextView empty = new TextView(this);
+                empty.setText("Nenhum dado disponível.");
+                empty.setTextColor(COR_CINZA_CLARO);
+                empty.setGravity(Gravity.CENTER);
+                container.addView(empty);
+                return;
+            }
+
+            final JSONObject academia = configData.getJSONObject("academia");
+            TextView sectionTitle = new TextView(this);
+            sectionTitle.setText("Resumo");
+            sectionTitle.setTextColor(Color.rgb(153, 153, 153));
+            sectionTitle.setTextSize(14);
+            sectionTitle.setPadding(0, dpToPx(10), 0, dpToPx(5));
+            container.addView(sectionTitle);
+
+            addInfoRow(container, "Data de Início", academia.optString("inicio", "Não definida"));
+            JSONObject peso = academia.getJSONObject("peso");
+            addInfoRow(container, "Peso Atual", peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg");
+            addInfoRow(container, "Meta", peso.isNull("meta") ? "Não definida" : peso.getDouble("meta") + " kg");
+            addInfoRow(container, "Intervalo Pesagem", peso.optInt("intervalo", 7) + " dias");
+
+            if (!isConfigViewOnly) {
+                Button btnPeso = new Button(this);
+                btnPeso.setText("Registrar Peso");
+                btnPeso.setTextColor(COR_VERDE_CLARO);
+                btnPeso.setBackgroundColor(COR_VERDE_ESCURO);
+                btnPeso.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                btnPeso.setPadding(0, dpToPx(8), 0, dpToPx(8));
+                btnPeso.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        showPesoInput();
+                    }
+                });
+                container.addView(btnPeso);
+            }
+
+            sectionTitle = new TextView(this);
+            sectionTitle.setText("Dias de Descanso");
+            sectionTitle.setTextColor(Color.rgb(153, 153, 153));
+            sectionTitle.setTextSize(14);
+            sectionTitle.setPadding(0, dpToPx(15), 0, dpToPx(5));
+            container.addView(sectionTitle);
+
+            JSONArray diasDescanso = academia.getJSONArray("diasDescanso");
+            final LinearLayout diasContainer = new LinearLayout(this);
+            diasContainer.setOrientation(LinearLayout.VERTICAL);
+            for (String dia : DIAS_SEMANA) {
+                CheckBox cb = new CheckBox(this);
+                cb.setText(dia);
+                cb.setTextColor(COR_CINZA_MEDIO);
+                cb.setChecked(diasDescanso.toString().contains("\"" + dia + "\""));
+                if (isConfigViewOnly) cb.setEnabled(false);
+                cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        try {
+                            JSONArray novos = new JSONArray();
+                            for (int i = 0; i < DIAS_SEMANA.length; i++) {
+                                CheckBox c = (CheckBox) diasContainer.getChildAt(i);
+                                if (c.isChecked()) novos.put(c.getText().toString());
+                            }
+                            academia.put("diasDescanso", novos);
+                            saveConfig();
+                        } catch (Exception e) {}
+                    }
+                });
+                diasContainer.addView(cb);
+            }
+            container.addView(diasContainer);
+
+            TextView treinosTitle = new TextView(this);
+            treinosTitle.setText("Treinos Disponíveis");
+            treinosTitle.setTextColor(Color.rgb(153, 153, 153));
+            treinosTitle.setTextSize(14);
+            treinosTitle.setPadding(0, dpToPx(15), 0, dpToPx(5));
+            container.addView(treinosTitle);
+
+            JSONArray treinos = academia.getJSONArray("treinos");
+            for (int i = 0; i < treinos.length(); i++) {
+                JSONObject t = treinos.getJSONObject(i);
+                String dia = t.getString("dia");
+                JSONArray exs = t.getJSONArray("exercicios");
+                int qtd = exs.length();
+                TextView tv = new TextView(this);
+                tv.setText(dia + " - " + qtd + " exercícios");
+                tv.setTextColor(COR_CINZA_CLARO);
+                tv.setTextSize(13);
+                tv.setPadding(0, dpToPx(3), 0, dpToPx(3));
+                container.addView(tv);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void addInfoRow(LinearLayout container, String label, String value) {
+        TextView tv = new TextView(this);
+        tv.setText(label + ": " + value);
+        tv.setTextColor(COR_CINZA_CLARO);
+        tv.setTextSize(13);
+        tv.setPadding(0, dpToPx(4), 0, dpToPx(4));
+        container.addView(tv);
+    }
+
+    private void showPesoInput() {
+        final FrameLayout overlay = new FrameLayout(this);
+        overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        overlay.setBackgroundColor(COR_FUNDO_OVERLAY);
+        overlay.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {}
+        });
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setBackgroundColor(COR_CARD);
+        box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
+        FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        boxParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        box.setLayoutParams(boxParams);
+
+        TextView title = new TextView(this);
+        title.setText("Registrar Peso");
+        title.setTextColor(COR_CINZA_MAIS_CLARO);
+        title.setTextSize(18);
+        title.setGravity(Gravity.CENTER);
+        box.addView(title);
+
+        final EditText input = new EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setHint("Peso (kg)");
+        input.setTextColor(COR_CINZA_CLARO);
+        input.setBackgroundColor(COR_FUNDO_INPUT);
+        input.setPadding(dpToPx(6), dpToPx(6), dpToPx(6), dpToPx(6));
+        box.addView(input);
+
+        Button saveBtn = new Button(this);
+        saveBtn.setText("Salvar");
+        saveBtn.setTextColor(COR_VERDE_CLARO);
+        saveBtn.setBackgroundColor(COR_VERDE_ESCURO);
+        saveBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    double val = Double.parseDouble(input.getText().toString());
+                    registrarPeso(val);
+                    ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                    renderOverlayContent();
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "Inválido", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        box.addView(saveBtn);
+        overlay.addView(box);
+        ((FrameLayout) getWindow().getDecorView()).addView(overlay);
     }
 
     private void loadConfig() {
@@ -411,11 +511,12 @@ public class MainActivity extends Activity {
             academia.put("inicio", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
             JSONObject peso = new JSONObject();
             peso.put("atual", 70.0);
-            peso.put("historico", new JSONArray());
-            JSONObject histEntry = new JSONObject();
-            histEntry.put("peso", 70.0);
-            histEntry.put("data", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
-            peso.getJSONArray("historico").put(histEntry);
+            JSONArray historico = new JSONArray();
+            JSONObject hist = new JSONObject();
+            hist.put("peso", 70.0);
+            hist.put("data", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+            historico.put(hist);
+            peso.put("historico", historico);
             peso.put("meta", 65.0);
             peso.put("intervalo", 7);
             peso.put("ultimoRegistro", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(new Date()));
@@ -430,10 +531,11 @@ public class MainActivity extends Activity {
             roupas.put("tenis", new JSONArray());
             academia.put("roupas", roupas);
             academia.put("combinacoes", new JSONObject());
+
             JSONArray treinos = new JSONArray();
-            JSONObject treinoSegunda = new JSONObject();
-            treinoSegunda.put("dia", "Segunda");
-            JSONArray exerciciosSegunda = new JSONArray();
+            JSONObject treinoSeg = new JSONObject();
+            treinoSeg.put("dia", "Segunda");
+            JSONArray exsSeg = new JSONArray();
             JSONObject ex1 = new JSONObject();
             ex1.put("exercise", "Supino Reto");
             ex1.put("sets", 4);
@@ -441,13 +543,14 @@ public class MainActivity extends Activity {
             ex1.put("load", 50.0);
             ex1.put("warmup", false);
             ex1.put("descanso", 60);
-            ex1.put("loadHistory", new JSONArray());
-            JSONObject histLoad = new JSONObject();
-            histLoad.put("load", 50.0);
-            histLoad.put("reps", 10);
-            histLoad.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
-            ex1.getJSONArray("loadHistory").put(histLoad);
-            exerciciosSegunda.put(ex1);
+            JSONArray loadHist = new JSONArray();
+            JSONObject lh = new JSONObject();
+            lh.put("load", 50.0);
+            lh.put("reps", 10);
+            lh.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+            loadHist.put(lh);
+            ex1.put("loadHistory", loadHist);
+            exsSeg.put(ex1);
             JSONObject ex2 = new JSONObject();
             ex2.put("exercise", "Crucifixo");
             ex2.put("sets", 3);
@@ -455,19 +558,20 @@ public class MainActivity extends Activity {
             ex2.put("load", 15.0);
             ex2.put("warmup", false);
             ex2.put("descanso", 45);
-            ex2.put("loadHistory", new JSONArray());
-            JSONObject histLoad2 = new JSONObject();
-            histLoad2.put("load", 15.0);
-            histLoad2.put("reps", 12);
-            histLoad2.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
-            ex2.getJSONArray("loadHistory").put(histLoad2);
-            exerciciosSegunda.put(ex2);
-            treinoSegunda.put("exercicios", exerciciosSegunda);
-            treinos.put(treinoSegunda);
+            JSONArray loadHist2 = new JSONArray();
+            JSONObject lh2 = new JSONObject();
+            lh2.put("load", 15.0);
+            lh2.put("reps", 12);
+            lh2.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+            loadHist2.put(lh2);
+            ex2.put("loadHistory", loadHist2);
+            exsSeg.put(ex2);
+            treinoSeg.put("exercicios", exsSeg);
+            treinos.put(treinoSeg);
 
-            JSONObject treinoQuarta = new JSONObject();
-            treinoQuarta.put("dia", "Quarta");
-            JSONArray exerciciosQuarta = new JSONArray();
+            JSONObject treinoQua = new JSONObject();
+            treinoQua.put("dia", "Quarta");
+            JSONArray exsQua = new JSONArray();
             JSONObject ex3 = new JSONObject();
             ex3.put("exercise", "Puxada Frontal");
             ex3.put("sets", 4);
@@ -475,15 +579,16 @@ public class MainActivity extends Activity {
             ex3.put("load", 40.0);
             ex3.put("warmup", false);
             ex3.put("descanso", 60);
-            ex3.put("loadHistory", new JSONArray());
-            JSONObject histLoad3 = new JSONObject();
-            histLoad3.put("load", 40.0);
-            histLoad3.put("reps", 10);
-            histLoad3.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
-            ex3.getJSONArray("loadHistory").put(histLoad3);
-            exerciciosQuarta.put(ex3);
-            treinoQuarta.put("exercicios", exerciciosQuarta);
-            treinos.put(treinoQuarta);
+            JSONArray loadHist3 = new JSONArray();
+            JSONObject lh3 = new JSONObject();
+            lh3.put("load", 40.0);
+            lh3.put("reps", 10);
+            lh3.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+            loadHist3.put(lh3);
+            ex3.put("loadHistory", loadHist3);
+            exsQua.put(ex3);
+            treinoQua.put("exercicios", exsQua);
+            treinos.put(treinoQua);
 
             academia.put("treinos", treinos);
             academia.put("treinoConcluido", new JSONObject());
@@ -593,7 +698,6 @@ public class MainActivity extends Activity {
                 configData.getJSONObject("academia").put("botaoAtivo", true);
                 saveConfig();
                 renderTreinoCard();
-                if (verificarPeso()) mostrarAvisoPeso();
                 return;
             }
             iniciarTreinoAtual();
@@ -629,7 +733,6 @@ public class MainActivity extends Activity {
             configData.getJSONObject("academia").put("treino_" + getTodayKey(), treinoAtual);
             saveConfig();
             renderTreinoCard();
-            if (verificarPeso()) mostrarAvisoPeso();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1062,46 +1165,6 @@ public class MainActivity extends Activity {
         timerContainer.removeAllViews();
     }
 
-    private boolean verificarPeso() {
-        try {
-            if (configData == null) return false;
-            JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
-            if (peso.isNull("ultimoRegistro")) return false;
-            String ultimoStr = peso.getString("ultimoRegistro");
-            Date ultimo = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(ultimoStr);
-            if (ultimo == null) return false;
-            Date hoje = new Date();
-            long diff = (hoje.getTime() - ultimo.getTime()) / (1000 * 60 * 60 * 24);
-            return diff >= peso.optInt("intervalo", 7);
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private void mostrarAvisoPeso() {
-        try {
-            if (configData == null || pesoAvisoModal == null) return;
-            JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
-            String ultimoStr = peso.optString("ultimoRegistro", "");
-            String dataFormatada = "Nunca";
-            if (!ultimoStr.isEmpty()) {
-                Date d = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(ultimoStr);
-                if (d != null) dataFormatada = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(d);
-            }
-            long diff = 999;
-            if (!ultimoStr.isEmpty()) {
-                Date ultimo = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(ultimoStr);
-                if (ultimo != null) diff = (new Date().getTime() - ultimo.getTime()) / (1000 * 60 * 60 * 24);
-            }
-            LinearLayout box = (LinearLayout) pesoAvisoModal.getChildAt(0);
-            TextView avisoText = (TextView) box.getChildAt(1);
-            avisoText.setText("Já faz " + diff + " dias desde a última pesagem (" + dataFormatada + "). Registre seu novo peso.");
-            pesoAvisoModal.setVisibility(View.VISIBLE);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private void registrarPeso(double val) {
         try {
             if (configData == null) return;
@@ -1119,136 +1182,6 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private void renderConfig(final boolean viewOnly) {
-        try {
-            if (configContent == null || configData == null) return;
-            configContent.removeAllViews();
-            final JSONObject academia = configData.getJSONObject("academia");
-            TextView sectionTitle = new TextView(this);
-            sectionTitle.setText("Resumo");
-            sectionTitle.setTextColor(Color.rgb(153, 153, 153));
-            sectionTitle.setTextSize(14);
-            sectionTitle.setPadding(0, dpToPx(10), 0, dpToPx(5));
-            configContent.addView(sectionTitle);
-
-            addConfigRow("Data de Início", academia.optString("inicio", "Não definida"));
-            
-            JSONObject peso = academia.getJSONObject("peso");
-            addConfigRow("Peso Atual", peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg");
-            addConfigRow("Meta", peso.isNull("meta") ? "Não definida" : peso.getDouble("meta") + " kg");
-            addConfigRow("Intervalo Pesagem", peso.optInt("intervalo", 7) + " dias");
-
-            if (!viewOnly) {
-                Button btnPeso = new Button(this);
-                btnPeso.setText("Registrar Peso");
-                btnPeso.setTextColor(COR_VERDE_CLARO);
-                btnPeso.setBackgroundColor(COR_VERDE_ESCURO);
-                btnPeso.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                btnPeso.setPadding(0, dpToPx(8), 0, dpToPx(8));
-                btnPeso.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        final EditText input = new EditText(MainActivity.this);
-                        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-                        input.setHint("Peso (kg)");
-                        input.setTextColor(COR_CINZA_CLARO);
-                        input.setBackgroundColor(COR_FUNDO_INPUT);
-                        
-                        final FrameLayout overlay = new FrameLayout(MainActivity.this);
-                        overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                        overlay.setBackgroundColor(COR_FUNDO_OVERLAY);
-                        overlay.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View ev) {}
-                        });
-                        
-                        LinearLayout box = new LinearLayout(MainActivity.this);
-                        box.setOrientation(LinearLayout.VERTICAL);
-                        box.setBackgroundColor(COR_CARD);
-                        box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
-                        FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
-                        box.setLayoutParams(boxParams);
-                        
-                        TextView title = new TextView(MainActivity.this);
-                        title.setText("Registrar Peso");
-                        title.setTextColor(COR_CINZA_MAIS_CLARO);
-                        title.setTextSize(18);
-                        title.setGravity(Gravity.CENTER);
-                        box.addView(title);
-                        box.addView(input);
-                        
-                        Button saveBtn = new Button(MainActivity.this);
-                        saveBtn.setText("Salvar");
-                        saveBtn.setTextColor(COR_VERDE_CLARO);
-                        saveBtn.setBackgroundColor(COR_VERDE_ESCURO);
-                        saveBtn.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View ev) {
-                                try {
-                                    double val = Double.parseDouble(input.getText().toString());
-                                    registrarPeso(val);
-                                    ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
-                                    renderConfig(false);
-                                } catch (Exception e) {
-                                    Toast.makeText(MainActivity.this, "Inválido", Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                        });
-                        box.addView(saveBtn);
-                        overlay.addView(box);
-                        ((FrameLayout) getWindow().getDecorView()).addView(overlay);
-                    }
-                });
-                configContent.addView(btnPeso);
-            }
-
-            sectionTitle = new TextView(this);
-            sectionTitle.setText("Dias de Descanso");
-            sectionTitle.setTextColor(Color.rgb(153, 153, 153));
-            sectionTitle.setTextSize(14);
-            sectionTitle.setPadding(0, dpToPx(15), 0, dpToPx(5));
-            configContent.addView(sectionTitle);
-
-            JSONArray diasDescanso = academia.getJSONArray("diasDescanso");
-            final LinearLayout diasContainer = new LinearLayout(this);
-            diasContainer.setOrientation(LinearLayout.VERTICAL);
-            for (String dia : DIAS_SEMANA) {
-                CheckBox cb = new CheckBox(this);
-                cb.setText(dia);
-                cb.setTextColor(COR_CINZA_MEDIO);
-                cb.setChecked(diasDescanso.toString().contains("\"" + dia + "\""));
-                if (viewOnly) cb.setEnabled(false);
-                cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                    @Override
-                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                        try {
-                            JSONArray novos = new JSONArray();
-                            for (int i = 0; i < DIAS_SEMANA.length; i++) {
-                                CheckBox c = (CheckBox) diasContainer.getChildAt(i);
-                                if (c.isChecked()) novos.put(c.getText().toString());
-                            }
-                            academia.put("diasDescanso", novos);
-                            saveConfig();
-                        } catch (Exception e) {}
-                    }
-                });
-                diasContainer.addView(cb);
-            }
-            configContent.addView(diasContainer);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void addConfigRow(String label, String value) {
-        TextView tv = new TextView(this);
-        tv.setText(label + ": " + value);
-        tv.setTextColor(COR_CINZA_CLARO);
-        tv.setTextSize(13);
-        tv.setPadding(0, dpToPx(4), 0, dpToPx(4));
-        configContent.addView(tv);
     }
 
     private void mostrarConfirmacao(String titulo, String msg, final ConfirmCallback callback, boolean unicoBotao) {
