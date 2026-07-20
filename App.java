@@ -1,4 +1,4 @@
-cat > src/main/java/com/academia/app/MainActivity.java << 'EOF'
+cat > src/main/java/com/academia/app/AcademiaApp.java << 'EOF'
 package com.academia.app;
 
 import javax.swing.*;
@@ -14,7 +14,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 
-public class MainActivity extends JFrame {
+public class AcademiaApp extends JFrame {
     private JPanel mainPanel;
     private JButton btnPrincipal;
     private JPanel cardTreinoPanel;
@@ -43,7 +43,7 @@ public class MainActivity extends JFrame {
     private int pendingConfirmIndex = -1;
     private Runnable pendingConfirmAction;
 
-    public MainActivity() {
+    public AcademiaApp() {
         setTitle("Sistema de Academia");
         setSize(900, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -3887,7 +3887,7 @@ public class MainActivity extends JFrame {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            new MainActivity();
+            new AcademiaApp();
         });
     }
 }
