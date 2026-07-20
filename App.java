@@ -296,14 +296,14 @@ public class MainActivity extends Activity {
         avisoTitle.setGravity(Gravity.CENTER);
         avisoBox.addView(avisoTitle);
 
-        TextView avisoText = new TextView(this);
+        final TextView avisoText = new TextView(this);
         avisoText.setTextColor(Color.parseColor("#ccc"));
         avisoText.setTextSize(14);
         avisoText.setGravity(Gravity.CENTER);
         avisoText.setPadding(0, dpToPx(10), 0, dpToPx(10));
         avisoBox.addView(avisoText);
 
-        EditText pesoInput = new EditText(this);
+        final EditText pesoInput = new EditText(this);
         pesoInput.setHint("Peso atual (kg)");
         pesoInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
         pesoInput.setTextColor(Color.parseColor("#ddd"));
@@ -487,8 +487,8 @@ public class MainActivity extends Activity {
 
     private void iniciarTreino() {
         try {
-            String hojeKey = getTodayKey();
-            JSONObject treinoConcluido = configData.getJSONObject("academia").getJSONObject("treinoConcluido");
+            final String hojeKey = getTodayKey();
+            final JSONObject treinoConcluido = configData.getJSONObject("academia").getJSONObject("treinoConcluido");
             if (treinoConcluido.optBoolean(hojeKey, false)) {
                 mostrarConfirmacao("Treino Concluído", "Deseja refazê-lo?", new ConfirmCallback() {
                     @Override
@@ -637,9 +637,9 @@ public class MainActivity extends Activity {
                 concluirTreinoCompleto();
                 return;
             }
-            JSONObject ex = exercicios.getJSONObject(exercicioAtualIndex);
-            int totalSeries = ex.optInt("sets", 1);
-            int seriesFeitas = ex.optInt("_seriesFeitas", 0);
+            final JSONObject ex = exercicios.getJSONObject(exercicioAtualIndex);
+            final int totalSeries = ex.optInt("sets", 1);
+            final int seriesFeitas = ex.optInt("_seriesFeitas", 0);
             boolean isDone = seriesFeitas >= totalSeries;
 
             LinearLayout card = new LinearLayout(this);
