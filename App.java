@@ -65,7 +65,6 @@ public class MainActivity extends Activity {
     private static final int COR_CINZA_MEDIO = Color.rgb(170, 170, 170);
     private static final int COR_CINZA_CLARO = Color.rgb(204, 204, 204);
     private static final int COR_BRANCO = Color.WHITE;
-    private static final int COR_PRETO = Color.BLACK;
     private static final int COR_AMARELO = Color.rgb(255, 170, 0);
     private static final int COR_VERMELHO_CLARO = Color.rgb(255, 138, 138);
     private static final int COR_VERDE_ESCURO = Color.rgb(26, 58, 26);
@@ -194,6 +193,8 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams menuParams = new FrameLayout.LayoutParams(dpToPx(280), ViewGroup.LayoutParams.MATCH_PARENT);
         menuParams.gravity = Gravity.START;
         menuPanel.setLayoutParams(menuParams);
+        menuPanel.setClickable(true);
+        menuPanel.setFocusable(true);
         menuPanel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {}
@@ -268,6 +269,12 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         boxParams.setMargins(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
         configBox.setLayoutParams(boxParams);
+        configBox.setClickable(true);
+        configBox.setFocusable(true);
+        configBox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {}
+        });
 
         LinearLayout configHeader = new LinearLayout(this);
         configHeader.setOrientation(LinearLayout.HORIZONTAL);
@@ -315,10 +322,6 @@ public class MainActivity extends Activity {
                 closeConfig();
             }
         });
-        configBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {}
-        });
         root.addView(configModal);
     }
 
@@ -334,6 +337,12 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams avisoParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
         avisoParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
         avisoBox.setLayoutParams(avisoParams);
+        avisoBox.setClickable(true);
+        avisoBox.setFocusable(true);
+        avisoBox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {}
+        });
 
         TextView avisoTitle = new TextView(this);
         avisoTitle.setText("Hora de Pesar!");
@@ -399,6 +408,12 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams confirmParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
         confirmParams.setMargins(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
         confirmBox.setLayoutParams(confirmParams);
+        confirmBox.setClickable(true);
+        confirmBox.setFocusable(true);
+        confirmBox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {}
+        });
 
         final TextView confirmTitle = new TextView(this);
         confirmTitle.setTextColor(COR_CINZA_MAIS_CLARO);
@@ -834,6 +849,12 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
             boxParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
             box.setLayoutParams(boxParams);
+            box.setClickable(true);
+            box.setFocusable(true);
+            box.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {}
+            });
 
             TextView title = new TextView(this);
             title.setText("Evolução de Carga");
@@ -1164,6 +1185,12 @@ public class MainActivity extends Activity {
                         box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
                         FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
                         box.setLayoutParams(boxParams);
+                        box.setClickable(true);
+                        box.setFocusable(true);
+                        box.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View ev) {}
+                        });
                         
                         TextView title = new TextView(MainActivity.this);
                         title.setText("Registrar Peso");
