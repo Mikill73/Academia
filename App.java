@@ -56,6 +56,25 @@ public class MainActivity extends Activity {
 
     private static final String[] DIAS_SEMANA = {"Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"};
 
+    private static final int COR_FUNDO = Color.rgb(13, 13, 13);
+    private static final int COR_CARD = Color.rgb(26, 26, 26);
+    private static final int COR_VERMELHO = Color.rgb(255, 0, 0);
+    private static final int COR_VERDE = Color.rgb(0, 204, 0);
+    private static final int COR_VERDE_CLARO = Color.rgb(139, 195, 74);
+    private static final int COR_CINZA_ESCURO = Color.rgb(136, 136, 136);
+    private static final int COR_CINZA_MEDIO = Color.rgb(170, 170, 170);
+    private static final int COR_CINZA_CLARO = Color.rgb(204, 204, 204);
+    private static final int COR_BRANCO = Color.WHITE;
+    private static final int COR_PRETO = Color.BLACK;
+    private static final int COR_AMARELO = Color.rgb(255, 170, 0);
+    private static final int COR_VERMELHO_CLARO = Color.rgb(255, 138, 138);
+    private static final int COR_VERDE_ESCURO = Color.rgb(26, 58, 26);
+    private static final int COR_FUNDO_OVERLAY = Color.argb(136, 0, 0, 0);
+    private static final int COR_FUNDO_TRANSPARENTE = Color.argb(0, 0, 0, 0);
+    private static final int COR_CINZA_MAIS_CLARO = Color.rgb(238, 238, 238);
+    private static final int COR_CINZA_MAIS_ESCURO = Color.rgb(102, 102, 102);
+    private static final int COR_FUNDO_INPUT = Color.rgb(10, 10, 10);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,14 +86,14 @@ public class MainActivity extends Activity {
             carregarEstadoBotao();
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "Erro ao iniciar", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Erro ao iniciar: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
     private void setupUI() {
         FrameLayout root = new FrameLayout(this);
         root.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        root.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        root.setBackgroundColor(COR_FUNDO);
 
         mainLayout = new LinearLayout(this);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
@@ -82,9 +101,9 @@ public class MainActivity extends Activity {
 
         Button hamburger = new Button(this);
         hamburger.setText("☰");
-        hamburger.setTextColor(Color.WHITE);
+        hamburger.setTextColor(COR_BRANCO);
         hamburger.setTextSize(28);
-        hamburger.setBackgroundColor(Color.TRANSPARENT);
+        hamburger.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
         LinearLayout.LayoutParams hamburgerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         hamburgerParams.setMargins(dpToPx(16), dpToPx(16), 0, 0);
         hamburger.setLayoutParams(hamburgerParams);
@@ -102,9 +121,9 @@ public class MainActivity extends Activity {
         mainParams.topMargin = dpToPx(40);
         mainBtn.setLayoutParams(mainParams);
         mainBtn.setBackgroundDrawable(new ShapeDrawable(new OvalShape()));
-        mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+        mainBtn.setBackgroundColor(COR_VERMELHO);
         mainBtn.setText("INICIAR");
-        mainBtn.setTextColor(Color.WHITE);
+        mainBtn.setTextColor(COR_BRANCO);
         mainBtn.setTextSize(14);
         mainBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -116,7 +135,7 @@ public class MainActivity extends Activity {
 
         todayCard = new LinearLayout(this);
         todayCard.setOrientation(LinearLayout.VERTICAL);
-        todayCard.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        todayCard.setBackgroundColor(COR_CARD);
         todayCard.setPadding(dpToPx(14), dpToPx(16), dpToPx(14), dpToPx(16));
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         cardParams.setMargins(dpToPx(10), dpToPx(20), dpToPx(10), 0);
@@ -125,7 +144,7 @@ public class MainActivity extends Activity {
 
         TextView cardTitle = new TextView(this);
         cardTitle.setText("Treino de Hoje");
-        cardTitle.setTextColor(Color.parseColor("#aaa"));
+        cardTitle.setTextColor(COR_CINZA_MEDIO);
         cardTitle.setTextSize(14);
         cardTitle.setGravity(Gravity.CENTER);
         cardTitle.setPadding(0, 0, 0, dpToPx(8));
@@ -140,17 +159,17 @@ public class MainActivity extends Activity {
         todayCard.addView(timerContainer);
 
         LinearLayout progressLayout = new LinearLayout(this);
-        progressLayout.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        progressLayout.setBackgroundColor(COR_FUNDO);
         progressLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(5)));
         progressFill = new View(this);
-        progressFill.setBackgroundColor(Color.parseColor("#8bc34a"));
+        progressFill.setBackgroundColor(COR_VERDE_CLARO);
         progressFill.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 0));
         progressLayout.addView(progressFill);
         todayCard.addView(progressLayout);
 
         progressText = new TextView(this);
         progressText.setText("0/0 concluídos");
-        progressText.setTextColor(Color.parseColor("#888"));
+        progressText.setTextColor(COR_CINZA_ESCURO);
         progressText.setTextSize(11);
         progressText.setGravity(Gravity.CENTER);
         progressText.setPadding(0, dpToPx(6), 0, 0);
@@ -160,7 +179,7 @@ public class MainActivity extends Activity {
 
         menuOverlay = new FrameLayout(this);
         menuOverlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        menuOverlay.setBackgroundColor(Color.TRANSPARENT);
+        menuOverlay.setBackgroundColor(COR_FUNDO_OVERLAY);
         menuOverlay.setVisibility(View.GONE);
         menuOverlay.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -171,7 +190,7 @@ public class MainActivity extends Activity {
 
         menuPanel = new LinearLayout(this);
         menuPanel.setOrientation(LinearLayout.VERTICAL);
-        menuPanel.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        menuPanel.setBackgroundColor(COR_CARD);
         FrameLayout.LayoutParams menuParams = new FrameLayout.LayoutParams(dpToPx(280), ViewGroup.LayoutParams.MATCH_PARENT);
         menuParams.gravity = Gravity.START;
         menuPanel.setLayoutParams(menuParams);
@@ -182,9 +201,9 @@ public class MainActivity extends Activity {
 
         Button closeMenu = new Button(this);
         closeMenu.setText("✕");
-        closeMenu.setTextColor(Color.parseColor("#888"));
+        closeMenu.setTextColor(COR_CINZA_ESCURO);
         closeMenu.setTextSize(28);
-        closeMenu.setBackgroundColor(Color.TRANSPARENT);
+        closeMenu.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
         closeMenu.setGravity(Gravity.END);
         closeMenu.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -196,8 +215,8 @@ public class MainActivity extends Activity {
 
         Button menuAcademia = new Button(this);
         menuAcademia.setText("Academia");
-        menuAcademia.setTextColor(Color.parseColor("#ccc"));
-        menuAcademia.setBackgroundColor(Color.TRANSPARENT);
+        menuAcademia.setTextColor(COR_CINZA_CLARO);
+        menuAcademia.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
         menuAcademia.setGravity(Gravity.START);
         menuAcademia.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
         menuAcademia.setTextSize(18);
@@ -212,8 +231,8 @@ public class MainActivity extends Activity {
 
         Button menuConfig = new Button(this);
         menuConfig.setText("Configurações");
-        menuConfig.setTextColor(Color.parseColor("#ccc"));
-        menuConfig.setBackgroundColor(Color.TRANSPARENT);
+        menuConfig.setTextColor(COR_CINZA_CLARO);
+        menuConfig.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
         menuConfig.setGravity(Gravity.START);
         menuConfig.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
         menuConfig.setTextSize(18);
@@ -240,12 +259,12 @@ public class MainActivity extends Activity {
     private void setupConfigModal(FrameLayout root) {
         configModal = new FrameLayout(this);
         configModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        configModal.setBackgroundColor(Color.TRANSPARENT);
+        configModal.setBackgroundColor(COR_FUNDO_OVERLAY);
         configModal.setVisibility(View.GONE);
 
         LinearLayout configBox = new LinearLayout(this);
         configBox.setOrientation(LinearLayout.VERTICAL);
-        configBox.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        configBox.setBackgroundColor(COR_CARD);
         FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         boxParams.setMargins(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
         configBox.setLayoutParams(boxParams);
@@ -257,9 +276,9 @@ public class MainActivity extends Activity {
 
         Button backBtn = new Button(this);
         backBtn.setText("←");
-        backBtn.setTextColor(Color.parseColor("#888"));
+        backBtn.setTextColor(COR_CINZA_ESCURO);
         backBtn.setTextSize(28);
-        backBtn.setBackgroundColor(Color.TRANSPARENT);
+        backBtn.setBackgroundColor(COR_FUNDO_TRANSPARENTE);
         backBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -270,7 +289,7 @@ public class MainActivity extends Activity {
 
         TextView configTitleView = new TextView(this);
         configTitleView.setText("Academia");
-        configTitleView.setTextColor(Color.parseColor("#aaa"));
+        configTitleView.setTextColor(COR_CINZA_MEDIO);
         configTitleView.setTextSize(18);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
         titleParams.gravity = Gravity.CENTER;
@@ -306,11 +325,11 @@ public class MainActivity extends Activity {
     private void setupPesoAvisoModal(FrameLayout root) {
         pesoAvisoModal = new FrameLayout(this);
         pesoAvisoModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        pesoAvisoModal.setBackgroundColor(Color.TRANSPARENT);
+        pesoAvisoModal.setBackgroundColor(COR_FUNDO_OVERLAY);
         pesoAvisoModal.setVisibility(View.GONE);
         LinearLayout avisoBox = new LinearLayout(this);
         avisoBox.setOrientation(LinearLayout.VERTICAL);
-        avisoBox.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        avisoBox.setBackgroundColor(COR_CARD);
         avisoBox.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
         FrameLayout.LayoutParams avisoParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
         avisoParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
@@ -318,13 +337,13 @@ public class MainActivity extends Activity {
 
         TextView avisoTitle = new TextView(this);
         avisoTitle.setText("Hora de Pesar!");
-        avisoTitle.setTextColor(Color.parseColor("#ff8a8a"));
+        avisoTitle.setTextColor(COR_VERMELHO_CLARO);
         avisoTitle.setTextSize(18);
         avisoTitle.setGravity(Gravity.CENTER);
         avisoBox.addView(avisoTitle);
 
         final TextView avisoText = new TextView(this);
-        avisoText.setTextColor(Color.parseColor("#ccc"));
+        avisoText.setTextColor(COR_CINZA_CLARO);
         avisoText.setTextSize(14);
         avisoText.setGravity(Gravity.CENTER);
         avisoText.setPadding(0, dpToPx(10), 0, dpToPx(10));
@@ -333,16 +352,16 @@ public class MainActivity extends Activity {
         final EditText pesoInput = new EditText(this);
         pesoInput.setHint("Peso atual (kg)");
         pesoInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        pesoInput.setTextColor(Color.parseColor("#ddd"));
-        pesoInput.setHintTextColor(Color.parseColor("#666"));
-        pesoInput.setBackgroundColor(Color.parseColor("#0a0a0a"));
+        pesoInput.setTextColor(COR_CINZA_CLARO);
+        pesoInput.setHintTextColor(COR_CINZA_ESCURO);
+        pesoInput.setBackgroundColor(COR_FUNDO_INPUT);
         pesoInput.setPadding(dpToPx(6), dpToPx(6), dpToPx(6), dpToPx(6));
         avisoBox.addView(pesoInput);
 
         Button pesoBtn = new Button(this);
         pesoBtn.setText("Registrar");
-        pesoBtn.setTextColor(Color.parseColor("#8bc34a"));
-        pesoBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+        pesoBtn.setTextColor(COR_VERDE_CLARO);
+        pesoBtn.setBackgroundColor(COR_VERDE_ESCURO);
         pesoBtn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         pesoBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -371,24 +390,24 @@ public class MainActivity extends Activity {
     private void setupConfirmModal(FrameLayout root) {
         confirmModal = new FrameLayout(this);
         confirmModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        confirmModal.setBackgroundColor(Color.TRANSPARENT);
+        confirmModal.setBackgroundColor(COR_FUNDO_OVERLAY);
         confirmModal.setVisibility(View.GONE);
         LinearLayout confirmBox = new LinearLayout(this);
         confirmBox.setOrientation(LinearLayout.VERTICAL);
-        confirmBox.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        confirmBox.setBackgroundColor(COR_CARD);
         confirmBox.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
         FrameLayout.LayoutParams confirmParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
         confirmParams.setMargins(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
         confirmBox.setLayoutParams(confirmParams);
 
         final TextView confirmTitle = new TextView(this);
-        confirmTitle.setTextColor(Color.parseColor("#eee"));
+        confirmTitle.setTextColor(COR_CINZA_MAIS_CLARO);
         confirmTitle.setTextSize(18);
         confirmTitle.setGravity(Gravity.CENTER);
         confirmBox.addView(confirmTitle);
 
         final TextView confirmMsg = new TextView(this);
-        confirmMsg.setTextColor(Color.parseColor("#aaa"));
+        confirmMsg.setTextColor(COR_CINZA_MEDIO);
         confirmMsg.setTextSize(14);
         confirmMsg.setGravity(Gravity.CENTER);
         confirmMsg.setPadding(0, dpToPx(10), 0, dpToPx(14));
@@ -562,7 +581,7 @@ public class MainActivity extends Activity {
                 treinoAtual = configData.getJSONObject("academia").getJSONObject("treino_" + hojeKey);
                 exercicioAtualIndex = 0;
                 todayCard.setVisibility(View.VISIBLE);
-                mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+                mainBtn.setBackgroundColor(COR_VERDE);
                 mainBtn.setText("PARAR");
                 isActive = true;
                 configData.getJSONObject("academia").put("botaoAtivo", true);
@@ -597,7 +616,7 @@ public class MainActivity extends Activity {
             }
             exercicioAtualIndex = 0;
             todayCard.setVisibility(View.VISIBLE);
-            mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+            mainBtn.setBackgroundColor(COR_VERDE);
             mainBtn.setText("PARAR");
             isActive = true;
             configData.getJSONObject("academia").put("botaoAtivo", true);
@@ -612,7 +631,7 @@ public class MainActivity extends Activity {
 
     private void pararTreino() {
         try {
-            mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+            mainBtn.setBackgroundColor(COR_VERMELHO);
             mainBtn.setText("INICIAR");
             isActive = false;
             todayCard.setVisibility(View.GONE);
@@ -656,20 +675,20 @@ public class MainActivity extends Activity {
                     academia.put("treino_" + hojeKey, JSONObject.NULL);
                     academia.put("botaoAtivo", false);
                     saveConfig();
-                    mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                    mainBtn.setBackgroundColor(COR_VERMELHO);
                     mainBtn.setText("INICIAR");
                     isActive = false;
                     todayCard.setVisibility(View.GONE);
                     treinoAtual = null;
                 } else {
-                    mainBtn.setBackgroundColor(Color.parseColor("#00cc00"));
+                    mainBtn.setBackgroundColor(COR_VERDE);
                     mainBtn.setText("PARAR");
                     isActive = true;
                     todayCard.setVisibility(View.VISIBLE);
                     renderTreinoCard();
                 }
             } else {
-                mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                mainBtn.setBackgroundColor(COR_VERMELHO);
                 mainBtn.setText("INICIAR");
                 isActive = false;
                 todayCard.setVisibility(View.GONE);
@@ -694,7 +713,7 @@ public class MainActivity extends Activity {
             if (exercicioAtualIndex >= exercicios.length()) {
                 TextView doneText = new TextView(this);
                 doneText.setText("Treino concluído!");
-                doneText.setTextColor(Color.parseColor("#666"));
+                doneText.setTextColor(COR_CINZA_ESCURO);
                 doneText.setGravity(Gravity.CENTER);
                 doneText.setPadding(0, dpToPx(20), 0, dpToPx(20));
                 exercisesContainer.addView(doneText);
@@ -708,13 +727,13 @@ public class MainActivity extends Activity {
 
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
-            card.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            card.setBackgroundColor(COR_FUNDO);
             card.setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14));
             card.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
             TextView name = new TextView(this);
             name.setText(ex.optString("exercise", "Exercício") + (ex.optBoolean("warmup", false) ? " (Aquecimento)" : ""));
-            name.setTextColor(Color.parseColor("#eee"));
+            name.setTextColor(COR_CINZA_MAIS_CLARO);
             name.setTextSize(18);
             name.setGravity(Gravity.CENTER);
             name.setPadding(0, 0, 0, dpToPx(4));
@@ -722,21 +741,21 @@ public class MainActivity extends Activity {
 
             TextView details = new TextView(this);
             details.setText(totalSeries + " séries x " + ex.optInt("reps", 0) + " reps");
-            details.setTextColor(Color.parseColor("#aaa"));
+            details.setTextColor(COR_CINZA_MEDIO);
             details.setTextSize(14);
             details.setGravity(Gravity.CENTER);
             card.addView(details);
 
             TextView load = new TextView(this);
             load.setText("Carga: " + ex.optDouble("load", 0) + "kg");
-            load.setTextColor(Color.parseColor("#8bc34a"));
+            load.setTextColor(COR_VERDE_CLARO);
             load.setTextSize(15);
             load.setGravity(Gravity.CENTER);
             card.addView(load);
 
             TextView status = new TextView(this);
             status.setText(isDone ? "Concluído" : (seriesFeitas + "/" + totalSeries + " séries"));
-            status.setTextColor(isDone ? Color.parseColor("#8bc34a") : Color.parseColor("#666"));
+            status.setTextColor(isDone ? COR_VERDE_CLARO : COR_CINZA_ESCURO);
             status.setTextSize(12);
             status.setGravity(Gravity.CENTER);
             status.setPadding(0, dpToPx(3), 0, 0);
@@ -745,8 +764,8 @@ public class MainActivity extends Activity {
             if (!isDone && !aguardandoTimer) {
                 Button btnDone = new Button(this);
                 btnDone.setText("PRONTO");
-                btnDone.setTextColor(Color.parseColor("#8bc34a"));
-                btnDone.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                btnDone.setTextColor(COR_VERDE_CLARO);
+                btnDone.setBackgroundColor(COR_VERDE_ESCURO);
                 LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                 btnParams.setMargins(0, dpToPx(8), 0, 0);
                 btnParams.gravity = Gravity.CENTER;
@@ -774,7 +793,7 @@ public class MainActivity extends Activity {
             } else if (aguardandoTimer) {
                 TextView waitText = new TextView(this);
                 waitText.setText("Aguardando descanso...");
-                waitText.setTextColor(Color.parseColor("#ffaa00"));
+                waitText.setTextColor(COR_AMARELO);
                 waitText.setTextSize(12);
                 waitText.setGravity(Gravity.CENTER);
                 waitText.setPadding(0, dpToPx(8), 0, 0);
@@ -802,7 +821,7 @@ public class MainActivity extends Activity {
         try {
             final FrameLayout overlay = new FrameLayout(this);
             overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            overlay.setBackgroundColor(Color.TRANSPARENT);
+            overlay.setBackgroundColor(COR_FUNDO_OVERLAY);
             overlay.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {}
@@ -810,7 +829,7 @@ public class MainActivity extends Activity {
 
             LinearLayout box = new LinearLayout(this);
             box.setOrientation(LinearLayout.VERTICAL);
-            box.setBackgroundColor(Color.parseColor("#1a1a1a"));
+            box.setBackgroundColor(COR_CARD);
             box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
             FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
             boxParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
@@ -818,14 +837,14 @@ public class MainActivity extends Activity {
 
             TextView title = new TextView(this);
             title.setText("Evolução de Carga");
-            title.setTextColor(Color.parseColor("#eee"));
+            title.setTextColor(COR_CINZA_MAIS_CLARO);
             title.setTextSize(18);
             title.setGravity(Gravity.CENTER);
             box.addView(title);
 
             TextView desc = new TextView(this);
             desc.setText("Registre a evolução para " + ex.optString("exercise"));
-            desc.setTextColor(Color.parseColor("#aaa"));
+            desc.setTextColor(COR_CINZA_MEDIO);
             desc.setTextSize(14);
             desc.setPadding(0, dpToPx(6), 0, dpToPx(6));
             box.addView(desc);
@@ -834,16 +853,16 @@ public class MainActivity extends Activity {
             loadInput.setHint("Carga atual (kg)");
             loadInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
             loadInput.setText(String.valueOf(ex.optDouble("load", 0)));
-            loadInput.setTextColor(Color.parseColor("#ddd"));
-            loadInput.setBackgroundColor(Color.parseColor("#0a0a0a"));
+            loadInput.setTextColor(COR_CINZA_CLARO);
+            loadInput.setBackgroundColor(COR_FUNDO_INPUT);
             box.addView(loadInput);
 
             final EditText repsInput = new EditText(this);
             repsInput.setHint("Repetições atuais");
             repsInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
             repsInput.setText(String.valueOf(ex.optInt("reps", 0)));
-            repsInput.setTextColor(Color.parseColor("#ddd"));
-            repsInput.setBackgroundColor(Color.parseColor("#0a0a0a"));
+            repsInput.setTextColor(COR_CINZA_CLARO);
+            repsInput.setBackgroundColor(COR_FUNDO_INPUT);
             box.addView(repsInput);
 
             LinearLayout btnRow = new LinearLayout(this);
@@ -853,8 +872,8 @@ public class MainActivity extends Activity {
 
             Button btnCancel = new Button(this);
             btnCancel.setText("Pular");
-            btnCancel.setTextColor(Color.parseColor("#ccc"));
-            btnCancel.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            btnCancel.setTextColor(COR_CINZA_CLARO);
+            btnCancel.setBackgroundColor(Color.rgb(42, 42, 42));
             btnCancel.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -866,8 +885,8 @@ public class MainActivity extends Activity {
 
             Button btnSave = new Button(this);
             btnSave.setText("Registrar");
-            btnSave.setTextColor(Color.parseColor("#8bc34a"));
-            btnSave.setBackgroundColor(Color.parseColor("#1a3a1a"));
+            btnSave.setTextColor(COR_VERDE_CLARO);
+            btnSave.setBackgroundColor(COR_VERDE_ESCURO);
             btnSave.setPadding(dpToPx(14), 0, dpToPx(14), 0);
             btnSave.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -966,7 +985,7 @@ public class MainActivity extends Activity {
             mostrarConfirmacao("Treino Concluído", "Parabéns! Você concluiu o treino de hoje.", new ConfirmCallback() {
                 @Override
                 public void onConfirm(boolean ok) {
-                    mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                    mainBtn.setBackgroundColor(COR_VERMELHO);
                     mainBtn.setText("INICIAR");
                     isActive = false;
                     todayCard.setVisibility(View.GONE);
@@ -987,7 +1006,7 @@ public class MainActivity extends Activity {
 
         LinearLayout timerDisplay = new LinearLayout(this);
         timerDisplay.setOrientation(LinearLayout.VERTICAL);
-        timerDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        timerDisplay.setBackgroundColor(COR_FUNDO);
         timerDisplay.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.setMargins(0, dpToPx(6), 0, dpToPx(6));
@@ -995,14 +1014,14 @@ public class MainActivity extends Activity {
 
         TextView label = new TextView(this);
         label.setText("Descanso");
-        label.setTextColor(Color.parseColor("#888"));
+        label.setTextColor(COR_CINZA_ESCURO);
         label.setTextSize(11);
         label.setGravity(Gravity.CENTER);
         timerDisplay.addView(label);
 
         final TextView text = new TextView(this);
         text.setId(View.generateViewId());
-        text.setTextColor(Color.parseColor("#8bc34a"));
+        text.setTextColor(COR_VERDE_CLARO);
         text.setTextSize(22);
         text.setGravity(Gravity.CENTER);
         timerDisplay.addView(text);
@@ -1103,7 +1122,7 @@ public class MainActivity extends Activity {
             final JSONObject academia = configData.getJSONObject("academia");
             TextView sectionTitle = new TextView(this);
             sectionTitle.setText("Resumo");
-            sectionTitle.setTextColor(Color.parseColor("#999"));
+            sectionTitle.setTextColor(Color.rgb(153, 153, 153));
             sectionTitle.setTextSize(14);
             sectionTitle.setPadding(0, dpToPx(10), 0, dpToPx(5));
             configContent.addView(sectionTitle);
@@ -1118,8 +1137,8 @@ public class MainActivity extends Activity {
             if (!viewOnly) {
                 Button btnPeso = new Button(this);
                 btnPeso.setText("Registrar Peso");
-                btnPeso.setTextColor(Color.parseColor("#8bc34a"));
-                btnPeso.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                btnPeso.setTextColor(COR_VERDE_CLARO);
+                btnPeso.setBackgroundColor(COR_VERDE_ESCURO);
                 btnPeso.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 btnPeso.setPadding(0, dpToPx(8), 0, dpToPx(8));
                 btnPeso.setOnClickListener(new View.OnClickListener() {
@@ -1128,12 +1147,12 @@ public class MainActivity extends Activity {
                         final EditText input = new EditText(MainActivity.this);
                         input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
                         input.setHint("Peso (kg)");
-                        input.setTextColor(Color.parseColor("#ddd"));
-                        input.setBackgroundColor(Color.parseColor("#0a0a0a"));
+                        input.setTextColor(COR_CINZA_CLARO);
+                        input.setBackgroundColor(COR_FUNDO_INPUT);
                         
                         final FrameLayout overlay = new FrameLayout(MainActivity.this);
                         overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                        overlay.setBackgroundColor(Color.TRANSPARENT);
+                        overlay.setBackgroundColor(COR_FUNDO_OVERLAY);
                         overlay.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View ev) {}
@@ -1141,14 +1160,14 @@ public class MainActivity extends Activity {
                         
                         LinearLayout box = new LinearLayout(MainActivity.this);
                         box.setOrientation(LinearLayout.VERTICAL);
-                        box.setBackgroundColor(Color.parseColor("#1a1a1a"));
+                        box.setBackgroundColor(COR_CARD);
                         box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
                         FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
                         box.setLayoutParams(boxParams);
                         
                         TextView title = new TextView(MainActivity.this);
                         title.setText("Registrar Peso");
-                        title.setTextColor(Color.parseColor("#eee"));
+                        title.setTextColor(COR_CINZA_MAIS_CLARO);
                         title.setTextSize(18);
                         title.setGravity(Gravity.CENTER);
                         box.addView(title);
@@ -1156,8 +1175,8 @@ public class MainActivity extends Activity {
                         
                         Button saveBtn = new Button(MainActivity.this);
                         saveBtn.setText("Salvar");
-                        saveBtn.setTextColor(Color.parseColor("#8bc34a"));
-                        saveBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                        saveBtn.setTextColor(COR_VERDE_CLARO);
+                        saveBtn.setBackgroundColor(COR_VERDE_ESCURO);
                         saveBtn.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View ev) {
@@ -1181,7 +1200,7 @@ public class MainActivity extends Activity {
 
             sectionTitle = new TextView(this);
             sectionTitle.setText("Dias de Descanso");
-            sectionTitle.setTextColor(Color.parseColor("#999"));
+            sectionTitle.setTextColor(Color.rgb(153, 153, 153));
             sectionTitle.setTextSize(14);
             sectionTitle.setPadding(0, dpToPx(15), 0, dpToPx(5));
             configContent.addView(sectionTitle);
@@ -1192,7 +1211,7 @@ public class MainActivity extends Activity {
             for (String dia : DIAS_SEMANA) {
                 CheckBox cb = new CheckBox(this);
                 cb.setText(dia);
-                cb.setTextColor(Color.parseColor("#aaa"));
+                cb.setTextColor(COR_CINZA_MEDIO);
                 cb.setChecked(diasDescanso.toString().contains("\"" + dia + "\""));
                 if (viewOnly) cb.setEnabled(false);
                 cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -1220,7 +1239,7 @@ public class MainActivity extends Activity {
     private void addConfigRow(String label, String value) {
         TextView tv = new TextView(this);
         tv.setText(label + ": " + value);
-        tv.setTextColor(Color.parseColor("#ccc"));
+        tv.setTextColor(COR_CINZA_CLARO);
         tv.setTextSize(13);
         tv.setPadding(0, dpToPx(4), 0, dpToPx(4));
         configContent.addView(tv);
@@ -1241,8 +1260,8 @@ public class MainActivity extends Activity {
             if (unicoBotao) {
                 Button btnOk = new Button(this);
                 btnOk.setText("OK");
-                btnOk.setTextColor(Color.parseColor("#8bc34a"));
-                btnOk.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                btnOk.setTextColor(COR_VERDE_CLARO);
+                btnOk.setBackgroundColor(COR_VERDE_ESCURO);
                 btnOk.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -1254,8 +1273,8 @@ public class MainActivity extends Activity {
             } else {
                 Button btnNo = new Button(this);
                 btnNo.setText("Não");
-                btnNo.setTextColor(Color.parseColor("#ccc"));
-                btnNo.setBackgroundColor(Color.parseColor("#2a2a2a"));
+                btnNo.setTextColor(COR_CINZA_CLARO);
+                btnNo.setBackgroundColor(Color.rgb(42, 42, 42));
                 btnNo.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -1267,8 +1286,8 @@ public class MainActivity extends Activity {
                 
                 Button btnYes = new Button(this);
                 btnYes.setText("Sim");
-                btnYes.setTextColor(Color.parseColor("#ff8a8a"));
-                btnYes.setBackgroundColor(Color.parseColor("#3a1a1a"));
+                btnYes.setTextColor(COR_VERMELHO_CLARO);
+                btnYes.setBackgroundColor(Color.rgb(58, 26, 26));
                 btnYes.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
