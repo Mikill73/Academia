@@ -1412,7 +1412,7 @@ public class MainActivity extends Activity {
                         item.setBackgroundColor(Color.parseColor("#0d0d0d"));
                         item.setPadding(dpToPx(6), dpToPx(3), dpToPx(6), dpToPx(3));
                         GradientDrawable border7 = new GradientDrawable();
-                        border7.setStroke(0, 0, 0, 2, Color.parseColor("#2a2a2a"));
+                        border7.setStroke(2, Color.parseColor("#2a2a2a"));
                         border7.setColor(Color.parseColor("#0d0d0d"));
                         item.setBackground(border7);
                         TextView lbl = new TextView(this);
@@ -1923,7 +1923,7 @@ public class MainActivity extends Activity {
                     item.setBackgroundColor(Color.parseColor("#0d0d0d"));
                     item.setPadding(dpToPx(6), dpToPx(3), dpToPx(6), dpToPx(3));
                     GradientDrawable border6 = new GradientDrawable();
-                    border6.setStroke(0, 0, 0, 2, Color.parseColor("#2a2a2a"));
+                    border6.setStroke(2, Color.parseColor("#2a2a2a"));
                     border6.setColor(Color.parseColor("#0d0d0d"));
                     item.setBackground(border6);
 
