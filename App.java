@@ -1,5 +1,5 @@
 mkdir -p src/main/java/com/academia/app
-cat > src/main/java/com/academia/app/MainActivity.java << 'ENDOFJAVA'
+cat > src/main/java/com/academia/app/MainActivity.java << 'EOF'
 package com.academia.app;
 
 import android.app.Activity;
@@ -13,20 +13,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
@@ -73,33 +70,33 @@ public class MainActivity extends Activity {
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-Button hamburger = new Button(this);
-hamburger.setText("☰");
-hamburger.setTextColor(Color.WHITE);
-hamburger.setTextSize(28);
-hamburger.setBackgroundColor(Color.TRANSPARENT);
-LinearLayout.LayoutParams hamburgerParams = new LinearLayout.LayoutParams(
-    ViewGroup.LayoutParams.WRAP_CONTENT, 
-    ViewGroup.LayoutParams.WRAP_CONTENT
-);
-hamburgerParams.setMargins(16, 16, 0, 0);
-hamburger.setLayoutParams(hamburgerParams);
-
-hamburger.setOnClickListener(new View.OnClickListener() {
-    @Override
-    public void onClick(View v) {
-        toggleMenu(true);
-    }
-});
-
-mainLayout.addView(hamburger);
+        Button hamburger = new Button(this);
+        hamburger.setText("☰");
+        hamburger.setTextColor(Color.WHITE);
+        hamburger.setTextSize(28);
+        hamburger.setBackgroundColor(Color.TRANSPARENT);
+        LinearLayout.LayoutParams hamburgerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        hamburgerParams.setMargins(16, 16, 0, 0);
+        hamburger.setLayoutParams(hamburgerParams);
+        hamburger.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleMenu(true);
+            }
+        });
+        mainLayout.addView(hamburger);
 
         mainBtn = new Button(this);
         mainBtn.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130), Gravity.CENTER));
         ((LinearLayout.LayoutParams) mainBtn.getLayoutParams()).topMargin = dpToPx(40);
         mainBtn.setBackgroundDrawable(new android.graphics.drawable.ShapeDrawable(new android.graphics.drawable.shapes.OvalShape()));
         mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
-        mainBtn.setOnClickListener(v -> handleMainBtnClick());
+        mainBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                handleMainBtnClick();
+            }
+        });
         mainLayout.addView(mainBtn);
 
         todayCard = new LinearLayout(this);
@@ -150,13 +147,21 @@ mainLayout.addView(hamburger);
         menuOverlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         menuOverlay.setBackgroundColor(Color.parseColor("#00000000"));
         menuOverlay.setVisibility(View.GONE);
-        menuOverlay.setOnClickListener(v -> toggleMenu(false));
+        menuOverlay.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleMenu(false);
+            }
+        });
 
         menuPanel = new LinearLayout(this);
         menuPanel.setOrientation(LinearLayout.VERTICAL);
         menuPanel.setBackgroundColor(Color.parseColor("#1a1a1a"));
         menuPanel.setLayoutParams(new FrameLayout.LayoutParams(dpToPx(280), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.START));
-        menuPanel.setOnClickListener(v -> {});
+        menuPanel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {}
+        });
 
         Button closeMenu = new Button(this);
         closeMenu.setText("✕");
@@ -164,7 +169,12 @@ mainLayout.addView(hamburger);
         closeMenu.setTextSize(28);
         closeMenu.setBackgroundColor(Color.TRANSPARENT);
         closeMenu.setGravity(Gravity.END);
-        closeMenu.setOnClickListener(v -> toggleMenu(false));
+        closeMenu.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleMenu(false);
+            }
+        });
         menuPanel.addView(closeMenu);
 
         Button menuAcademia = new Button(this);
@@ -174,7 +184,13 @@ mainLayout.addView(hamburger);
         menuAcademia.setGravity(Gravity.START);
         menuAcademia.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
         menuAcademia.setTextSize(18);
-        menuAcademia.setOnClickListener(v -> { toggleMenu(false); openConfig(true); });
+        menuAcademia.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleMenu(false);
+                openConfig(true);
+            }
+        });
         menuPanel.addView(menuAcademia);
 
         Button menuConfig = new Button(this);
@@ -184,7 +200,13 @@ mainLayout.addView(hamburger);
         menuConfig.setGravity(Gravity.START);
         menuConfig.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
         menuConfig.setTextSize(18);
-        menuConfig.setOnClickListener(v -> { toggleMenu(false); openConfig(false); });
+        menuConfig.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleMenu(false);
+                openConfig(false);
+            }
+        });
         menuPanel.addView(menuConfig);
 
         menuOverlay.addView(menuPanel);
@@ -213,7 +235,12 @@ mainLayout.addView(hamburger);
         backBtn.setTextColor(Color.parseColor("#888"));
         backBtn.setTextSize(28);
         backBtn.setBackgroundColor(Color.TRANSPARENT);
-        backBtn.setOnClickListener(v -> closeConfig());
+        backBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                closeConfig();
+            }
+        });
         configHeader.addView(backBtn);
 
         TextView configTitleView = new TextView(this);
@@ -238,8 +265,16 @@ mainLayout.addView(hamburger);
         configScroll.addView(configContent);
         configBox.addView(configScroll);
         configModal.addView(configBox);
-        configModal.setOnClickListener(v -> closeConfig());
-        configBox.setOnClickListener(v -> {});
+        configModal.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                closeConfig();
+            }
+        });
+        configBox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {}
+        });
         root.addView(configModal);
 
         pesoAvisoModal = new FrameLayout(this);
@@ -282,21 +317,27 @@ mainLayout.addView(hamburger);
         pesoBtn.setTextColor(Color.parseColor("#8bc34a"));
         pesoBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
         pesoBtn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        pesoBtn.setOnClickListener(v -> {
-            String valStr = pesoInput.getText().toString();
-            if (!valStr.isEmpty()) {
-                try {
-                    double val = Double.parseDouble(valStr);
-                    registrarPeso(val);
-                    pesoAvisoModal.setVisibility(View.GONE);
-                } catch (Exception e) {
-                    Toast.makeText(this, "Peso inválido", Toast.LENGTH_SHORT).show();
+        pesoBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String valStr = pesoInput.getText().toString();
+                if (!valStr.isEmpty()) {
+                    try {
+                        double val = Double.parseDouble(valStr);
+                        registrarPeso(val);
+                        pesoAvisoModal.setVisibility(View.GONE);
+                    } catch (Exception e) {
+                        Toast.makeText(MainActivity.this, "Peso inválido", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });
         avisoBox.addView(pesoBtn);
         pesoAvisoModal.addView(avisoBox);
-        pesoAvisoModal.setOnClickListener(v -> {});
+        pesoAvisoModal.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {}
+        });
         root.addView(pesoAvisoModal);
 
         confirmModal = new FrameLayout(this);
@@ -330,7 +371,10 @@ mainLayout.addView(hamburger);
         confirmBtnRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         confirmBox.addView(confirmBtnRow);
         confirmModal.addView(confirmBox);
-        confirmModal.setOnClickListener(v -> {});
+        confirmModal.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {}
+        });
         root.addView(confirmModal);
 
         setContentView(root);
@@ -420,15 +464,21 @@ mainLayout.addView(hamburger);
 
     private void handleMainBtnClick() {
         if (isActive) {
-            mostrarConfirmacao("Parar Treino", "Deseja realmente parar?", ok -> {
-                if (ok) {
-                    pararTreino();
+            mostrarConfirmacao("Parar Treino", "Deseja realmente parar?", new ConfirmCallback() {
+                @Override
+                public void onConfirm(boolean ok) {
+                    if (ok) {
+                        pararTreino();
+                    }
                 }
             });
         } else {
             JSONArray treinos = getTodayTreinos();
             if (treinos.length() == 0) {
-                mostrarConfirmacao("Aviso", "Nenhum treino programado para hoje.", ok -> {}, true);
+                mostrarConfirmacao("Aviso", "Nenhum treino programado para hoje.", new ConfirmCallback() {
+                    @Override
+                    public void onConfirm(boolean ok) {}
+                }, true);
                 return;
             }
             iniciarTreino();
@@ -440,13 +490,16 @@ mainLayout.addView(hamburger);
             String hojeKey = getTodayKey();
             JSONObject treinoConcluido = configData.getJSONObject("academia").getJSONObject("treinoConcluido");
             if (treinoConcluido.optBoolean(hojeKey, false)) {
-                mostrarConfirmacao("Treino Concluído", "Deseja refazê-lo?", ok -> {
-                    if (ok) {
-                        try {
-                            treinoConcluido.put(hojeKey, false);
-                            saveConfig();
-                            iniciarTreinoAtual();
-                        } catch (Exception e) {}
+                mostrarConfirmacao("Treino Concluído", "Deseja refazê-lo?", new ConfirmCallback() {
+                    @Override
+                    public void onConfirm(boolean ok) {
+                        if (ok) {
+                            try {
+                                treinoConcluido.put(hojeKey, false);
+                                saveConfig();
+                                iniciarTreinoAtual();
+                            } catch (Exception e) {}
+                        }
                     }
                 });
                 return;
@@ -634,17 +687,24 @@ mainLayout.addView(hamburger);
                 btnParams.setMargins(0, dpToPx(8), 0, 0);
                 btnParams.gravity = Gravity.CENTER;
                 btnDone.setLayoutParams(btnParams);
-                btnDone.setOnClickListener(v -> {
-                    if (aguardandoTimer) return;
-                    ex.put("_seriesFeitas", seriesFeitas + 1);
-                    if (ex.optInt("_seriesFeitas", 0) >= totalSeries) {
-                        ex.put("_done", true);
-                        if (!ex.optBoolean("warmup", false)) {
-                            pedirEvolucaoCarga(ex, exercicioAtualIndex);
-                            return;
+                btnDone.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (aguardandoTimer) return;
+                        try {
+                            ex.put("_seriesFeitas", seriesFeitas + 1);
+                            if (ex.optInt("_seriesFeitas", 0) >= totalSeries) {
+                                ex.put("_done", true);
+                                if (!ex.optBoolean("warmup", false)) {
+                                    pedirEvolucaoCarga(ex, exercicioAtualIndex);
+                                    return;
+                                }
+                            }
+                            salvarProgressoEAtualizar(exercicioAtualIndex);
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
                     }
-                    salvarProgressoEAtualizar(exercicioAtualIndex);
                 });
                 card.addView(btnDone);
             } else if (aguardandoTimer) {
@@ -674,12 +734,15 @@ mainLayout.addView(hamburger);
         }
     }
 
-    private void pedirEvolucaoCarga(JSONObject ex, int idx) {
+    private void pedirEvolucaoCarga(final JSONObject ex, final int idx) {
         try {
-            FrameLayout overlay = new FrameLayout(this);
+            final FrameLayout overlay = new FrameLayout(this);
             overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             overlay.setBackgroundColor(Color.parseColor("#00000000"));
-            overlay.setOnClickListener(v -> {});
+            overlay.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {}
+            });
 
             LinearLayout box = new LinearLayout(this);
             box.setOrientation(LinearLayout.VERTICAL);
@@ -703,7 +766,7 @@ mainLayout.addView(hamburger);
             desc.setPadding(0, dpToPx(6), 0, dpToPx(6));
             box.addView(desc);
 
-            EditText loadInput = new EditText(this);
+            final EditText loadInput = new EditText(this);
             loadInput.setHint("Carga atual (kg)");
             loadInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
             loadInput.setText(String.valueOf(ex.optDouble("load", 0)));
@@ -711,7 +774,7 @@ mainLayout.addView(hamburger);
             loadInput.setBackgroundColor(Color.parseColor("#0a0a0a"));
             box.addView(loadInput);
 
-            EditText repsInput = new EditText(this);
+            final EditText repsInput = new EditText(this);
             repsInput.setHint("Repetições atuais");
             repsInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
             repsInput.setText(String.valueOf(ex.optInt("reps", 0)));
@@ -728,9 +791,12 @@ mainLayout.addView(hamburger);
             btnCancel.setText("Pular");
             btnCancel.setTextColor(Color.parseColor("#ccc"));
             btnCancel.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            btnCancel.setOnClickListener(v -> {
-                ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
-                salvarProgressoEAtualizar(idx);
+            btnCancel.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                    salvarProgressoEAtualizar(idx);
+                }
             });
             btnRow.addView(btnCancel);
 
@@ -739,26 +805,29 @@ mainLayout.addView(hamburger);
             btnSave.setTextColor(Color.parseColor("#8bc34a"));
             btnSave.setBackgroundColor(Color.parseColor("#1a3a1a"));
             btnSave.setPadding(dpToPx(14), 0, dpToPx(14), 0);
-            btnSave.setOnClickListener(v -> {
-                try {
-                    double load = Double.parseDouble(loadInput.getText().toString());
-                    int reps = Integer.parseInt(repsInput.getText().toString());
-                    String hoje = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
-                    JSONArray hist = ex.optJSONArray("loadHistory");
-                    if (hist == null) hist = new JSONArray();
-                    JSONObject reg = new JSONObject();
-                    reg.put("load", load);
-                    reg.put("reps", reps);
-                    reg.put("date", hoje);
-                    hist.put(reg);
-                    ex.put("loadHistory", hist);
-                    ex.put("load", load);
-                    ex.put("reps", reps);
-                    ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
-                    salvarProgressoEAtualizar(idx);
-                } catch (Exception e) {
-                    ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
-                    salvarProgressoEAtualizar(idx);
+            btnSave.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        double load = Double.parseDouble(loadInput.getText().toString());
+                        int reps = Integer.parseInt(repsInput.getText().toString());
+                        String hoje = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
+                        JSONArray hist = ex.optJSONArray("loadHistory");
+                        if (hist == null) hist = new JSONArray();
+                        JSONObject reg = new JSONObject();
+                        reg.put("load", load);
+                        reg.put("reps", reps);
+                        reg.put("date", hoje);
+                        hist.put(reg);
+                        ex.put("loadHistory", hist);
+                        ex.put("load", load);
+                        ex.put("reps", reps);
+                        ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                        salvarProgressoEAtualizar(idx);
+                    } catch (Exception e) {
+                        ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                        salvarProgressoEAtualizar(idx);
+                    }
                 }
             });
             btnRow.addView(btnSave);
@@ -803,9 +872,12 @@ mainLayout.addView(hamburger);
             if (descanso > 0) {
                 aguardandoTimer = true;
                 renderTreinoCard();
-                iniciarTimer(descanso, () -> {
-                    aguardandoTimer = false;
-                    renderTreinoCard();
+                iniciarTimer(descanso, new Runnable() {
+                    @Override
+                    public void run() {
+                        aguardandoTimer = false;
+                        renderTreinoCard();
+                    }
                 });
             } else {
                 renderTreinoCard();
@@ -825,19 +897,22 @@ mainLayout.addView(hamburger);
             configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
             configData.getJSONObject("academia").put("botaoAtivo", false);
             saveConfig();
-            mostrarConfirmacao("Treino Concluído", "Parabéns! Você concluiu o treino de hoje.", ok -> {
-                mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
-                isActive = false;
-                todayCard.setVisibility(View.GONE);
-                treinoAtual = null;
-                limparTimer();
+            mostrarConfirmacao("Treino Concluído", "Parabéns! Você concluiu o treino de hoje.", new ConfirmCallback() {
+                @Override
+                public void onConfirm(boolean ok) {
+                    mainBtn.setBackgroundColor(Color.parseColor("#ff0000"));
+                    isActive = false;
+                    todayCard.setVisibility(View.GONE);
+                    treinoAtual = null;
+                    limparTimer();
+                }
             }, true);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void iniciarTimer(int segundos, Runnable callback) {
+    private void iniciarTimer(int segundos, final Runnable callback) {
         limparTimer();
         timerRestante = segundos;
         aguardandoTimer = true;
@@ -858,7 +933,7 @@ mainLayout.addView(hamburger);
         label.setGravity(Gravity.CENTER);
         timerDisplay.addView(label);
 
-        TextView text = new TextView(this);
+        final TextView text = new TextView(this);
         text.setId(View.generateViewId());
         text.setTextColor(Color.parseColor("#8bc34a"));
         text.setTextSize(22);
@@ -954,10 +1029,10 @@ mainLayout.addView(hamburger);
         }
     }
 
-    private void renderConfig(boolean viewOnly) {
+    private void renderConfig(final boolean viewOnly) {
         configContent.removeAllViews();
         try {
-            JSONObject academia = configData.getJSONObject("academia");
+            final JSONObject academia = configData.getJSONObject("academia");
             TextView sectionTitle = new TextView(this);
             sectionTitle.setText("Resumo");
             sectionTitle.setTextColor(Color.parseColor("#999"));
@@ -979,50 +1054,59 @@ mainLayout.addView(hamburger);
                 btnPeso.setBackgroundColor(Color.parseColor("#1a3a1a"));
                 btnPeso.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 btnPeso.setPadding(0, dpToPx(8), 0, dpToPx(8));
-                btnPeso.setOnClickListener(v -> {
-                    EditText input = new EditText(this);
-                    input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-                    input.setHint("Peso (kg)");
-                    input.setTextColor(Color.parseColor("#ddd"));
-                    input.setBackgroundColor(Color.parseColor("#0a0a0a"));
-                    
-                    FrameLayout overlay = new FrameLayout(this);
-                    overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                    overlay.setBackgroundColor(Color.parseColor("#00000000"));
-                    overlay.setOnClickListener(ev -> {});
-                    
-                    LinearLayout box = new LinearLayout(this);
-                    box.setOrientation(LinearLayout.VERTICAL);
-                    box.setBackgroundColor(Color.parseColor("#1a1a1a"));
-                    box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
-                    FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
-                    box.setLayoutParams(boxParams);
-                    
-                    TextView title = new TextView(this);
-                    title.setText("Registrar Peso");
-                    title.setTextColor(Color.parseColor("#eee"));
-                    title.setTextSize(18);
-                    title.setGravity(Gravity.CENTER);
-                    box.addView(title);
-                    box.addView(input);
-                    
-                    Button saveBtn = new Button(this);
-                    saveBtn.setText("Salvar");
-                    saveBtn.setTextColor(Color.parseColor("#8bc34a"));
-                    saveBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
-                    saveBtn.setOnClickListener(ev -> {
-                        try {
-                            double val = Double.parseDouble(input.getText().toString());
-                            registrarPeso(val);
-                            ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
-                            renderConfig(false);
-                        } catch (Exception e) {
-                            Toast.makeText(this, "Inválido", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                    box.addView(saveBtn);
-                    overlay.addView(box);
-                    ((FrameLayout) getWindow().getDecorView()).addView(overlay);
+                btnPeso.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        final EditText input = new EditText(MainActivity.this);
+                        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+                        input.setHint("Peso (kg)");
+                        input.setTextColor(Color.parseColor("#ddd"));
+                        input.setBackgroundColor(Color.parseColor("#0a0a0a"));
+                        
+                        final FrameLayout overlay = new FrameLayout(MainActivity.this);
+                        overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                        overlay.setBackgroundColor(Color.parseColor("#00000000"));
+                        overlay.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View ev) {}
+                        });
+                        
+                        LinearLayout box = new LinearLayout(MainActivity.this);
+                        box.setOrientation(LinearLayout.VERTICAL);
+                        box.setBackgroundColor(Color.parseColor("#1a1a1a"));
+                        box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
+                        FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+                        box.setLayoutParams(boxParams);
+                        
+                        TextView title = new TextView(MainActivity.this);
+                        title.setText("Registrar Peso");
+                        title.setTextColor(Color.parseColor("#eee"));
+                        title.setTextSize(18);
+                        title.setGravity(Gravity.CENTER);
+                        box.addView(title);
+                        box.addView(input);
+                        
+                        Button saveBtn = new Button(MainActivity.this);
+                        saveBtn.setText("Salvar");
+                        saveBtn.setTextColor(Color.parseColor("#8bc34a"));
+                        saveBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+                        saveBtn.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View ev) {
+                                try {
+                                    double val = Double.parseDouble(input.getText().toString());
+                                    registrarPeso(val);
+                                    ((FrameLayout) getWindow().getDecorView()).removeView(overlay);
+                                    renderConfig(false);
+                                } catch (Exception e) {
+                                    Toast.makeText(MainActivity.this, "Inválido", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+                        box.addView(saveBtn);
+                        overlay.addView(box);
+                        ((FrameLayout) getWindow().getDecorView()).addView(overlay);
+                    }
                 });
                 configContent.addView(btnPeso);
             }
@@ -1035,7 +1119,7 @@ mainLayout.addView(hamburger);
             configContent.addView(sectionTitle);
 
             JSONArray diasDescanso = academia.getJSONArray("diasDescanso");
-            LinearLayout diasContainer = new LinearLayout(this);
+            final LinearLayout diasContainer = new LinearLayout(this);
             diasContainer.setOrientation(LinearLayout.VERTICAL);
             for (String dia : DIAS_SEMANA) {
                 CheckBox cb = new CheckBox(this);
@@ -1043,16 +1127,19 @@ mainLayout.addView(hamburger);
                 cb.setTextColor(Color.parseColor("#aaa"));
                 cb.setChecked(diasDescanso.toString().contains("\"" + dia + "\""));
                 if (viewOnly) cb.setEnabled(false);
-                cb.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    try {
-                        JSONArray novos = new JSONArray();
-                        for (int i = 0; i < DIAS_SEMANA.length; i++) {
-                            CheckBox c = (CheckBox) diasContainer.getChildAt(i);
-                            if (c.isChecked()) novos.put(c.getText().toString());
-                        }
-                        academia.put("diasDescanso", novos);
-                        saveConfig();
-                    } catch (Exception e) {}
+                cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        try {
+                            JSONArray novos = new JSONArray();
+                            for (int i = 0; i < DIAS_SEMANA.length; i++) {
+                                CheckBox c = (CheckBox) diasContainer.getChildAt(i);
+                                if (c.isChecked()) novos.put(c.getText().toString());
+                            }
+                            academia.put("diasDescanso", novos);
+                            saveConfig();
+                        } catch (Exception e) {}
+                    }
                 });
                 diasContainer.addView(cb);
             }
@@ -1072,7 +1159,7 @@ mainLayout.addView(hamburger);
         configContent.addView(tv);
     }
 
-    private void mostrarConfirmacao(String titulo, String msg, ConfirmCallback callback, boolean unicoBotao) {
+    private void mostrarConfirmacao(String titulo, String msg, final ConfirmCallback callback, boolean unicoBotao) {
         try {
             TextView titleView = confirmModal.findViewById(android.R.id.text1);
             TextView msgView = confirmModal.findViewById(android.R.id.text2);
@@ -1092,9 +1179,12 @@ mainLayout.addView(hamburger);
                 btnOk.setText("OK");
                 btnOk.setTextColor(Color.parseColor("#8bc34a"));
                 btnOk.setBackgroundColor(Color.parseColor("#1a3a1a"));
-                btnOk.setOnClickListener(v -> {
-                    confirmModal.setVisibility(View.GONE);
-                    if (callback != null) callback.onConfirm(true);
+                btnOk.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        confirmModal.setVisibility(View.GONE);
+                        if (callback != null) callback.onConfirm(true);
+                    }
                 });
                 btnRow.addView(btnOk);
             } else {
@@ -1102,9 +1192,12 @@ mainLayout.addView(hamburger);
                 btnNo.setText("Não");
                 btnNo.setTextColor(Color.parseColor("#ccc"));
                 btnNo.setBackgroundColor(Color.parseColor("#2a2a2a"));
-                btnNo.setOnClickListener(v -> {
-                    confirmModal.setVisibility(View.GONE);
-                    if (callback != null) callback.onConfirm(false);
+                btnNo.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        confirmModal.setVisibility(View.GONE);
+                        if (callback != null) callback.onConfirm(false);
+                    }
                 });
                 btnRow.addView(btnNo);
                 
@@ -1112,9 +1205,12 @@ mainLayout.addView(hamburger);
                 btnYes.setText("Sim");
                 btnYes.setTextColor(Color.parseColor("#ff8a8a"));
                 btnYes.setBackgroundColor(Color.parseColor("#3a1a1a"));
-                btnYes.setOnClickListener(v -> {
-                    confirmModal.setVisibility(View.GONE);
-                    if (callback != null) callback.onConfirm(true);
+                btnYes.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        confirmModal.setVisibility(View.GONE);
+                        if (callback != null) callback.onConfirm(true);
+                    }
                 });
                 btnRow.addView(btnYes);
             }
@@ -1136,4 +1232,4 @@ mainLayout.addView(hamburger);
         void onConfirm(boolean ok);
     }
 }
-ENDOFJAVA
+EOF
