@@ -67,7 +67,7 @@ public class MainActivity extends Activity {
             carregarEstadoBotao();
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(this, "Erro ao iniciar: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Erro ao iniciar", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -160,7 +160,7 @@ public class MainActivity extends Activity {
 
         menuOverlay = new FrameLayout(this);
         menuOverlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        menuOverlay.setBackgroundColor(Color.parseColor("#88000000"));
+        menuOverlay.setBackgroundColor(Color.TRANSPARENT);
         menuOverlay.setVisibility(View.GONE);
         menuOverlay.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -240,7 +240,7 @@ public class MainActivity extends Activity {
     private void setupConfigModal(FrameLayout root) {
         configModal = new FrameLayout(this);
         configModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        configModal.setBackgroundColor(Color.parseColor("#88000000"));
+        configModal.setBackgroundColor(Color.TRANSPARENT);
         configModal.setVisibility(View.GONE);
 
         LinearLayout configBox = new LinearLayout(this);
@@ -306,7 +306,7 @@ public class MainActivity extends Activity {
     private void setupPesoAvisoModal(FrameLayout root) {
         pesoAvisoModal = new FrameLayout(this);
         pesoAvisoModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        pesoAvisoModal.setBackgroundColor(Color.parseColor("#88000000"));
+        pesoAvisoModal.setBackgroundColor(Color.TRANSPARENT);
         pesoAvisoModal.setVisibility(View.GONE);
         LinearLayout avisoBox = new LinearLayout(this);
         avisoBox.setOrientation(LinearLayout.VERTICAL);
@@ -371,7 +371,7 @@ public class MainActivity extends Activity {
     private void setupConfirmModal(FrameLayout root) {
         confirmModal = new FrameLayout(this);
         confirmModal.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        confirmModal.setBackgroundColor(Color.parseColor("#88000000"));
+        confirmModal.setBackgroundColor(Color.TRANSPARENT);
         confirmModal.setVisibility(View.GONE);
         LinearLayout confirmBox = new LinearLayout(this);
         confirmBox.setOrientation(LinearLayout.VERTICAL);
@@ -802,7 +802,7 @@ public class MainActivity extends Activity {
         try {
             final FrameLayout overlay = new FrameLayout(this);
             overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            overlay.setBackgroundColor(Color.parseColor("#88000000"));
+            overlay.setBackgroundColor(Color.TRANSPARENT);
             overlay.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {}
@@ -1133,7 +1133,7 @@ public class MainActivity extends Activity {
                         
                         final FrameLayout overlay = new FrameLayout(MainActivity.this);
                         overlay.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                        overlay.setBackgroundColor(Color.parseColor("#88000000"));
+                        overlay.setBackgroundColor(Color.TRANSPARENT);
                         overlay.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View ev) {}
