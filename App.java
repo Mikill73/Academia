@@ -2,8 +2,12 @@ cat > src/main/java/com/academia/app/MainActivity.java << 'EOF'
 package com.academia.app;
 
 import android.app.Activity;
+import android.app.DatePickerDialog;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.Manifest;
 import android.view.View;
 import android.widget.*;
 import android.graphics.Color;
@@ -50,10 +54,19 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = this;
+        verificarPermissoes();
         carregarDados();
         setupUI();
         carregarEstadoBotao();
         renderDados();
+    }
+
+    private void verificarPermissoes() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            }
+        }
     }
 
     private void setupUI() {
@@ -194,6 +207,7 @@ public class MainActivity extends Activity {
             academia.put("treinoConcluido", new JSONObject());
             academia.put("botaoAtivo", false);
             configData.put("academia", academia);
+            salvarDados();
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -302,6 +316,18 @@ public class MainActivity extends Activity {
             return sdfOut.format(date);
         } catch (Exception e) {
             return dataStr;
+        }
+    }
+
+    private String formatDataParaSalvar(String dataBR) {
+        if (dataBR == null || dataBR.isEmpty()) return "";
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat sdfOut = new SimpleDateFormat("yyyy-MM-dd");
+            Date date = sdf.parse(dataBR);
+            return sdfOut.format(date);
+        } catch (Exception e) {
+            return dataBR;
         }
     }
 
@@ -2221,21 +2247,48 @@ public class MainActivity extends Activity {
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
-        String current = "";
+        final TextView dataDisplay = new TextView(this);
+        dataDisplay.setText("Selecione a data");
+        dataDisplay.setTextColor(Color.parseColor("#eeeeee"));
+        dataDisplay.setTextSize(16);
+        dataDisplay.setPadding(dpToPx(10), dpToPx(10), dpToPx(10), dpToPx(10));
+        dataDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        dataDisplay.setGravity(android.view.Gravity.CENTER);
+        dataDisplay.setOnClickListener(v -> {
+            final Calendar calendar = Calendar.getInstance();
+            String current = "";
+            try {
+                current = configData.getJSONObject("academia").isNull("inicio") ? "" : configData.getJSONObject("academia").getString("inicio");
+                if (!current.isEmpty()) {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    Date date = sdf.parse(current);
+                    calendar.setTime(date);
+                }
+            } catch (Exception e) {}
+
+            DatePickerDialog datePicker = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+                String dataSelecionada = String.format("%02d/%02d/%04d", dayOfMonth, month + 1, year);
+                dataDisplay.setText(dataSelecionada);
+                dataDisplay.setTag(String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth));
+            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH));
+            datePicker.show();
+        });
+
+        String currentData = "";
         try {
-            current = configData.getJSONObject("academia").isNull("inicio") ? "" : configData.getJSONObject("academia").getString("inicio");
+            currentData = configData.getJSONObject("academia").isNull("inicio") ? "" : formatDataBR(configData.getJSONObject("academia").getString("inicio"));
+            if (!currentData.isEmpty()) {
+                dataDisplay.setText(currentData);
+                dataDisplay.setTag(configData.getJSONObject("academia").getString("inicio"));
+            }
         } catch (JSONException e) {}
 
-        final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        input.setText(current);
-        input.setHint("aaaa-mm-dd");
-        layout.addView(input);
+        layout.addView(dataDisplay);
 
         builder.setView(layout);
         builder.setPositiveButton("Salvar", (dialog, which) -> {
-            String val = input.getText().toString().trim();
-            if (val.isEmpty()) {
+            String val = (String) dataDisplay.getTag();
+            if (val == null || val.isEmpty()) {
                 Toast.makeText(this, "Selecione uma data válida.", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -3095,6 +3148,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        salvarDados();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
         salvarDados();
     }
 }
