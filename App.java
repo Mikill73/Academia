@@ -71,7 +71,6 @@ public class MainActivity extends Activity {
     private static final int COR_FUNDO_OVERLAY = Color.argb(136, 0, 0, 0);
     private static final int COR_FUNDO_TRANSPARENTE = Color.argb(0, 0, 0, 0);
     private static final int COR_CINZA_MAIS_CLARO = Color.rgb(238, 238, 238);
-    private static final int COR_CINZA_MAIS_ESCURO = Color.rgb(102, 102, 102);
     private static final int COR_FUNDO_INPUT = Color.rgb(10, 10, 10);
 
     @Override
@@ -193,8 +192,6 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams menuParams = new FrameLayout.LayoutParams(dpToPx(280), ViewGroup.LayoutParams.MATCH_PARENT);
         menuParams.gravity = Gravity.START;
         menuPanel.setLayoutParams(menuParams);
-        menuPanel.setClickable(true);
-        menuPanel.setFocusable(true);
         menuPanel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {}
@@ -269,12 +266,6 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         boxParams.setMargins(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
         configBox.setLayoutParams(boxParams);
-        configBox.setClickable(true);
-        configBox.setFocusable(true);
-        configBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {}
-        });
 
         LinearLayout configHeader = new LinearLayout(this);
         configHeader.setOrientation(LinearLayout.HORIZONTAL);
@@ -322,6 +313,10 @@ public class MainActivity extends Activity {
                 closeConfig();
             }
         });
+        configBox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {}
+        });
         root.addView(configModal);
     }
 
@@ -337,12 +332,6 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams avisoParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
         avisoParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
         avisoBox.setLayoutParams(avisoParams);
-        avisoBox.setClickable(true);
-        avisoBox.setFocusable(true);
-        avisoBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {}
-        });
 
         TextView avisoTitle = new TextView(this);
         avisoTitle.setText("Hora de Pesar!");
@@ -408,12 +397,6 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams confirmParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
         confirmParams.setMargins(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
         confirmBox.setLayoutParams(confirmParams);
-        confirmBox.setClickable(true);
-        confirmBox.setFocusable(true);
-        confirmBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {}
-        });
 
         final TextView confirmTitle = new TextView(this);
         confirmTitle.setTextColor(COR_CINZA_MAIS_CLARO);
@@ -478,15 +461,21 @@ public class MainActivity extends Activity {
         try {
             configData = new JSONObject();
             JSONObject academia = new JSONObject();
-            academia.put("inicio", JSONObject.NULL);
+            academia.put("inicio", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
             JSONObject peso = new JSONObject();
-            peso.put("atual", JSONObject.NULL);
+            peso.put("atual", 70.0);
             peso.put("historico", new JSONArray());
-            peso.put("meta", JSONObject.NULL);
+            JSONObject histEntry = new JSONObject();
+            histEntry.put("peso", 70.0);
+            histEntry.put("data", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+            peso.getJSONArray("historico").put(histEntry);
+            peso.put("meta", 65.0);
             peso.put("intervalo", 7);
-            peso.put("ultimoRegistro", JSONObject.NULL);
+            peso.put("ultimoRegistro", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(new Date()));
             academia.put("peso", peso);
-            academia.put("diasDescanso", new JSONArray());
+            JSONArray diasDescanso = new JSONArray();
+            diasDescanso.put("Domingo");
+            academia.put("diasDescanso", diasDescanso);
             academia.put("objetivos", new JSONArray());
             JSONObject roupas = new JSONObject();
             roupas.put("camisas", new JSONArray());
@@ -494,7 +483,62 @@ public class MainActivity extends Activity {
             roupas.put("tenis", new JSONArray());
             academia.put("roupas", roupas);
             academia.put("combinacoes", new JSONObject());
-            academia.put("treinos", new JSONArray());
+            JSONArray treinos = new JSONArray();
+            JSONObject treinoSegunda = new JSONObject();
+            treinoSegunda.put("dia", "Segunda");
+            JSONArray exerciciosSegunda = new JSONArray();
+            JSONObject ex1 = new JSONObject();
+            ex1.put("exercise", "Supino Reto");
+            ex1.put("sets", 4);
+            ex1.put("reps", 10);
+            ex1.put("load", 50.0);
+            ex1.put("warmup", false);
+            ex1.put("descanso", 60);
+            ex1.put("loadHistory", new JSONArray());
+            JSONObject histLoad = new JSONObject();
+            histLoad.put("load", 50.0);
+            histLoad.put("reps", 10);
+            histLoad.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+            ex1.getJSONArray("loadHistory").put(histLoad);
+            exerciciosSegunda.put(ex1);
+            JSONObject ex2 = new JSONObject();
+            ex2.put("exercise", "Crucifixo");
+            ex2.put("sets", 3);
+            ex2.put("reps", 12);
+            ex2.put("load", 15.0);
+            ex2.put("warmup", false);
+            ex2.put("descanso", 45);
+            ex2.put("loadHistory", new JSONArray());
+            JSONObject histLoad2 = new JSONObject();
+            histLoad2.put("load", 15.0);
+            histLoad2.put("reps", 12);
+            histLoad2.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+            ex2.getJSONArray("loadHistory").put(histLoad2);
+            exerciciosSegunda.put(ex2);
+            treinoSegunda.put("exercicios", exerciciosSegunda);
+            treinos.put(treinoSegunda);
+
+            JSONObject treinoQuarta = new JSONObject();
+            treinoQuarta.put("dia", "Quarta");
+            JSONArray exerciciosQuarta = new JSONArray();
+            JSONObject ex3 = new JSONObject();
+            ex3.put("exercise", "Puxada Frontal");
+            ex3.put("sets", 4);
+            ex3.put("reps", 10);
+            ex3.put("load", 40.0);
+            ex3.put("warmup", false);
+            ex3.put("descanso", 60);
+            ex3.put("loadHistory", new JSONArray());
+            JSONObject histLoad3 = new JSONObject();
+            histLoad3.put("load", 40.0);
+            histLoad3.put("reps", 10);
+            histLoad3.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
+            ex3.getJSONArray("loadHistory").put(histLoad3);
+            exerciciosQuarta.put(ex3);
+            treinoQuarta.put("exercicios", exerciciosQuarta);
+            treinos.put(treinoQuarta);
+
+            academia.put("treinos", treinos);
             academia.put("treinoConcluido", new JSONObject());
             academia.put("botaoAtivo", false);
             configData.put("academia", academia);
@@ -849,12 +893,6 @@ public class MainActivity extends Activity {
             FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
             boxParams.setMargins(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
             box.setLayoutParams(boxParams);
-            box.setClickable(true);
-            box.setFocusable(true);
-            box.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {}
-            });
 
             TextView title = new TextView(this);
             title.setText("Evolução de Carga");
@@ -1185,12 +1223,6 @@ public class MainActivity extends Activity {
                         box.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
                         FrameLayout.LayoutParams boxParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
                         box.setLayoutParams(boxParams);
-                        box.setClickable(true);
-                        box.setFocusable(true);
-                        box.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View ev) {}
-                        });
                         
                         TextView title = new TextView(MainActivity.this);
                         title.setText("Registrar Peso");
