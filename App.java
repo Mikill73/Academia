@@ -25,6 +25,7 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -312,6 +313,9 @@ public class MainActivity extends Activity {
     private void openOverlay() {
         if (overlayModal != null && overlayContent != null) {
             overlayModal.setVisibility(View.VISIBLE);
+            LinearLayout header = (LinearLayout) overlayContent.getChildAt(0);
+            TextView overlayTitle = (TextView) header.getChildAt(1);
+            overlayTitle.setText(isConfigViewOnly ? "Academia" : "Configurações");
             renderOverlayContent();
         }
     }
@@ -323,9 +327,10 @@ public class MainActivity extends Activity {
     }
 
     private void renderOverlayContent() {
+        LinearLayout container = null;
         try {
             ScrollView scroll = (ScrollView) overlayContent.getChildAt(1);
-            LinearLayout container = (LinearLayout) scroll.getChildAt(0);
+            container = (LinearLayout) scroll.getChildAt(0);
             container.removeAllViews();
 
             if (configData == null) {
@@ -421,15 +426,23 @@ public class MainActivity extends Activity {
                 tv.setPadding(0, dpToPx(3), 0, dpToPx(3));
                 container.addView(tv);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
+            if (container != null) {
+                container.removeAllViews();
+                TextView errorTv = new TextView(this);
+                errorTv.setText("Erro ao carregar dados. Reinicie o app.");
+                errorTv.setTextColor(COR_VERMELHO_CLARO);
+                errorTv.setGravity(Gravity.CENTER);
+                container.addView(errorTv);
+            }
         }
     }
 
     private void addInfoRow(LinearLayout container, String label, String value) {
         TextView tv = new TextView(this);
-        tv.setText(label + ": " + value);
+        String displayValue = (value == null) ? "Não definido" : value;
+        tv.setText(label + ": " + displayValue);
         tv.setTextColor(COR_CINZA_CLARO);
         tv.setTextSize(13);
         tv.setPadding(0, dpToPx(4), 0, dpToPx(4));
@@ -495,11 +508,11 @@ public class MainActivity extends Activity {
             String json = prefs.getString("academia_data", null);
             if (json != null && !json.isEmpty()) {
                 configData = new JSONObject(json);
-            } else {
-                createDefaultConfig();
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        if (configData == null || !configData.has("academia")) {
             createDefaultConfig();
         }
     }
@@ -612,11 +625,9 @@ public class MainActivity extends Activity {
 
     private String getTodayName() {
         String[] names = {"Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
-        try {
-            return names[new Date().getDay()];
-        } catch (Exception e) {
-            return "Segunda";
-        }
+        Calendar cal = Calendar.getInstance();
+        int day = cal.get(Calendar.DAY_OF_WEEK) - 1;
+        return names[day];
     }
 
     private String getTodayKey() {
