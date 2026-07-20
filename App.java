@@ -1,3 +1,5 @@
+mkdir -p src/main/java/com/academia/app
+cat > src/main/java/com/academia/app/MainActivity.java << 'EOF'
 package com.academia.app;
 
 import android.app.Activity;
