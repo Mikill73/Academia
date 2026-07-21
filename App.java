@@ -285,7 +285,8 @@ public class MainActivity extends Activity {
 
     private String getTodayName() {
         SimpleDateFormat sdf = new SimpleDateFormat("EEEE", new Locale("pt", "BR"));
-        return sdf.format(new Date());
+        String dia = sdf.format(new Date());
+        return dia.substring(0, 1).toUpperCase() + dia.substring(1).toLowerCase();
     }
 
     private String getTodayKey() {
@@ -300,7 +301,8 @@ public class MainActivity extends Activity {
             JSONArray result = new JSONArray();
             for (int i = 0; i < treinos.length(); i++) {
                 JSONObject treino = treinos.getJSONObject(i);
-                if (treino.getString("dia").equals(hoje)) {
+                String diaTreino = treino.getString("dia").trim();
+                if (diaTreino.equals(hoje)) {
                     result.put(treino);
                 }
             }
@@ -856,6 +858,7 @@ public class MainActivity extends Activity {
                     } catch (JSONException e) {}
                     salvarDados();
                     atualizarTreinoHoje();
+                    treinoHojePanel.setVisibility(View.VISIBLE);
                     renderDados();
                 });
                 return;
@@ -937,6 +940,7 @@ public class MainActivity extends Activity {
                         treinoAtual = null;
                         limparTimer();
                         atualizarTreinoHoje();
+                        treinoHojePanel.setVisibility(View.VISIBLE);
                         return;
                     }
                 }
