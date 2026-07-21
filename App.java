@@ -2030,8 +2030,12 @@ public class MainActivity extends Activity {
                 exItem.setBackground(border);
 
                 String details = ex.getString("exercise");
-                if (ex.has("sets")) details += " • " + ex.getInt("sets") + "x" + ex.getInt("reps");
-                if (ex.has("load")) details += " • " + ex.getDouble("load") + "kg";
+                if (ex.has("sets") && ex.getInt("sets") > 0) {
+                    details += " • " + ex.getInt("sets") + "x" + ex.getInt("reps");
+                    if (ex.has("load")) details += " • " + ex.getDouble("load") + "kg";
+                } else {
+                    details += " • ⚠️ Sem série definida";
+                }
 
                 TextView info = new TextView(this);
                 info.setText(details);
@@ -2747,7 +2751,6 @@ public class MainActivity extends Activity {
             addSerieBtn.setTextColor(Color.parseColor("#8bc34a"));
             addSerieBtn.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
             addSerieBtn.setOnClickListener(v -> {
-                dialog.dismiss();
                 mostrarAdicionarSerie(treinoIdx, exIdx);
             });
             btnRow.addView(addSerieBtn);
@@ -2759,7 +2762,6 @@ public class MainActivity extends Activity {
                 verSerieBtn.setTextColor(Color.parseColor("#cccccc"));
                 verSerieBtn.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
                 verSerieBtn.setOnClickListener(v -> {
-                    dialog.dismiss();
                     mostrarDetalhesSerie(treinoIdx, exIdx);
                 });
                 btnRow.addView(verSerieBtn);
@@ -2773,15 +2775,13 @@ public class MainActivity extends Activity {
             histBtn.setTextColor(Color.parseColor("#cccccc"));
             histBtn.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
             histBtn.setOnClickListener(v -> {
-                dialog.dismiss();
                 mostrarHistoricoCarga(treinoIdx, exIdx);
             });
             layout.addView(histBtn);
 
             builder.setView(layout);
             builder.setPositiveButton("Fechar", null);
-            AlertDialog dialog = builder.create();
-            dialog.show();
+            builder.show();
         } catch (JSONException e) {}
     }
 
@@ -2894,75 +2894,6 @@ public class MainActivity extends Activity {
             builder.setPositiveButton("Fechar", null);
             builder.show();
         } catch (JSONException e) {}
-    }
-
-    private void renderExerciciosLista(int treinoIdx, LinearLayout container) {
-        container.removeAllViews();
-        try {
-            JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
-            JSONObject treino = treinos.getJSONObject(treinoIdx);
-            if (!treino.has("exercicios")) return;
-
-            JSONArray exercicios = treino.getJSONArray("exercicios");
-            for (int i = 0; i < exercicios.length(); i++) {
-                JSONObject ex = exercicios.getJSONObject(i);
-                LinearLayout exItem = new LinearLayout(this);
-                exItem.setOrientation(LinearLayout.HORIZONTAL);
-                exItem.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                exItem.setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4));
-                GradientDrawable border = new GradientDrawable();
-                border.setStroke(1, Color.parseColor("#1a1a1a"));
-                border.setColor(Color.parseColor("#0d0d0d"));
-                exItem.setBackground(border);
-
-                String details = ex.getString("exercise");
-                if (ex.has("sets") && ex.getInt("sets") > 0) {
-                    details += " • " + ex.getInt("sets") + "x" + ex.getInt("reps");
-                    if (ex.has("load")) details += " • " + ex.getDouble("load") + "kg";
-                } else {
-                    details += " • ⚠️ Sem série definida";
-                }
-
-                TextView info = new TextView(this);
-                info.setText(details);
-                info.setTextColor(Color.parseColor("#cccccc"));
-                info.setTextSize(12);
-                info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-                exItem.addView(info);
-
-                LinearLayout actions = new LinearLayout(this);
-                actions.setOrientation(LinearLayout.HORIZONTAL);
-                int exIdx = i;
-                Button editEx = new Button(this);
-                editEx.setText("✎");
-                editEx.setTextColor(Color.parseColor("#88aaff"));
-                editEx.setBackground(null);
-                editEx.setOnClickListener(v -> mostrarEditarExercicio(treinoIdx, exIdx));
-                actions.addView(editEx);
-
-                Button delEx = new Button(this);
-                delEx.setText("✕");
-                delEx.setTextColor(Color.parseColor("#ff6666"));
-                delEx.setBackground(null);
-                delEx.setOnClickListener(v -> {
-                    mostrarConfirmacao("Excluir Exercício", "Tem certeza que deseja excluir este exercício?", () -> {
-                        try {
-                            JSONArray ts = configData.getJSONObject("academia").getJSONArray("treinos");
-                            JSONObject t = ts.getJSONObject(treinoIdx);
-                            t.getJSONArray("exercicios").remove(exIdx);
-                            salvarDados();
-                            renderDados();
-                        } catch (JSONException exc) {}
-                    });
-                });
-                actions.addView(delEx);
-
-                exItem.addView(actions);
-                container.addView(exItem);
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
     }
 
     private void mostrarAdicionarRoupa(String categoria) {
