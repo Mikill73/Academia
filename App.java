@@ -27,7 +27,9 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
     private LinearLayout mainLayout;
-    private Button btnPrincipal;
+    private LinearLayout treinoHojePanel;
+    private TextView treinoHojeNome;
+    private Button btnIniciarTreino;
     private LinearLayout cardTreinoPanel;
     private LinearLayout exerciciosContainer;
     private LinearLayout dadosContainer;
@@ -58,6 +60,7 @@ public class MainActivity extends Activity {
         carregarDados();
         setupUI();
         carregarEstadoBotao();
+        atualizarTreinoHoje();
         renderDados();
     }
 
@@ -73,52 +76,108 @@ public class MainActivity extends Activity {
         mainLayout = new LinearLayout(this);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setBackgroundColor(Color.parseColor("#0d0d0d"));
-        mainLayout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+        mainLayout.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
 
         LinearLayout topPanel = new LinearLayout(this);
-        topPanel.setOrientation(LinearLayout.VERTICAL);
-        topPanel.setGravity(android.view.Gravity.CENTER);
-        topPanel.setPadding(0, dpToPx(20), 0, dpToPx(10));
+        topPanel.setOrientation(LinearLayout.HORIZONTAL);
+        topPanel.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        topPanel.setPadding(0, 0, 0, dpToPx(16));
 
-        btnPrincipal = new Button(this);
-        btnPrincipal.setText("");
-        LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(dpToPx(130), dpToPx(130));
-        btnPrincipal.setLayoutParams(btnParams);
-        GradientDrawable circle = new GradientDrawable();
-        circle.setShape(GradientDrawable.OVAL);
-        circle.setColor(Color.parseColor("#ff0000"));
-        btnPrincipal.setBackground(circle);
-        btnPrincipal.setClickable(true);
-        btnPrincipal.setOnClickListener(v -> toggleTreino());
-        topPanel.addView(btnPrincipal);
+        TextView appTitle = new TextView(this);
+        appTitle.setText("🏋️ Academia");
+        appTitle.setTextColor(Color.parseColor("#ffffff"));
+        appTitle.setTextSize(22);
+        appTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+        appTitle.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        topPanel.addView(appTitle);
+
+        configBtn = new Button(this);
+        configBtn.setText("⚙️");
+        configBtn.setBackground(null);
+        configBtn.setTextColor(Color.parseColor("#888888"));
+        configBtn.setTextSize(20);
+        configBtn.setOnClickListener(v -> {
+            modoConfig = !modoConfig;
+            renderDados();
+        });
+        topPanel.addView(configBtn);
 
         mainLayout.addView(topPanel);
 
-        LinearLayout centerPanel = new LinearLayout(this);
-        centerPanel.setOrientation(LinearLayout.VERTICAL);
-        centerPanel.setPadding(0, 0, 0, 0);
+        treinoHojePanel = new LinearLayout(this);
+        treinoHojePanel.setOrientation(LinearLayout.VERTICAL);
+        treinoHojePanel.setBackgroundColor(Color.parseColor("#1a1a1a"));
+        treinoHojePanel.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+        GradientDrawable border = new GradientDrawable();
+        border.setStroke(1, Color.parseColor("#2a2a2a"));
+        border.setColor(Color.parseColor("#1a1a1a"));
+        treinoHojePanel.setBackground(border);
+        treinoHojePanel.setVisibility(View.VISIBLE);
+
+        TextView hojeLabel = new TextView(this);
+        hojeLabel.setText("📅 TREINO DE HOJE");
+        hojeLabel.setTextColor(Color.parseColor("#666666"));
+        hojeLabel.setTextSize(11);
+        hojeLabel.setGravity(android.view.Gravity.CENTER);
+        treinoHojePanel.addView(hojeLabel);
+
+        treinoHojeNome = new TextView(this);
+        treinoHojeNome.setText("Nenhum treino programado");
+        treinoHojeNome.setTextColor(Color.parseColor("#ffffff"));
+        treinoHojeNome.setTextSize(18);
+        treinoHojeNome.setTypeface(null, android.graphics.Typeface.BOLD);
+        treinoHojeNome.setGravity(android.view.Gravity.CENTER);
+        treinoHojeNome.setPadding(0, dpToPx(8), 0, dpToPx(8));
+        treinoHojePanel.addView(treinoHojeNome);
+
+        btnIniciarTreino = new Button(this);
+        btnIniciarTreino.setText("▶ INICIAR TREINO");
+        btnIniciarTreino.setBackgroundColor(Color.parseColor("#00cc00"));
+        btnIniciarTreino.setTextColor(Color.parseColor("#ffffff"));
+        btnIniciarTreino.setTypeface(null, android.graphics.Typeface.BOLD);
+        btnIniciarTreino.setPadding(dpToPx(20), dpToPx(12), dpToPx(20), dpToPx(12));
+        btnIniciarTreino.setEnabled(false);
+        btnIniciarTreino.setOnClickListener(v -> toggleTreino());
+        treinoHojePanel.addView(btnIniciarTreino);
+
+        mainLayout.addView(treinoHojePanel);
 
         cardTreinoPanel = new LinearLayout(this);
         cardTreinoPanel.setOrientation(LinearLayout.VERTICAL);
         cardTreinoPanel.setBackgroundColor(Color.parseColor("#1a1a1a"));
         cardTreinoPanel.setPadding(dpToPx(14), dpToPx(16), dpToPx(14), dpToPx(16));
-        GradientDrawable border = new GradientDrawable();
-        border.setStroke(1, Color.parseColor("#2a2a2a"));
-        border.setColor(Color.parseColor("#1a1a1a"));
-        cardTreinoPanel.setBackground(border);
+        GradientDrawable border2 = new GradientDrawable();
+        border2.setStroke(1, Color.parseColor("#2a2a2a"));
+        border2.setColor(Color.parseColor("#1a1a1a"));
+        cardTreinoPanel.setBackground(border2);
         cardTreinoPanel.setVisibility(View.GONE);
+        cardTreinoPanel.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        LinearLayout treinoHeader = new LinearLayout(this);
+        treinoHeader.setOrientation(LinearLayout.HORIZONTAL);
+        treinoHeader.setPadding(0, 0, 0, dpToPx(8));
 
         cardTitle = new TextView(this);
-        cardTitle.setText("Treino de Hoje");
-        cardTitle.setTextColor(Color.parseColor("#aaaaaa"));
+        cardTitle.setText("🔥 Treino em Andamento");
+        cardTitle.setTextColor(Color.parseColor("#8bc34a"));
         cardTitle.setTextSize(14);
         cardTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-        cardTitle.setGravity(android.view.Gravity.CENTER);
-        cardTreinoPanel.addView(cardTitle);
+        cardTitle.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        treinoHeader.addView(cardTitle);
+
+        Button btnParar = new Button(this);
+        btnParar.setText("⏹ Parar");
+        btnParar.setBackground(null);
+        btnParar.setTextColor(Color.parseColor("#ff6b6b"));
+        btnParar.setTextSize(12);
+        btnParar.setOnClickListener(v -> toggleTreino());
+        treinoHeader.addView(btnParar);
+
+        cardTreinoPanel.addView(treinoHeader);
 
         exerciciosContainer = new LinearLayout(this);
         exerciciosContainer.setOrientation(LinearLayout.VERTICAL);
-        exerciciosContainer.setPadding(0, dpToPx(8), 0, 0);
+        exerciciosContainer.setPadding(0, dpToPx(4), 0, 0);
         cardTreinoPanel.addView(exerciciosContainer);
 
         timerPanel = new LinearLayout(this);
@@ -128,7 +187,7 @@ public class MainActivity extends Activity {
 
         LinearLayout progressPanel = new LinearLayout(this);
         progressPanel.setOrientation(LinearLayout.VERTICAL);
-        progressPanel.setPadding(0, dpToPx(6), 0, 0);
+        progressPanel.setPadding(0, dpToPx(8), 0, 0);
 
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setMax(100);
@@ -145,17 +204,17 @@ public class MainActivity extends Activity {
 
         cardTreinoPanel.addView(progressPanel);
 
-        centerPanel.addView(cardTreinoPanel);
+        mainLayout.addView(cardTreinoPanel);
 
         dadosContainer = new LinearLayout(this);
         dadosContainer.setOrientation(LinearLayout.VERTICAL);
-        dadosContainer.setPadding(0, dpToPx(10), 0, 0);
+        dadosContainer.setPadding(0, dpToPx(12), 0, 0);
 
         ScrollView scrollDados = new ScrollView(this);
+        scrollDados.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         scrollDados.addView(dadosContainer);
-        centerPanel.addView(scrollDados);
+        mainLayout.addView(scrollDados);
 
-        mainLayout.addView(centerPanel);
         setContentView(mainLayout);
     }
 
@@ -251,6 +310,26 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void atualizarTreinoHoje() {
+        JSONArray treinos = getTodayTreinos();
+        if (treinos.length() > 0) {
+            try {
+                JSONObject treino = treinos.getJSONObject(0);
+                treinoHojeNome.setText(treino.getString("nome"));
+                btnIniciarTreino.setEnabled(true);
+                btnIniciarTreino.setBackgroundColor(Color.parseColor("#00cc00"));
+                btnIniciarTreino.setText("▶ INICIAR TREINO");
+            } catch (JSONException e) {
+                treinoHojeNome.setText("Erro ao carregar");
+                btnIniciarTreino.setEnabled(false);
+            }
+        } else {
+            treinoHojeNome.setText("Nenhum treino programado");
+            btnIniciarTreino.setEnabled(false);
+            btnIniciarTreino.setBackgroundColor(Color.parseColor("#444444"));
+        }
+    }
+
     private boolean verificarPeso() {
         try {
             JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
@@ -316,18 +395,6 @@ public class MainActivity extends Activity {
             return sdfOut.format(date);
         } catch (Exception e) {
             return dataStr;
-        }
-    }
-
-    private String formatDataParaSalvar(String dataBR) {
-        if (dataBR == null || dataBR.isEmpty()) return "";
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-            SimpleDateFormat sdfOut = new SimpleDateFormat("yyyy-MM-dd");
-            Date date = sdf.parse(dataBR);
-            return sdfOut.format(date);
-        } catch (Exception e) {
-            return dataBR;
         }
     }
 
@@ -404,23 +471,24 @@ public class MainActivity extends Activity {
         LinearLayout display = new LinearLayout(this);
         display.setOrientation(LinearLayout.VERTICAL);
         display.setBackgroundColor(Color.parseColor("#0d0d0d"));
-        display.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
+        display.setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12));
         GradientDrawable border = new GradientDrawable();
         border.setStroke(1, Color.parseColor("#2a4a2a"));
         border.setColor(Color.parseColor("#0d0d0d"));
         display.setBackground(border);
 
         TextView label = new TextView(this);
-        label.setText("Descanso");
-        label.setTextColor(Color.parseColor("#888888"));
-        label.setTextSize(11);
+        label.setText("⏱ DESCANSANDO");
+        label.setTextColor(Color.parseColor("#ffaa00"));
+        label.setTextSize(12);
+        label.setTypeface(null, android.graphics.Typeface.BOLD);
         label.setGravity(android.view.Gravity.CENTER);
         display.addView(label);
 
         timerLabel = new TextView(this);
         timerLabel.setText(String.format("%02d:%02d", segundos/60, segundos%60));
         timerLabel.setTextColor(Color.parseColor("#8bc34a"));
-        timerLabel.setTextSize(22);
+        timerLabel.setTextSize(28);
         timerLabel.setTypeface(null, android.graphics.Typeface.BOLD);
         timerLabel.setGravity(android.view.Gravity.CENTER);
         display.addView(timerLabel);
@@ -447,6 +515,7 @@ public class MainActivity extends Activity {
     private void renderTreinoCard() {
         if (treinoAtual == null) {
             exerciciosContainer.removeAllViews();
+            cardTreinoPanel.setVisibility(View.GONE);
             return;
         }
 
@@ -466,9 +535,9 @@ public class MainActivity extends Activity {
             if (exercicioAtualIndex >= exercicios.length()) {
                 exerciciosContainer.removeAllViews();
                 TextView done = new TextView(this);
-                done.setText("Treino concluído!");
+                done.setText("✅ Treino concluído!");
                 done.setTextColor(Color.parseColor("#8bc34a"));
-                done.setTextSize(14);
+                done.setTextSize(16);
                 done.setTypeface(null, android.graphics.Typeface.BOLD);
                 done.setGravity(android.view.Gravity.CENTER);
                 done.setPadding(0, dpToPx(20), 0, dpToPx(20));
@@ -480,7 +549,7 @@ public class MainActivity extends Activity {
             int totalSeries = ex.getInt("sets");
             int seriesFeitas = ex.has("_seriesFeitas") ? ex.getInt("_seriesFeitas") : 0;
             boolean isDone = seriesFeitas >= totalSeries;
-            String warmupText = ex.has("warmup") && ex.getBoolean("warmup") ? "Aquecimento" : "";
+            String warmupText = ex.has("warmup") && ex.getBoolean("warmup") ? "🔥 Aquecimento" : "";
 
             exerciciosContainer.removeAllViews();
             LinearLayout card = new LinearLayout(this);
@@ -492,54 +561,84 @@ public class MainActivity extends Activity {
             border.setColor(Color.parseColor("#0d0d0d"));
             card.setBackground(border);
 
+            LinearLayout topRow = new LinearLayout(this);
+            topRow.setOrientation(LinearLayout.HORIZONTAL);
+            
             TextView nameLabel = new TextView(this);
-            nameLabel.setText(ex.getString("exercise") + " " + warmupText);
-            nameLabel.setTextColor(Color.parseColor("#eeeeee"));
+            nameLabel.setText(ex.getString("exercise"));
+            nameLabel.setTextColor(Color.parseColor("#ffffff"));
             nameLabel.setTextSize(18);
             nameLabel.setTypeface(null, android.graphics.Typeface.BOLD);
-            nameLabel.setGravity(android.view.Gravity.CENTER);
-            card.addView(nameLabel);
+            nameLabel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            topRow.addView(nameLabel);
+
+            if (!warmupText.isEmpty()) {
+                TextView warmupTag = new TextView(this);
+                warmupTag.setText(warmupText);
+                warmupTag.setTextColor(Color.parseColor("#ffaa00"));
+                warmupTag.setTextSize(11);
+                warmupTag.setBackgroundColor(Color.parseColor("#2a2a00"));
+                warmupTag.setPadding(dpToPx(8), dpToPx(2), dpToPx(8), dpToPx(2));
+                GradientDrawable tagBorder = new GradientDrawable();
+                tagBorder.setStroke(1, Color.parseColor("#443300"));
+                tagBorder.setColor(Color.parseColor("#2a2a00"));
+                warmupTag.setBackground(tagBorder);
+                topRow.addView(warmupTag);
+            }
+            card.addView(topRow);
 
             TextView details = new TextView(this);
-            details.setText(ex.getInt("sets") + " séries x " + ex.getInt("reps") + " reps");
+            details.setText("⚡ " + ex.getInt("sets") + " séries × " + ex.getInt("reps") + " repetições");
             details.setTextColor(Color.parseColor("#aaaaaa"));
             details.setTextSize(14);
-            details.setGravity(android.view.Gravity.CENTER);
+            details.setPadding(0, dpToPx(4), 0, 0);
             card.addView(details);
 
             TextView loadLabel = new TextView(this);
-            loadLabel.setText("Carga: " + ex.getDouble("load") + "kg");
+            loadLabel.setText("🏋️ " + ex.getDouble("load") + " kg");
             loadLabel.setTextColor(Color.parseColor("#8bc34a"));
-            loadLabel.setTextSize(14);
-            loadLabel.setGravity(android.view.Gravity.CENTER);
+            loadLabel.setTextSize(15);
+            loadLabel.setTypeface(null, android.graphics.Typeface.BOLD);
             card.addView(loadLabel);
 
             if (ex.has("metaCarga") && !ex.isNull("metaCarga")) {
                 TextView metaLabel = new TextView(this);
-                metaLabel.setText("Meta: " + ex.getDouble("metaCarga") + "kg");
+                metaLabel.setText("🎯 Meta: " + ex.getDouble("metaCarga") + " kg");
                 metaLabel.setTextColor(Color.parseColor("#ffaa00"));
-                metaLabel.setTextSize(14);
-                metaLabel.setGravity(android.view.Gravity.CENTER);
+                metaLabel.setTextSize(13);
                 card.addView(metaLabel);
             }
 
+            View sep = new View(this);
+            sep.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            sep.setMinimumHeight(1);
+            sep.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            sep.setPadding(0, dpToPx(8), 0, dpToPx(8));
+            card.addView(sep);
+
+            LinearLayout statusRow = new LinearLayout(this);
+            statusRow.setOrientation(LinearLayout.HORIZONTAL);
+            statusRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
             TextView statusLabel = new TextView(this);
-            statusLabel.setText(isDone ? "Concluído" : seriesFeitas + "/" + totalSeries + " séries");
-            statusLabel.setTextColor(isDone ? Color.parseColor("#8bc34a") : Color.parseColor("#666666"));
-            statusLabel.setTextSize(12);
-            statusLabel.setGravity(android.view.Gravity.CENTER);
-            card.addView(statusLabel);
+            if (isDone) {
+                statusLabel.setText("✅ Concluído");
+                statusLabel.setTextColor(Color.parseColor("#8bc34a"));
+            } else {
+                statusLabel.setText("⏳ " + seriesFeitas + "/" + totalSeries + " séries");
+                statusLabel.setTextColor(Color.parseColor("#ffaa00"));
+            }
+            statusLabel.setTextSize(13);
+            statusLabel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            statusRow.addView(statusLabel);
 
             if (!isDone && !aguardandoTimer) {
-                LinearLayout btnPanel = new LinearLayout(this);
-                btnPanel.setOrientation(LinearLayout.HORIZONTAL);
-                btnPanel.setGravity(android.view.Gravity.CENTER);
-
                 Button btnPronto = new Button(this);
-                btnPronto.setText("PRONTO");
+                btnPronto.setText("✅ PRONTO");
                 btnPronto.setBackgroundColor(Color.parseColor("#1a3a1a"));
                 btnPronto.setTextColor(Color.parseColor("#8bc34a"));
-                btnPronto.setPadding(dpToPx(18), dpToPx(6), dpToPx(18), dpToPx(6));
+                btnPronto.setTypeface(null, android.graphics.Typeface.BOLD);
+                btnPronto.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8));
                 btnPronto.setOnClickListener(v -> {
                     if (aguardandoTimer) return;
                     try {
@@ -565,23 +664,23 @@ public class MainActivity extends Activity {
                         ex2.printStackTrace();
                     }
                 });
-                btnPanel.addView(btnPronto);
-                card.addView(btnPanel);
+                statusRow.addView(btnPronto);
             } else if (isDone) {
                 TextView doneLabel = new TextView(this);
-                doneLabel.setText("Concluído");
+                doneLabel.setText("✅ Concluído");
                 doneLabel.setTextColor(Color.parseColor("#8bc34a"));
-                doneLabel.setTextSize(14);
-                doneLabel.setGravity(android.view.Gravity.CENTER);
-                card.addView(doneLabel);
+                doneLabel.setTextSize(13);
+                doneLabel.setTypeface(null, android.graphics.Typeface.BOLD);
+                statusRow.addView(doneLabel);
             } else if (aguardandoTimer) {
                 TextView waitLabel = new TextView(this);
-                waitLabel.setText("Aguardando descanso...");
+                waitLabel.setText("⏱ Aguardando...");
                 waitLabel.setTextColor(Color.parseColor("#ffaa00"));
-                waitLabel.setTextSize(14);
-                waitLabel.setGravity(android.view.Gravity.CENTER);
-                card.addView(waitLabel);
+                waitLabel.setTextSize(13);
+                statusRow.addView(waitLabel);
             }
+
+            card.addView(statusRow);
 
             exerciciosContainer.addView(card);
 
@@ -595,7 +694,7 @@ public class MainActivity extends Activity {
             }
             int pct = total > 0 ? (done * 100) / total : 0;
             progressBar.setProgress(pct);
-            progressText.setText(done + "/" + total + " exercícios concluídos");
+            progressText.setText("📊 " + done + "/" + total + " exercícios concluídos");
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -603,7 +702,7 @@ public class MainActivity extends Activity {
 
     private void mostrarEvolucaoDialog(int idx) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Evolução de Carga");
+        builder.setTitle("📈 Evolução de Carga");
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -618,7 +717,7 @@ public class MainActivity extends Activity {
             layout.addView(exName);
 
             TextView loadLabel = new TextView(this);
-            loadLabel.setText("Carga atual (kg)");
+            loadLabel.setText("📦 Carga atual (kg)");
             loadLabel.setTextColor(Color.parseColor("#888888"));
             loadLabel.setTextSize(12);
             layout.addView(loadLabel);
@@ -626,10 +725,12 @@ public class MainActivity extends Activity {
             final EditText loadField = new EditText(this);
             loadField.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
             loadField.setText(String.valueOf(ex.getDouble("load")));
+            loadField.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            loadField.setTextColor(Color.parseColor("#ffffff"));
             layout.addView(loadField);
 
             TextView repsLabel = new TextView(this);
-            repsLabel.setText("Repetições atuais");
+            repsLabel.setText("🔢 Repetições atuais");
             repsLabel.setTextColor(Color.parseColor("#888888"));
             repsLabel.setTextSize(12);
             layout.addView(repsLabel);
@@ -637,11 +738,19 @@ public class MainActivity extends Activity {
             final EditText repsField = new EditText(this);
             repsField.setInputType(InputType.TYPE_CLASS_NUMBER);
             repsField.setText(String.valueOf(ex.getInt("reps")));
+            repsField.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            repsField.setTextColor(Color.parseColor("#ffffff"));
             layout.addView(repsField);
+
+            TextView note = new TextView(this);
+            note.setText("💡 Deixe em branco se não houve evolução");
+            note.setTextColor(Color.parseColor("#666666"));
+            note.setTextSize(10);
+            layout.addView(note);
 
             builder.setView(layout);
 
-            builder.setPositiveButton("Registrar", (dialog, which) -> {
+            builder.setPositiveButton("📊 Registrar", (dialog, which) -> {
                 try {
                     double load = Double.parseDouble(loadField.getText().toString());
                     int reps = Integer.parseInt(repsField.getText().toString());
@@ -668,7 +777,7 @@ public class MainActivity extends Activity {
                 }
             });
 
-            builder.setNegativeButton("Pular", (dialog, which) -> {
+            builder.setNegativeButton("⏭ Pular", (dialog, which) -> {
                 salvarProgressoEAtualizar(idx);
             });
 
@@ -737,11 +846,7 @@ public class MainActivity extends Activity {
                 configData.getJSONObject("academia").put("botaoAtivo", false);
                 salvarDados();
                 runOnUiThread(() -> {
-                    mostrarConfirmacaoUnico("Treino Concluído", "Parabéns! Você concluiu o treino de hoje.");
-                    GradientDrawable circle = new GradientDrawable();
-                    circle.setShape(GradientDrawable.OVAL);
-                    circle.setColor(Color.parseColor("#ff0000"));
-                    btnPrincipal.setBackground(circle);
+                    mostrarConfirmacaoUnico("🎉 Treino Concluído!", "Parabéns! Você concluiu o treino de hoje.");
                     isActive = false;
                     cardTreinoPanel.setVisibility(View.GONE);
                     treinoAtual = null;
@@ -750,6 +855,7 @@ public class MainActivity extends Activity {
                         configData.getJSONObject("academia").put("botaoAtivo", false);
                     } catch (JSONException e) {}
                     salvarDados();
+                    atualizarTreinoHoje();
                     renderDados();
                 });
                 return;
@@ -783,16 +889,6 @@ public class MainActivity extends Activity {
         JSONArray treinos = getTodayTreinos();
         if (treinos.length() == 0) {
             mostrarConfirmacaoUnico("Aviso", "Nenhum treino programado para hoje.");
-            GradientDrawable circle = new GradientDrawable();
-            circle.setShape(GradientDrawable.OVAL);
-            circle.setColor(Color.parseColor("#ff0000"));
-            btnPrincipal.setBackground(circle);
-            isActive = false;
-            cardTreinoPanel.setVisibility(View.GONE);
-            try {
-                configData.getJSONObject("academia").put("botaoAtivo", false);
-            } catch (JSONException e) {}
-            salvarDados();
             return;
         }
 
@@ -836,25 +932,19 @@ public class MainActivity extends Activity {
                         configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
                         configData.getJSONObject("academia").put("botaoAtivo", false);
                         salvarDados();
-                        GradientDrawable circle = new GradientDrawable();
-                        circle.setShape(GradientDrawable.OVAL);
-                        circle.setColor(Color.parseColor("#ff0000"));
-                        btnPrincipal.setBackground(circle);
                         isActive = false;
                         cardTreinoPanel.setVisibility(View.GONE);
                         treinoAtual = null;
                         limparTimer();
+                        atualizarTreinoHoje();
                         return;
                     }
                 }
                 cardTreinoPanel.setVisibility(View.VISIBLE);
-                GradientDrawable circle = new GradientDrawable();
-                circle.setShape(GradientDrawable.OVAL);
-                circle.setColor(Color.parseColor("#00cc00"));
-                btnPrincipal.setBackground(circle);
                 isActive = true;
                 configData.getJSONObject("academia").put("botaoAtivo", true);
                 salvarDados();
+                treinoHojePanel.setVisibility(View.GONE);
                 renderTreinoCard();
                 if (verificarPeso()) mostrarAvisoPeso();
                 return;
@@ -889,12 +979,9 @@ public class MainActivity extends Activity {
             }
             exercicioAtualIndex = 0;
             cardTreinoPanel.setVisibility(View.VISIBLE);
-            GradientDrawable circle = new GradientDrawable();
-            circle.setShape(GradientDrawable.OVAL);
-            circle.setColor(Color.parseColor("#00cc00"));
-            btnPrincipal.setBackground(circle);
             isActive = true;
             configData.getJSONObject("academia").put("botaoAtivo", true);
+            treinoHojePanel.setVisibility(View.GONE);
             renderTreinoCard();
 
             String hojeKey = getTodayKey();
@@ -921,10 +1008,6 @@ public class MainActivity extends Activity {
                     }
                     if (algumFeito) {
                         mostrarConfirmacao("Parar Treino", "Você já fez alguns exercícios. Deseja realmente parar?", () -> {
-                            GradientDrawable circle = new GradientDrawable();
-                            circle.setShape(GradientDrawable.OVAL);
-                            circle.setColor(Color.parseColor("#ff0000"));
-                            btnPrincipal.setBackground(circle);
                             isActive = false;
                             cardTreinoPanel.setVisibility(View.GONE);
                             treinoAtual = null;
@@ -935,16 +1018,14 @@ public class MainActivity extends Activity {
                                 configData.getJSONObject("academia").put("botaoAtivo", false);
                             } catch (JSONException e) {}
                             salvarDados();
+                            atualizarTreinoHoje();
+                            treinoHojePanel.setVisibility(View.VISIBLE);
                             renderDados();
                         });
                         return;
                     }
                 } catch (JSONException e) {}
             }
-            GradientDrawable circle = new GradientDrawable();
-            circle.setShape(GradientDrawable.OVAL);
-            circle.setColor(Color.parseColor("#ff0000"));
-            btnPrincipal.setBackground(circle);
             isActive = false;
             cardTreinoPanel.setVisibility(View.GONE);
             treinoAtual = null;
@@ -953,6 +1034,8 @@ public class MainActivity extends Activity {
                 configData.getJSONObject("academia").put("botaoAtivo", false);
             } catch (JSONException e) {}
             salvarDados();
+            atualizarTreinoHoje();
+            treinoHojePanel.setVisibility(View.VISIBLE);
             renderDados();
         } else {
             JSONArray treinos = getTodayTreinos();
@@ -991,10 +1074,6 @@ public class MainActivity extends Activity {
                         }
                     }
                     if (todosConcluidos) {
-                        GradientDrawable circle = new GradientDrawable();
-                        circle.setShape(GradientDrawable.OVAL);
-                        circle.setColor(Color.parseColor("#ff0000"));
-                        btnPrincipal.setBackground(circle);
                         isActive = false;
                         cardTreinoPanel.setVisibility(View.GONE);
                         treinoAtual = null;
@@ -1002,14 +1081,12 @@ public class MainActivity extends Activity {
                         treinoConcluido.put(hojeKey, true);
                         configData.getJSONObject("academia").put("botaoAtivo", false);
                         salvarDados();
+                        treinoHojePanel.setVisibility(View.VISIBLE);
                     } else {
-                        GradientDrawable circle = new GradientDrawable();
-                        circle.setShape(GradientDrawable.OVAL);
-                        circle.setColor(Color.parseColor("#00cc00"));
-                        btnPrincipal.setBackground(circle);
                         isActive = true;
                         cardTreinoPanel.setVisibility(View.VISIBLE);
                         treinoAtual = treino;
+                        treinoHojePanel.setVisibility(View.GONE);
                         exercicioAtualIndex = 0;
                         for (int i = 0; i < exs.length(); i++) {
                             JSONObject e = exs.getJSONObject(i);
@@ -1024,32 +1101,33 @@ public class MainActivity extends Activity {
                 }
             }
 
-            GradientDrawable circle = new GradientDrawable();
-            circle.setShape(GradientDrawable.OVAL);
-            circle.setColor(Color.parseColor("#ff0000"));
-            btnPrincipal.setBackground(circle);
             isActive = false;
             cardTreinoPanel.setVisibility(View.GONE);
             treinoAtual = null;
             limparTimer();
+            treinoHojePanel.setVisibility(View.VISIBLE);
             if (configData.getJSONObject("academia").getBoolean("botaoAtivo")) {
                 configData.getJSONObject("academia").put("botaoAtivo", false);
                 salvarDados();
             }
         } catch (JSONException e) {
-            GradientDrawable circle = new GradientDrawable();
-            circle.setShape(GradientDrawable.OVAL);
-            circle.setColor(Color.parseColor("#ff0000"));
-            btnPrincipal.setBackground(circle);
             isActive = false;
             cardTreinoPanel.setVisibility(View.GONE);
             treinoAtual = null;
             limparTimer();
+            treinoHojePanel.setVisibility(View.VISIBLE);
         }
+        atualizarTreinoHoje();
     }
 
     private void renderDados() {
         dadosContainer.removeAllViews();
+
+        if (isActive) {
+            dadosContainer.setVisibility(View.GONE);
+            return;
+        }
+        dadosContainer.setVisibility(View.VISIBLE);
 
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
@@ -1065,27 +1143,24 @@ public class MainActivity extends Activity {
         header.setWeightSum(2);
 
         TextView title = new TextView(this);
-        title.setText("Academia");
+        title.setText("📊 Dados da Academia");
         title.setTextColor(Color.parseColor("#aaaaaa"));
-        title.setTextSize(16);
+        title.setTextSize(14);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
         title.setLayoutParams(titleParams);
         header.addView(title);
 
-        configBtn = new Button(this);
-        configBtn.setText(modoConfig ? "✅ Pronto" : "⚙️ Configurar");
-        configBtn.setBackgroundColor(Color.parseColor("#2a2a2a"));
-        configBtn.setTextColor(Color.parseColor("#cccccc"));
-        configBtn.setPadding(dpToPx(14), dpToPx(5), dpToPx(14), dpToPx(5));
-        configBtn.setOnClickListener(v -> {
+        Button configBtn2 = new Button(this);
+        configBtn2.setText(modoConfig ? "✅ Pronto" : "⚙️ Configurar");
+        configBtn2.setBackgroundColor(modoConfig ? Color.parseColor("#1a3a1a") : Color.parseColor("#2a2a2a"));
+        configBtn2.setTextColor(modoConfig ? Color.parseColor("#8bc34a") : Color.parseColor("#cccccc"));
+        configBtn2.setPadding(dpToPx(12), dpToPx(5), dpToPx(12), dpToPx(5));
+        configBtn2.setOnClickListener(v -> {
             modoConfig = !modoConfig;
             renderDados();
         });
-        if (modoConfig) {
-            configBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
-            configBtn.setTextColor(Color.parseColor("#8bc34a"));
-        }
-        header.addView(configBtn);
+        header.addView(configBtn2);
 
         box.addView(header);
 
@@ -1111,54 +1186,15 @@ public class MainActivity extends Activity {
             int diasFreq = getDiasFrequentados();
             String inicioDisplay = academia.isNull("inicio") ? "Não definida" : formatDataBR(academia.getString("inicio"));
 
-            addLabel(parent, "Data de Início");
-            LinearLayout valueDisplay = new LinearLayout(this);
-            valueDisplay.setOrientation(LinearLayout.HORIZONTAL);
-            valueDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            valueDisplay.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
-            GradientDrawable border = new GradientDrawable();
-            border.setStroke(1, Color.parseColor("#2a2a2a"));
-            border.setColor(Color.parseColor("#0d0d0d"));
-            valueDisplay.setBackground(border);
-            TextView info = new TextView(this);
-            info.setText(inicioDisplay + (academia.has("inicio") && !academia.isNull("inicio") && diasFreq > 0 ? " (" + diasFreq + " dias)" : ""));
-            info.setTextColor(Color.parseColor("#eeeeee"));
-            info.setTextSize(14);
-            valueDisplay.addView(info);
-            parent.addView(valueDisplay);
+            LinearLayout infoGrid = new LinearLayout(this);
+            infoGrid.setOrientation(LinearLayout.VERTICAL);
+            infoGrid.setPadding(0, dpToPx(8), 0, dpToPx(8));
 
-            LinearLayout subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line = new View(this);
-            line.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line.setMinimumHeight(1);
-            subSection.addView(line);
-
-            TextView subTitle = new TextView(this);
-            subTitle.setText("Evolução do Peso");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
-
-            LinearLayout pesoDisplay = new LinearLayout(this);
-            pesoDisplay.setOrientation(LinearLayout.HORIZONTAL);
-            pesoDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            pesoDisplay.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
-            GradientDrawable border2 = new GradientDrawable();
-            border2.setStroke(1, Color.parseColor("#2a2a2a"));
-            border2.setColor(Color.parseColor("#0d0d0d"));
-            pesoDisplay.setBackground(border2);
-
+            addInfoRow(infoGrid, "📅 Data de Início", inicioDisplay + (academia.has("inicio") && !academia.isNull("inicio") && diasFreq > 0 ? " (" + diasFreq + " dias)" : ""));
+            
             String pesoAtual = peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg";
-            TextView pesoLabel = new TextView(this);
-            pesoLabel.setText("Peso Atual: " + pesoAtual);
-            pesoLabel.setTextColor(Color.parseColor("#eeeeee"));
-            pesoLabel.setTextSize(14);
-            pesoDisplay.addView(pesoLabel);
-
             String evolucaoTexto = "Sem dados";
-            String evolucaoCor = "#aaaaaa";
+            String evolucaoCor = "#666666";
             if (peso.has("historico") && peso.getJSONArray("historico").length() >= 2) {
                 JSONArray hist = peso.getJSONArray("historico");
                 double primeiro = hist.getJSONObject(0).getDouble("peso");
@@ -1168,29 +1204,15 @@ public class MainActivity extends Activity {
                 evolucaoTexto = (diff > 0 ? "+" : "") + String.format("%.1f", diff) + "kg (" + (pct > 0 ? "+" : "") + String.format("%.1f", pct) + "%)";
                 evolucaoCor = diff > 0 ? "#8bc34a" : (diff < 0 ? "#ff6b6b" : "#aaaaaa");
             }
-            TextView evolucaoLabel = new TextView(this);
-            evolucaoLabel.setText(evolucaoTexto);
-            evolucaoLabel.setTextColor(Color.parseColor(evolucaoCor));
-            evolucaoLabel.setTextSize(14);
-            pesoDisplay.addView(evolucaoLabel);
-
-            subSection.addView(pesoDisplay);
-
-            TextView ultimaPesagem = new TextView(this);
-            ultimaPesagem.setText("Última pesagem: " + getUltimaPesagemData());
-            ultimaPesagem.setTextColor(Color.parseColor("#666666"));
-            ultimaPesagem.setTextSize(11);
-            subSection.addView(ultimaPesagem);
-
+            addInfoRow(infoGrid, "⚖️ Peso Atual", pesoAtual);
+            addInfoRow(infoGrid, "📈 Evolução", evolucaoTexto, evolucaoCor);
+            addInfoRow(infoGrid, "📋 Última pesagem", getUltimaPesagemData());
             if (!peso.isNull("meta")) {
-                TextView metaLabel = new TextView(this);
-                metaLabel.setText("Meta: " + peso.getDouble("meta") + " kg");
-                metaLabel.setTextColor(Color.parseColor("#666666"));
-                metaLabel.setTextSize(11);
-                subSection.addView(metaLabel);
+                addInfoRow(infoGrid, "🎯 Meta", peso.getDouble("meta") + " kg");
             }
+            addInfoRow(infoGrid, "📆 Intervalo", peso.getInt("intervalo") + " dias");
 
-            parent.addView(subSection);
+            parent.addView(infoGrid);
 
             JSONArray treinos = academia.getJSONArray("treinos");
             JSONArray todosExercicios = new JSONArray();
@@ -1208,29 +1230,33 @@ public class MainActivity extends Activity {
                 }
             }
 
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line2 = new View(this);
-            line2.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line2.setMinimumHeight(1);
-            subSection.addView(line2);
-
-            subTitle = new TextView(this);
-            subTitle.setText("Evolução de Carga");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
-
-            LinearLayout tablePanel = new LinearLayout(this);
-            tablePanel.setOrientation(LinearLayout.VERTICAL);
-            tablePanel.setPadding(0, dpToPx(6), 0, dpToPx(6));
-
             if (todosExercicios.length() > 0) {
+                LinearLayout subSection = new LinearLayout(this);
+                subSection.setOrientation(LinearLayout.VERTICAL);
+                subSection.setPadding(0, dpToPx(12), 0, dpToPx(8));
+                View line2 = new View(this);
+                line2.setBackgroundColor(Color.parseColor("#2a2a2a"));
+                line2.setMinimumHeight(1);
+                subSection.addView(line2);
+
+                TextView subTitle = new TextView(this);
+                subTitle.setText("📊 Evolução de Carga");
+                subTitle.setTextColor(Color.parseColor("#999999"));
+                subTitle.setTextSize(13);
+                subTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+                subTitle.setPadding(0, dpToPx(8), 0, dpToPx(8));
+                subSection.addView(subTitle);
+
                 for (int i = 0; i < todosExercicios.length(); i++) {
                     JSONObject ex = todosExercicios.getJSONObject(i);
                     LinearLayout row = new LinearLayout(this);
                     row.setOrientation(LinearLayout.HORIZONTAL);
+                    row.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                    row.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
+                    GradientDrawable border2 = new GradientDrawable();
+                    border2.setStroke(1, Color.parseColor("#1a1a1a"));
+                    border2.setColor(Color.parseColor("#0d0d0d"));
+                    row.setBackground(border2);
 
                     TextView exName = new TextView(this);
                     exName.setText(ex.getString("exercise"));
@@ -1241,7 +1267,7 @@ public class MainActivity extends Activity {
 
                     String evolucao = "Sem dados";
                     String progresso = "0%";
-                    String cor = "#aaaaaa";
+                    String cor = "#666666";
                     if (ex.has("loadHistory") && ex.getJSONArray("loadHistory").length() >= 2) {
                         JSONArray hist = ex.getJSONArray("loadHistory");
                         double primeiro = hist.getJSONObject(0).getDouble("load");
@@ -1267,74 +1293,26 @@ public class MainActivity extends Activity {
                     exProg.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                     row.addView(exProg);
 
-                    tablePanel.addView(row);
+                    subSection.addView(row);
                 }
-            } else {
-                TextView empty = new TextView(this);
-                empty.setText("Nenhum exercício com dados");
-                empty.setTextColor(Color.parseColor("#666666"));
-                empty.setTextSize(12);
-                empty.setGravity(android.view.Gravity.CENTER);
-                tablePanel.addView(empty);
+                parent.addView(subSection);
             }
 
-            subSection.addView(tablePanel);
-            parent.addView(subSection);
-
-            subSection = new LinearLayout(this);
+            LinearLayout subSection = new LinearLayout(this);
             subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
+            subSection.setPadding(0, dpToPx(12), 0, dpToPx(8));
             View line3 = new View(this);
             line3.setBackgroundColor(Color.parseColor("#2a2a2a"));
             line3.setMinimumHeight(1);
             subSection.addView(line3);
 
-            subTitle = new TextView(this);
-            subTitle.setText("Resumo");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
-
-            String[] resumos = {
-                "Peso Atual: " + (peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg"),
-                "Meta: " + (peso.isNull("meta") ? "Não definida" : peso.getDouble("meta") + " kg"),
-                "Intervalo Pesagem: " + peso.getInt("intervalo") + " dias",
-                "Última pesagem: " + getUltimaPesagemData(),
-                "Dias frequentados: " + diasFreq,
-                "Data de início: " + inicioDisplay
-            };
-            for (String s : resumos) {
-                LinearLayout lineLayout = new LinearLayout(this);
-                lineLayout.setOrientation(LinearLayout.HORIZONTAL);
-                lineLayout.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                lineLayout.setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4));
-                GradientDrawable border3 = new GradientDrawable();
-                border3.setStroke(1, Color.parseColor("#2a2a2a"));
-                border3.setColor(Color.parseColor("#0d0d0d"));
-                lineLayout.setBackground(border3);
-                TextView lbl = new TextView(this);
-                lbl.setText(s);
-                lbl.setTextColor(Color.parseColor("#eeeeee"));
-                lbl.setTextSize(13);
-                lineLayout.addView(lbl);
-                subSection.addView(lineLayout);
-            }
-
-            parent.addView(subSection);
-
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line4 = new View(this);
-            line4.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line4.setMinimumHeight(1);
-            subSection.addView(line4);
-
-            subTitle = new TextView(this);
-            subTitle.setText("Objetivos");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
+            TextView subTitle2 = new TextView(this);
+            subTitle2.setText("🎯 Objetivos");
+            subTitle2.setTextColor(Color.parseColor("#999999"));
+            subTitle2.setTextSize(13);
+            subTitle2.setTypeface(null, android.graphics.Typeface.BOLD);
+            subTitle2.setPadding(0, dpToPx(8), 0, dpToPx(8));
+            subSection.addView(subTitle2);
 
             JSONArray objetivos = academia.getJSONArray("objetivos");
             if (objetivos.length() > 0) {
@@ -1343,12 +1321,12 @@ public class MainActivity extends Activity {
                     item.setOrientation(LinearLayout.HORIZONTAL);
                     item.setBackgroundColor(Color.parseColor("#0d0d0d"));
                     item.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
-                    GradientDrawable border4 = new GradientDrawable();
-                    border4.setStroke(1, Color.parseColor("#2a2a2a"));
-                    border4.setColor(Color.parseColor("#0d0d0d"));
-                    item.setBackground(border4);
+                    GradientDrawable border3 = new GradientDrawable();
+                    border3.setStroke(1, Color.parseColor("#1a1a1a"));
+                    border3.setColor(Color.parseColor("#0d0d0d"));
+                    item.setBackground(border3);
                     TextView lbl = new TextView(this);
-                    lbl.setText(objetivos.getString(i));
+                    lbl.setText("• " + objetivos.getString(i));
                     lbl.setTextColor(Color.parseColor("#eeeeee"));
                     lbl.setTextSize(13);
                     item.addView(lbl);
@@ -1359,185 +1337,102 @@ public class MainActivity extends Activity {
                 empty.setText("Nenhum objetivo definido.");
                 empty.setTextColor(Color.parseColor("#666666"));
                 empty.setTextSize(11);
+                empty.setPadding(dpToPx(10), dpToPx(6), 0, dpToPx(6));
                 subSection.addView(empty);
             }
 
             parent.addView(subSection);
 
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line5 = new View(this);
-            line5.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line5.setMinimumHeight(1);
-            subSection.addView(line5);
-
-            subTitle = new TextView(this);
-            subTitle.setText("Dias de Descanso");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
-
-            LinearLayout diasPanel = new LinearLayout(this);
-            diasPanel.setOrientation(LinearLayout.HORIZONTAL);
-            diasPanel.setPadding(0, dpToPx(4), 0, dpToPx(4));
-            JSONArray diasDescanso = academia.getJSONArray("diasDescanso");
-            if (diasDescanso.length() > 0) {
-                for (int i = 0; i < diasDescanso.length(); i++) {
-                    TextView dia = new TextView(this);
-                    dia.setText(diasDescanso.getString(i));
-                    dia.setTextColor(Color.parseColor("#cccccc"));
-                    dia.setTextSize(12);
-                    dia.setBackgroundColor(Color.parseColor("#1a1a1a"));
-                    dia.setPadding(dpToPx(8), dpToPx(2), dpToPx(8), dpToPx(2));
-                    GradientDrawable border5 = new GradientDrawable();
-                    border5.setStroke(1, Color.parseColor("#2a2a2a"));
-                    border5.setColor(Color.parseColor("#1a1a1a"));
-                    dia.setBackground(border5);
-                    diasPanel.addView(dia);
-                }
-            } else {
-                TextView empty = new TextView(this);
-                empty.setText("Nenhum dia de descanso");
-                empty.setTextColor(Color.parseColor("#666666"));
-                empty.setTextSize(11);
-                diasPanel.addView(empty);
-            }
-            subSection.addView(diasPanel);
-
-            parent.addView(subSection);
-
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line6 = new View(this);
-            line6.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line6.setMinimumHeight(1);
-            subSection.addView(line6);
-
-            subTitle = new TextView(this);
-            subTitle.setText("Roupas");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
-
             JSONObject roupas = academia.getJSONObject("roupas");
             String[] cats = {"camisas", "calcas", "tenis"};
-            String[] catLabels = {"Camisas", "Calças", "Tênis"};
+            String[] catLabels = {"👕 Camisas", "👖 Calças", "👟 Tênis"};
+            LinearLayout subSectionRoupas = new LinearLayout(this);
+            subSectionRoupas.setOrientation(LinearLayout.VERTICAL);
+            subSectionRoupas.setPadding(0, dpToPx(12), 0, dpToPx(8));
+            View line4 = new View(this);
+            line4.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line4.setMinimumHeight(1);
+            subSectionRoupas.addView(line4);
+
+            TextView subTitle3 = new TextView(this);
+            subTitle3.setText("👔 Roupas");
+            subTitle3.setTextColor(Color.parseColor("#999999"));
+            subTitle3.setTextSize(13);
+            subTitle3.setTypeface(null, android.graphics.Typeface.BOLD);
+            subTitle3.setPadding(0, dpToPx(8), 0, dpToPx(8));
+            subSectionRoupas.addView(subTitle3);
+
             for (int c = 0; c < cats.length; c++) {
+                LinearLayout catLayout = new LinearLayout(this);
+                catLayout.setOrientation(LinearLayout.VERTICAL);
+                catLayout.setPadding(0, dpToPx(4), 0, dpToPx(4));
+                
                 TextView catLabel = new TextView(this);
                 catLabel.setText(catLabels[c]);
                 catLabel.setTextColor(Color.parseColor("#888888"));
                 catLabel.setTextSize(11);
-                subSection.addView(catLabel);
+                catLayout.addView(catLabel);
+                
                 JSONArray items = roupas.getJSONArray(cats[c]);
                 if (items.length() > 0) {
                     for (int i = 0; i < items.length(); i++) {
                         LinearLayout item = new LinearLayout(this);
                         item.setOrientation(LinearLayout.HORIZONTAL);
                         item.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                        item.setPadding(dpToPx(6), dpToPx(3), dpToPx(6), dpToPx(3));
-                        GradientDrawable border7 = new GradientDrawable();
-                        border7.setStroke(2, Color.parseColor("#2a2a2a"));
-                        border7.setColor(Color.parseColor("#0d0d0d"));
-                        item.setBackground(border7);
+                        item.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3));
                         TextView lbl = new TextView(this);
-                        lbl.setText(items.getString(i));
+                        lbl.setText("• " + items.getString(i));
                         lbl.setTextColor(Color.parseColor("#cccccc"));
                         lbl.setTextSize(12);
                         item.addView(lbl);
-                        subSection.addView(item);
+                        catLayout.addView(item);
                     }
                 } else {
                     TextView empty = new TextView(this);
-                    empty.setText("Nenhuma " + catLabels[c].toLowerCase() + ".");
+                    empty.setText("Nenhuma " + catLabels[c].toLowerCase().replace("👕 ", "").replace("👖 ", "").replace("👟 ", ""));
                     empty.setTextColor(Color.parseColor("#666666"));
                     empty.setTextSize(11);
-                    subSection.addView(empty);
+                    empty.setPadding(dpToPx(8), dpToPx(3), 0, dpToPx(3));
+                    catLayout.addView(empty);
                 }
+                subSectionRoupas.addView(catLayout);
             }
+            parent.addView(subSectionRoupas);
 
-            parent.addView(subSection);
-
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line7 = new View(this);
-            line7.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line7.setMinimumHeight(1);
-            subSection.addView(line7);
-
-            subTitle = new TextView(this);
-            subTitle.setText("Combinações");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
-
-            JSONObject combinacoes = academia.getJSONObject("combinacoes");
-            JSONArray workingDays = new JSONArray();
-            for (String d : DIAS_SEMANA) {
-                boolean isDescanso = false;
-                for (int i = 0; i < diasDescanso.length(); i++) {
-                    if (diasDescanso.getString(i).equals(d)) {
-                        isDescanso = true;
-                        break;
-                    }
-                }
-                if (!isDescanso) workingDays.put(d);
-            }
-
-            if (workingDays.length() > 0) {
-                for (int i = 0; i < workingDays.length(); i++) {
-                    String day = workingDays.getString(i);
-                    LinearLayout dayPanel = new LinearLayout(this);
-                    dayPanel.setOrientation(LinearLayout.VERTICAL);
-                    dayPanel.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                    dayPanel.setPadding(dpToPx(6), dpToPx(4), dpToPx(6), dpToPx(4));
-                    GradientDrawable border8 = new GradientDrawable();
-                    border8.setStroke(1, Color.parseColor("#1a1a1a"));
-                    border8.setColor(Color.parseColor("#0d0d0d"));
-                    dayPanel.setBackground(border8);
-
-                    TextView dayTitle = new TextView(this);
-                    dayTitle.setText(day);
-                    dayTitle.setTextColor(Color.parseColor("#aaaaaa"));
-                    dayTitle.setTextSize(12);
-                    dayTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-                    dayPanel.addView(dayTitle);
-
-                    JSONArray combos = combinacoes.has(day) ? combinacoes.getJSONArray(day) : new JSONArray();
-                    if (combos.length() > 0) {
-                        for (int j = 0; j < combos.length(); j++) {
-                            LinearLayout comboItem = new LinearLayout(this);
-                            comboItem.setOrientation(LinearLayout.HORIZONTAL);
-                            TextView comboText = new TextView(this);
-                            comboText.setText(combos.getString(j));
-                            comboText.setTextColor(Color.parseColor("#cccccc"));
-                            comboText.setTextSize(12);
-                            comboItem.addView(comboText);
-                            dayPanel.addView(comboItem);
-                        }
-                    } else {
-                        TextView empty = new TextView(this);
-                        empty.setText("Nenhuma combinação.");
-                        empty.setTextColor(Color.parseColor("#666666"));
-                        empty.setTextSize(11);
-                        dayPanel.addView(empty);
-                    }
-                    subSection.addView(dayPanel);
-                }
-            } else {
-                TextView empty = new TextView(this);
-                empty.setText("Nenhum dia disponível.");
-                empty.setTextColor(Color.parseColor("#666666"));
-                empty.setTextSize(11);
-                subSection.addView(empty);
-            }
-
-            parent.addView(subSection);
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    private void addInfoRow(LinearLayout parent, String label, String value) {
+        addInfoRow(parent, label, value, null);
+    }
+
+    private void addInfoRow(LinearLayout parent, String label, String value, String color) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        row.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
+        GradientDrawable border = new GradientDrawable();
+        border.setStroke(1, Color.parseColor("#1a1a1a"));
+        border.setColor(Color.parseColor("#0d0d0d"));
+        row.setBackground(border);
+
+        TextView lbl = new TextView(this);
+        lbl.setText(label);
+        lbl.setTextColor(Color.parseColor("#888888"));
+        lbl.setTextSize(12);
+        lbl.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        row.addView(lbl);
+
+        TextView val = new TextView(this);
+        val.setText(value);
+        val.setTextColor(color != null ? Color.parseColor(color) : Color.parseColor("#eeeeee"));
+        val.setTextSize(13);
+        val.setTypeface(null, android.graphics.Typeface.BOLD);
+        row.addView(val);
+
+        parent.addView(row);
     }
 
     private void renderModoConfig(LinearLayout parent) {
@@ -1549,151 +1444,33 @@ public class MainActivity extends Activity {
 
             LinearLayout subSection = new LinearLayout(this);
             subSection.setOrientation(LinearLayout.VERTICAL);
+            subSection.setPadding(0, dpToPx(8), 0, dpToPx(8));
 
-            TextView subTitle = new TextView(this);
-            subTitle.setText("Data de Início");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
-
-            LinearLayout valueDisplay = new LinearLayout(this);
-            valueDisplay.setOrientation(LinearLayout.HORIZONTAL);
-            valueDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            valueDisplay.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
-            GradientDrawable border = new GradientDrawable();
-            border.setStroke(1, Color.parseColor("#2a2a2a"));
-            border.setColor(Color.parseColor("#0d0d0d"));
-            valueDisplay.setBackground(border);
-
-            TextView info = new TextView(this);
-            info.setText(inicioDisplay + (academia.has("inicio") && !academia.isNull("inicio") && diasFreq > 0 ? " (" + diasFreq + " dias)" : ""));
-            info.setTextColor(Color.parseColor("#eeeeee"));
-            info.setTextSize(14);
-            valueDisplay.addView(info);
-
-            Button editBtn = new Button(this);
-            editBtn.setText(academia.isNull("inicio") ? "Definir" : "Editar");
-            editBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
-            editBtn.setTextColor(Color.parseColor("#8bc34a"));
-            editBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
-            editBtn.setOnClickListener(v -> mostrarEditarInicio());
-            valueDisplay.addView(editBtn);
-
-            subSection.addView(valueDisplay);
-            parent.addView(subSection);
-
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line = new View(this);
-            line.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line.setMinimumHeight(1);
-            subSection.addView(line);
-
-            subTitle = new TextView(this);
-            subTitle.setText("Peso");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
-
-            TextView pesoLabel = new TextView(this);
-            pesoLabel.setText("Peso Atual");
-            pesoLabel.setTextColor(Color.parseColor("#888888"));
-            pesoLabel.setTextSize(11);
-            subSection.addView(pesoLabel);
-
-            LinearLayout pesoDisplay = new LinearLayout(this);
-            pesoDisplay.setOrientation(LinearLayout.HORIZONTAL);
-            pesoDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            pesoDisplay.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
-            GradientDrawable border2 = new GradientDrawable();
-            border2.setStroke(1, Color.parseColor("#2a2a2a"));
-            border2.setColor(Color.parseColor("#0d0d0d"));
-            pesoDisplay.setBackground(border2);
-
-            String pesoAtual = peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg";
-            TextView atualLabel = new TextView(this);
-            atualLabel.setText(pesoAtual);
-            atualLabel.setTextColor(Color.parseColor("#eeeeee"));
-            atualLabel.setTextSize(14);
-            pesoDisplay.addView(atualLabel);
-
-            LinearLayout btnPanel = new LinearLayout(this);
-            btnPanel.setOrientation(LinearLayout.HORIZONTAL);
-
-            Button addPesoBtn = new Button(this);
-            addPesoBtn.setText("Registrar");
-            addPesoBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
-            addPesoBtn.setTextColor(Color.parseColor("#8bc34a"));
-            addPesoBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
-            addPesoBtn.setOnClickListener(v -> mostrarRegistrarPeso());
-            btnPanel.addView(addPesoBtn);
-
-            Button histBtn = new Button(this);
-            histBtn.setText("Histórico");
-            histBtn.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            histBtn.setTextColor(Color.parseColor("#cccccc"));
-            histBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
-            histBtn.setOnClickListener(v -> mostrarHistoricoPeso());
-            btnPanel.addView(histBtn);
-
-            pesoDisplay.addView(btnPanel);
-            subSection.addView(pesoDisplay);
-
-            TextView intervaloLabel = new TextView(this);
-            intervaloLabel.setText("Intervalo para Pesagem (dias)");
-            intervaloLabel.setTextColor(Color.parseColor("#888888"));
-            intervaloLabel.setTextSize(11);
-            subSection.addView(intervaloLabel);
-
-            LinearLayout intervaloDisplay = new LinearLayout(this);
-            intervaloDisplay.setOrientation(LinearLayout.HORIZONTAL);
-            intervaloDisplay.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            intervaloDisplay.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
-            GradientDrawable border3 = new GradientDrawable();
-            border3.setStroke(1, Color.parseColor("#2a2a2a"));
-            border3.setColor(Color.parseColor("#0d0d0d"));
-            intervaloDisplay.setBackground(border3);
-
-            TextView intervaloVal = new TextView(this);
-            intervaloVal.setText(peso.getInt("intervalo") + " dias");
-            intervaloVal.setTextColor(Color.parseColor("#eeeeee"));
-            intervaloVal.setTextSize(14);
-            intervaloDisplay.addView(intervaloVal);
-
-            Button editIntervaloBtn = new Button(this);
-            editIntervaloBtn.setText("Editar");
-            editIntervaloBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
-            editIntervaloBtn.setTextColor(Color.parseColor("#8bc34a"));
-            editIntervaloBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
-            editIntervaloBtn.setOnClickListener(v -> mostrarEditarIntervalo());
-            intervaloDisplay.addView(editIntervaloBtn);
-
-            subSection.addView(intervaloDisplay);
-
+            addConfigRow(subSection, "📅 Data de Início", inicioDisplay + (academia.has("inicio") && !academia.isNull("inicio") && diasFreq > 0 ? " (" + diasFreq + " dias)" : ""), "Editar", v -> mostrarEditarInicio());
+            addConfigRow(subSection, "⚖️ Peso Atual", peso.isNull("atual") ? "--" : peso.getDouble("atual") + " kg", "Registrar", v -> mostrarRegistrarPeso());
+            addConfigRow(subSection, "📋 Histórico de Peso", "", "Ver", v -> mostrarHistoricoPeso());
+            addConfigRow(subSection, "📆 Intervalo Pesagem", peso.getInt("intervalo") + " dias", "Editar", v -> mostrarEditarIntervalo());
             if (!peso.isNull("meta")) {
-                TextView metaLabel = new TextView(this);
-                metaLabel.setText("Meta: " + peso.getDouble("meta") + " kg");
-                metaLabel.setTextColor(Color.parseColor("#666666"));
-                metaLabel.setTextSize(11);
-                subSection.addView(metaLabel);
+                addConfigRow(subSection, "🎯 Meta", peso.getDouble("meta") + " kg", "", null);
             }
 
             parent.addView(subSection);
 
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line2 = new View(this);
-            line2.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line2.setMinimumHeight(1);
-            subSection.addView(line2);
+            LinearLayout subSection2 = new LinearLayout(this);
+            subSection2.setOrientation(LinearLayout.VERTICAL);
+            subSection2.setPadding(0, dpToPx(12), 0, dpToPx(8));
+            View line = new View(this);
+            line.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line.setMinimumHeight(1);
+            subSection2.addView(line);
 
-            subTitle = new TextView(this);
-            subTitle.setText("Dias de Descanso");
+            TextView subTitle = new TextView(this);
+            subTitle.setText("📅 Dias de Descanso");
             subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
+            subTitle.setTextSize(13);
+            subTitle.setTypeface(null, android.graphics.Typeface.BOLD);
+            subTitle.setPadding(0, dpToPx(8), 0, dpToPx(8));
+            subSection2.addView(subTitle);
 
             LinearLayout gridPanel = new LinearLayout(this);
             gridPanel.setOrientation(LinearLayout.VERTICAL);
@@ -1708,6 +1485,7 @@ public class MainActivity extends Activity {
                 }
                 LinearLayout row = new LinearLayout(this);
                 row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setPadding(0, dpToPx(2), 0, dpToPx(2));
                 CheckBox cb = new CheckBox(this);
                 cb.setText(d);
                 cb.setChecked(checked);
@@ -1737,23 +1515,24 @@ public class MainActivity extends Activity {
                 row.addView(cb);
                 gridPanel.addView(row);
             }
-            subSection.addView(gridPanel);
+            subSection2.addView(gridPanel);
+            parent.addView(subSection2);
 
-            parent.addView(subSection);
+            LinearLayout subSection3 = new LinearLayout(this);
+            subSection3.setOrientation(LinearLayout.VERTICAL);
+            subSection3.setPadding(0, dpToPx(12), 0, dpToPx(8));
+            View line2 = new View(this);
+            line2.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line2.setMinimumHeight(1);
+            subSection3.addView(line2);
 
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line3 = new View(this);
-            line3.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line3.setMinimumHeight(1);
-            subSection.addView(line3);
-
-            subTitle = new TextView(this);
-            subTitle.setText("Objetivos");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
+            TextView subTitle2 = new TextView(this);
+            subTitle2.setText("🎯 Objetivos");
+            subTitle2.setTextColor(Color.parseColor("#999999"));
+            subTitle2.setTextSize(13);
+            subTitle2.setTypeface(null, android.graphics.Typeface.BOLD);
+            subTitle2.setPadding(0, dpToPx(8), 0, dpToPx(8));
+            subSection3.addView(subTitle2);
 
             JSONArray objetivos = academia.getJSONArray("objetivos");
             for (int i = 0; i < objetivos.length(); i++) {
@@ -1761,15 +1540,16 @@ public class MainActivity extends Activity {
                 item.setOrientation(LinearLayout.HORIZONTAL);
                 item.setBackgroundColor(Color.parseColor("#0d0d0d"));
                 item.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
-                GradientDrawable border4 = new GradientDrawable();
-                border4.setStroke(1, Color.parseColor("#2a2a2a"));
-                border4.setColor(Color.parseColor("#0d0d0d"));
-                item.setBackground(border4);
+                GradientDrawable border = new GradientDrawable();
+                border.setStroke(1, Color.parseColor("#1a1a1a"));
+                border.setColor(Color.parseColor("#0d0d0d"));
+                item.setBackground(border);
 
                 TextView lbl = new TextView(this);
-                lbl.setText(objetivos.getString(i));
+                lbl.setText("• " + objetivos.getString(i));
                 lbl.setTextColor(Color.parseColor("#eeeeee"));
                 lbl.setTextSize(13);
+                lbl.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                 item.addView(lbl);
 
                 LinearLayout actions = new LinearLayout(this);
@@ -1799,32 +1579,34 @@ public class MainActivity extends Activity {
                 actions.addView(delObj);
 
                 item.addView(actions);
-                subSection.addView(item);
+                subSection3.addView(item);
             }
 
             Button addObjBtn = new Button(this);
             addObjBtn.setText("+ Adicionar Objetivo");
             addObjBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
             addObjBtn.setTextColor(Color.parseColor("#8bc34a"));
-            addObjBtn.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5));
+            addObjBtn.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
             addObjBtn.setOnClickListener(v -> mostrarAdicionarObjetivo());
-            subSection.addView(addObjBtn);
+            subSection3.addView(addObjBtn);
 
-            parent.addView(subSection);
+            parent.addView(subSection3);
 
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line4 = new View(this);
-            line4.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line4.setMinimumHeight(1);
-            subSection.addView(line4);
+            LinearLayout subSection4 = new LinearLayout(this);
+            subSection4.setOrientation(LinearLayout.VERTICAL);
+            subSection4.setPadding(0, dpToPx(12), 0, dpToPx(8));
+            View line3 = new View(this);
+            line3.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line3.setMinimumHeight(1);
+            subSection4.addView(line3);
 
-            subTitle = new TextView(this);
-            subTitle.setText("Treinos");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
+            TextView subTitle3 = new TextView(this);
+            subTitle3.setText("🏋️ Treinos");
+            subTitle3.setTextColor(Color.parseColor("#999999"));
+            subTitle3.setTextSize(13);
+            subTitle3.setTypeface(null, android.graphics.Typeface.BOLD);
+            subTitle3.setPadding(0, dpToPx(8), 0, dpToPx(8));
+            subSection4.addView(subTitle3);
 
             JSONArray treinos = academia.getJSONArray("treinos");
             for (int i = 0; i < treinos.length(); i++) {
@@ -1832,20 +1614,21 @@ public class MainActivity extends Activity {
                 LinearLayout treinoPanel = new LinearLayout(this);
                 treinoPanel.setOrientation(LinearLayout.VERTICAL);
                 treinoPanel.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                treinoPanel.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
-                GradientDrawable border5 = new GradientDrawable();
-                border5.setStroke(1, Color.parseColor("#2a2a2a"));
-                border5.setColor(Color.parseColor("#0d0d0d"));
-                treinoPanel.setBackground(border5);
+                treinoPanel.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
+                GradientDrawable border2 = new GradientDrawable();
+                border2.setStroke(1, Color.parseColor("#1a1a1a"));
+                border2.setColor(Color.parseColor("#0d0d0d"));
+                treinoPanel.setBackground(border2);
 
                 LinearLayout headerPanel = new LinearLayout(this);
                 headerPanel.setOrientation(LinearLayout.HORIZONTAL);
 
                 TextView nomeLabel = new TextView(this);
-                nomeLabel.setText(treino.getString("nome"));
+                nomeLabel.setText("📌 " + treino.getString("nome"));
                 nomeLabel.setTextColor(Color.parseColor("#eeeeee"));
                 nomeLabel.setTextSize(13);
                 nomeLabel.setTypeface(null, android.graphics.Typeface.BOLD);
+                nomeLabel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                 headerPanel.addView(nomeLabel);
 
                 LinearLayout actions = new LinearLayout(this);
@@ -1878,15 +1661,15 @@ public class MainActivity extends Activity {
                 treinoPanel.addView(headerPanel);
 
                 TextView diaLabel = new TextView(this);
-                diaLabel.setText("Dia: " + treino.getString("dia"));
-                diaLabel.setTextColor(Color.parseColor("#aaaaaa"));
+                diaLabel.setText("📅 " + treino.getString("dia"));
+                diaLabel.setTextColor(Color.parseColor("#888888"));
                 diaLabel.setTextSize(12);
                 treinoPanel.addView(diaLabel);
 
                 if (treino.has("objetivo") && !treino.isNull("objetivo") && !treino.getString("objetivo").isEmpty()) {
                     TextView objLabel = new TextView(this);
-                    objLabel.setText("Objetivo: " + treino.getString("objetivo"));
-                    objLabel.setTextColor(Color.parseColor("#aaaaaa"));
+                    objLabel.setText("🎯 " + treino.getString("objetivo"));
+                    objLabel.setTextColor(Color.parseColor("#888888"));
                     objLabel.setTextSize(12);
                     treinoPanel.addView(objLabel);
                 }
@@ -1901,68 +1684,71 @@ public class MainActivity extends Activity {
                 addExBtn.setText("+ Exercício");
                 addExBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
                 addExBtn.setTextColor(Color.parseColor("#8bc34a"));
-                addExBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
+                addExBtn.setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4));
                 addExBtn.setOnClickListener(v -> mostrarAdicionarExercicio(treinoIdx));
                 treinoPanel.addView(addExBtn);
 
-                subSection.addView(treinoPanel);
+                subSection4.addView(treinoPanel);
             }
 
             Button addTreinoBtn = new Button(this);
             addTreinoBtn.setText("+ Adicionar Treino");
             addTreinoBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
             addTreinoBtn.setTextColor(Color.parseColor("#8bc34a"));
-            addTreinoBtn.setPadding(dpToPx(10), dpToPx(5), dpToPx(10), dpToPx(5));
+            addTreinoBtn.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
             addTreinoBtn.setOnClickListener(v -> mostrarAdicionarTreino());
-            subSection.addView(addTreinoBtn);
+            subSection4.addView(addTreinoBtn);
 
-            parent.addView(subSection);
+            parent.addView(subSection4);
 
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line5 = new View(this);
-            line5.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line5.setMinimumHeight(1);
-            subSection.addView(line5);
+            LinearLayout subSection5 = new LinearLayout(this);
+            subSection5.setOrientation(LinearLayout.VERTICAL);
+            subSection5.setPadding(0, dpToPx(12), 0, dpToPx(8));
+            View line4 = new View(this);
+            line4.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line4.setMinimumHeight(1);
+            subSection5.addView(line4);
 
-            subTitle = new TextView(this);
-            subTitle.setText("Roupas");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
+            TextView subTitle4 = new TextView(this);
+            subTitle4.setText("👔 Roupas");
+            subTitle4.setTextColor(Color.parseColor("#999999"));
+            subTitle4.setTextSize(13);
+            subTitle4.setTypeface(null, android.graphics.Typeface.BOLD);
+            subTitle4.setPadding(0, dpToPx(8), 0, dpToPx(8));
+            subSection5.addView(subTitle4);
 
             JSONObject roupas = academia.getJSONObject("roupas");
-            String[] cats2 = {"camisas", "calcas", "tenis"};
-            String[] catLabels2 = {"Camisas", "Calças", "Tênis"};
-            for (int c = 0; c < cats2.length; c++) {
+            String[] cats = {"camisas", "calcas", "tenis"};
+            String[] catLabels = {"Camisas", "Calças", "Tênis"};
+            for (int c = 0; c < cats.length; c++) {
+                LinearLayout catLayout = new LinearLayout(this);
+                catLayout.setOrientation(LinearLayout.VERTICAL);
+                catLayout.setPadding(0, dpToPx(4), 0, dpToPx(4));
+                
                 TextView catLabel = new TextView(this);
-                catLabel.setText(catLabels2[c]);
+                catLabel.setText(catLabels[c]);
                 catLabel.setTextColor(Color.parseColor("#888888"));
                 catLabel.setTextSize(11);
-                subSection.addView(catLabel);
+                catLayout.addView(catLabel);
 
-                JSONArray items = roupas.getJSONArray(cats2[c]);
+                JSONArray items = roupas.getJSONArray(cats[c]);
                 for (int i = 0; i < items.length(); i++) {
                     LinearLayout item = new LinearLayout(this);
                     item.setOrientation(LinearLayout.HORIZONTAL);
                     item.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                    item.setPadding(dpToPx(6), dpToPx(3), dpToPx(6), dpToPx(3));
-                    GradientDrawable border6 = new GradientDrawable();
-                    border6.setStroke(2, Color.parseColor("#2a2a2a"));
-                    border6.setColor(Color.parseColor("#0d0d0d"));
-                    item.setBackground(border6);
+                    item.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3));
 
                     TextView lbl = new TextView(this);
-                    lbl.setText(items.getString(i));
+                    lbl.setText("• " + items.getString(i));
                     lbl.setTextColor(Color.parseColor("#cccccc"));
                     lbl.setTextSize(12);
+                    lbl.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                     item.addView(lbl);
 
                     LinearLayout actions2 = new LinearLayout(this);
                     actions2.setOrientation(LinearLayout.HORIZONTAL);
                     int roupaIdx = i;
-                    String catFinal = cats2[c];
+                    String catFinal = cats[c];
                     Button editRoupa = new Button(this);
                     editRoupa.setText("✎");
                     editRoupa.setTextColor(Color.parseColor("#88aaff"));
@@ -1987,34 +1773,36 @@ public class MainActivity extends Activity {
                     actions2.addView(delRoupa);
 
                     item.addView(actions2);
-                    subSection.addView(item);
+                    catLayout.addView(item);
                 }
 
                 Button addRoupaBtn = new Button(this);
-                addRoupaBtn.setText("+ Adicionar " + catLabels2[c].toLowerCase());
+                addRoupaBtn.setText("+ Adicionar " + catLabels[c].toLowerCase());
                 addRoupaBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
                 addRoupaBtn.setTextColor(Color.parseColor("#8bc34a"));
-                addRoupaBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
-                String catFinal2 = cats2[c];
+                addRoupaBtn.setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4));
+                String catFinal2 = cats[c];
                 addRoupaBtn.setOnClickListener(v -> mostrarAdicionarRoupa(catFinal2));
-                subSection.addView(addRoupaBtn);
+                catLayout.addView(addRoupaBtn);
+                subSection5.addView(catLayout);
             }
+            parent.addView(subSection5);
 
-            parent.addView(subSection);
+            LinearLayout subSection6 = new LinearLayout(this);
+            subSection6.setOrientation(LinearLayout.VERTICAL);
+            subSection6.setPadding(0, dpToPx(12), 0, dpToPx(8));
+            View line5 = new View(this);
+            line5.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            line5.setMinimumHeight(1);
+            subSection6.addView(line5);
 
-            subSection = new LinearLayout(this);
-            subSection.setOrientation(LinearLayout.VERTICAL);
-            subSection.setPadding(0, dpToPx(10), 0, dpToPx(10));
-            View line6 = new View(this);
-            line6.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line6.setMinimumHeight(1);
-            subSection.addView(line6);
-
-            subTitle = new TextView(this);
-            subTitle.setText("Combinações por Dia");
-            subTitle.setTextColor(Color.parseColor("#999999"));
-            subTitle.setTextSize(14);
-            subSection.addView(subTitle);
+            TextView subTitle5 = new TextView(this);
+            subTitle5.setText("👕 Combinações por Dia");
+            subTitle5.setTextColor(Color.parseColor("#999999"));
+            subTitle5.setTextSize(13);
+            subTitle5.setTypeface(null, android.graphics.Typeface.BOLD);
+            subTitle5.setPadding(0, dpToPx(8), 0, dpToPx(8));
+            subSection6.addView(subTitle5);
 
             JSONObject combinacoes2 = academia.getJSONObject("combinacoes");
             JSONArray diasDescanso2 = academia.getJSONArray("diasDescanso");
@@ -2036,14 +1824,14 @@ public class MainActivity extends Activity {
                     LinearLayout dayPanel = new LinearLayout(this);
                     dayPanel.setOrientation(LinearLayout.VERTICAL);
                     dayPanel.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                    dayPanel.setPadding(dpToPx(6), dpToPx(4), dpToPx(6), dpToPx(4));
-                    GradientDrawable border7 = new GradientDrawable();
-                    border7.setStroke(1, Color.parseColor("#1a1a1a"));
-                    border7.setColor(Color.parseColor("#0d0d0d"));
-                    dayPanel.setBackground(border7);
+                    dayPanel.setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6));
+                    GradientDrawable border3 = new GradientDrawable();
+                    border3.setStroke(1, Color.parseColor("#1a1a1a"));
+                    border3.setColor(Color.parseColor("#0d0d0d"));
+                    dayPanel.setBackground(border3);
 
                     TextView dayTitle = new TextView(this);
-                    dayTitle.setText(day);
+                    dayTitle.setText("📅 " + day);
                     dayTitle.setTextColor(Color.parseColor("#aaaaaa"));
                     dayTitle.setTextSize(12);
                     dayTitle.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -2053,11 +1841,13 @@ public class MainActivity extends Activity {
                     for (int j = 0; j < combos2.length(); j++) {
                         LinearLayout comboItem = new LinearLayout(this);
                         comboItem.setOrientation(LinearLayout.HORIZONTAL);
+                        comboItem.setPadding(0, dpToPx(2), 0, dpToPx(2));
 
                         TextView comboText = new TextView(this);
-                        comboText.setText(combos2.getString(j));
+                        comboText.setText("• " + combos2.getString(j));
                         comboText.setTextColor(Color.parseColor("#cccccc"));
                         comboText.setTextSize(12);
+                        comboText.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                         comboItem.addView(comboText);
 
                         int comboIdx = j;
@@ -2087,6 +1877,7 @@ public class MainActivity extends Activity {
                     JSONObject roupas2 = academia.getJSONObject("roupas");
                     LinearLayout comboSelects = new LinearLayout(this);
                     comboSelects.setOrientation(LinearLayout.HORIZONTAL);
+                    comboSelects.setPadding(0, dpToPx(4), 0, 0);
 
                     Spinner camisaSpinner = new Spinner(this);
                     ArrayAdapter<String> camisaAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
@@ -2095,6 +1886,7 @@ public class MainActivity extends Activity {
                     JSONArray camisas = roupas2.getJSONArray("camisas");
                     for (int j = 0; j < camisas.length(); j++) camisaAdapter.add(camisas.getString(j));
                     camisaSpinner.setAdapter(camisaAdapter);
+                    camisaSpinner.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
                     Spinner calcaSpinner = new Spinner(this);
                     ArrayAdapter<String> calcaAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
@@ -2103,6 +1895,7 @@ public class MainActivity extends Activity {
                     JSONArray calcas = roupas2.getJSONArray("calcas");
                     for (int j = 0; j < calcas.length(); j++) calcaAdapter.add(calcas.getString(j));
                     calcaSpinner.setAdapter(calcaAdapter);
+                    calcaSpinner.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
                     Spinner tenisSpinner = new Spinner(this);
                     ArrayAdapter<String> tenisAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
@@ -2111,16 +1904,17 @@ public class MainActivity extends Activity {
                     JSONArray tenis = roupas2.getJSONArray("tenis");
                     for (int j = 0; j < tenis.length(); j++) tenisAdapter.add(tenis.getString(j));
                     tenisSpinner.setAdapter(tenisAdapter);
+                    tenisSpinner.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
                     comboSelects.addView(camisaSpinner);
                     comboSelects.addView(calcaSpinner);
                     comboSelects.addView(tenisSpinner);
 
                     Button addComboBtn = new Button(this);
-                    addComboBtn.setText("Adicionar");
+                    addComboBtn.setText("+");
                     addComboBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
                     addComboBtn.setTextColor(Color.parseColor("#8bc34a"));
-                    addComboBtn.setPadding(dpToPx(10), dpToPx(3), dpToPx(10), dpToPx(3));
+                    addComboBtn.setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4));
                     String dayFinal2 = day;
                     addComboBtn.setOnClickListener(v -> {
                         try {
@@ -2151,20 +1945,63 @@ public class MainActivity extends Activity {
                     comboSelects.addView(addComboBtn);
 
                     dayPanel.addView(comboSelects);
-                    subSection.addView(dayPanel);
+                    subSection6.addView(dayPanel);
                 }
             } else {
                 TextView empty = new TextView(this);
                 empty.setText("Nenhum dia disponível. Defina os dias de descanso primeiro.");
                 empty.setTextColor(Color.parseColor("#666666"));
                 empty.setTextSize(11);
-                subSection.addView(empty);
+                empty.setPadding(dpToPx(10), dpToPx(6), 0, dpToPx(6));
+                subSection6.addView(empty);
             }
 
-            parent.addView(subSection);
+            parent.addView(subSection6);
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    private void addConfigRow(LinearLayout parent, String label, String value, String actionLabel, View.OnClickListener listener) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        row.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
+        GradientDrawable border = new GradientDrawable();
+        border.setStroke(1, Color.parseColor("#1a1a1a"));
+        border.setColor(Color.parseColor("#0d0d0d"));
+        row.setBackground(border);
+
+        LinearLayout textLayout = new LinearLayout(this);
+        textLayout.setOrientation(LinearLayout.VERTICAL);
+        textLayout.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        TextView lbl = new TextView(this);
+        lbl.setText(label);
+        lbl.setTextColor(Color.parseColor("#888888"));
+        lbl.setTextSize(11);
+        textLayout.addView(lbl);
+
+        TextView val = new TextView(this);
+        val.setText(value);
+        val.setTextColor(Color.parseColor("#eeeeee"));
+        val.setTextSize(13);
+        val.setTypeface(null, android.graphics.Typeface.BOLD);
+        textLayout.addView(val);
+
+        row.addView(textLayout);
+
+        if (actionLabel != null && listener != null) {
+            Button btn = new Button(this);
+            btn.setText(actionLabel);
+            btn.setBackgroundColor(Color.parseColor("#1a3a1a"));
+            btn.setTextColor(Color.parseColor("#8bc34a"));
+            btn.setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4));
+            btn.setOnClickListener(listener);
+            row.addView(btn);
+        }
+
+        parent.addView(row);
     }
 
     private void renderExerciciosLista(int treinoIdx, LinearLayout container) {
@@ -2180,9 +2017,9 @@ public class MainActivity extends Activity {
                 LinearLayout exItem = new LinearLayout(this);
                 exItem.setOrientation(LinearLayout.HORIZONTAL);
                 exItem.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                exItem.setPadding(dpToPx(10), dpToPx(6), dpToPx(10), dpToPx(6));
+                exItem.setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4));
                 GradientDrawable border = new GradientDrawable();
-                border.setStroke(1, Color.parseColor("#2a2a2a"));
+                border.setStroke(1, Color.parseColor("#1a1a1a"));
                 border.setColor(Color.parseColor("#0d0d0d"));
                 exItem.setBackground(border);
 
@@ -2194,6 +2031,7 @@ public class MainActivity extends Activity {
                 info.setText(details);
                 info.setTextColor(Color.parseColor("#cccccc"));
                 info.setTextSize(12);
+                info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                 exItem.addView(info);
 
                 LinearLayout actions = new LinearLayout(this);
@@ -2231,17 +2069,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void addLabel(LinearLayout parent, String text) {
-        TextView label = new TextView(this);
-        label.setText(text);
-        label.setTextColor(Color.parseColor("#888888"));
-        label.setTextSize(11);
-        parent.addView(label);
-    }
-
     private void mostrarEditarInicio() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Definir Data de Início");
+        builder.setTitle("📅 Definir Data de Início");
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -2304,7 +2134,7 @@ public class MainActivity extends Activity {
 
     private void mostrarEditarIntervalo() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Intervalo para Pesagem");
+        builder.setTitle("📆 Intervalo para Pesagem");
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -2318,6 +2148,8 @@ public class MainActivity extends Activity {
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
         input.setText(String.valueOf(current));
+        input.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        input.setTextColor(Color.parseColor("#ffffff"));
         layout.addView(input);
 
         TextView note = new TextView(this);
@@ -2344,7 +2176,7 @@ public class MainActivity extends Activity {
 
     private void mostrarRegistrarPeso() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Registrar Peso");
+        builder.setTitle("⚖️ Registrar Peso");
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -2358,6 +2190,8 @@ public class MainActivity extends Activity {
 
         final EditText pesoInput = new EditText(this);
         pesoInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        pesoInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        pesoInput.setTextColor(Color.parseColor("#ffffff"));
         layout.addView(pesoInput);
 
         TextView metaLabel = new TextView(this);
@@ -2374,6 +2208,8 @@ public class MainActivity extends Activity {
         final EditText metaInput = new EditText(this);
         metaInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         metaInput.setText(currentMeta > 0 ? String.valueOf(currentMeta) : "");
+        metaInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        metaInput.setTextColor(Color.parseColor("#ffffff"));
         layout.addView(metaInput);
 
         builder.setView(layout);
@@ -2412,7 +2248,7 @@ public class MainActivity extends Activity {
 
     private void mostrarHistoricoPeso() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Histórico de Peso");
+        builder.setTitle("📋 Histórico de Peso");
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -2431,12 +2267,13 @@ public class MainActivity extends Activity {
                     JSONObject item = historico.getJSONObject(i);
                     LinearLayout entry = new LinearLayout(this);
                     entry.setOrientation(LinearLayout.HORIZONTAL);
-                    entry.setPadding(0, dpToPx(3), 0, dpToPx(3));
+                    entry.setPadding(0, dpToPx(4), 0, dpToPx(4));
 
                     TextView info = new TextView(this);
-                    info.setText(item.getDouble("peso") + " kg (" + item.getString("data") + ")");
+                    info.setText("📊 " + item.getDouble("peso") + " kg (" + item.getString("data") + ")");
                     info.setTextColor(Color.parseColor("#bbbbbb"));
                     info.setTextSize(12);
+                    info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                     entry.addView(info);
 
                     final int idx = i;
@@ -2474,11 +2311,13 @@ public class MainActivity extends Activity {
 
     private void mostrarAdicionarObjetivo() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Novo Objetivo");
+        builder.setTitle("🎯 Novo Objetivo");
 
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_TEXT);
         input.setHint("Digite o objetivo");
+        input.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        input.setTextColor(Color.parseColor("#ffffff"));
         builder.setView(input);
 
         builder.setPositiveButton("Salvar", (dialog, which) -> {
@@ -2503,11 +2342,13 @@ public class MainActivity extends Activity {
             String current = objetivos.getString(idx);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Editar Objetivo");
+            builder.setTitle("✏️ Editar Objetivo");
 
             final EditText input = new EditText(this);
             input.setInputType(InputType.TYPE_CLASS_TEXT);
             input.setText(current);
+            input.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            input.setTextColor(Color.parseColor("#ffffff"));
             builder.setView(input);
 
             builder.setPositiveButton("Salvar", (dialog, which) -> {
@@ -2530,7 +2371,7 @@ public class MainActivity extends Activity {
 
     private void mostrarAdicionarTreino() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Novo Treino");
+        builder.setTitle("🏋️ Novo Treino");
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -2545,6 +2386,8 @@ public class MainActivity extends Activity {
         final EditText nomeInput = new EditText(this);
         nomeInput.setInputType(InputType.TYPE_CLASS_TEXT);
         nomeInput.setHint("Nome do treino");
+        nomeInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        nomeInput.setTextColor(Color.parseColor("#ffffff"));
         layout.addView(nomeInput);
 
         TextView diaLabel = new TextView(this);
@@ -2596,6 +2439,7 @@ public class MainActivity extends Activity {
                 configData.getJSONObject("academia").getJSONArray("treinos").put(treino);
                 salvarDados();
                 renderDados();
+                atualizarTreinoHoje();
             } catch (JSONException ex) {}
         });
         builder.setNegativeButton("Cancelar", null);
@@ -2608,7 +2452,7 @@ public class MainActivity extends Activity {
             JSONObject treino = treinos.getJSONObject(idx);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Editar Treino");
+            builder.setTitle("✏️ Editar Treino");
 
             LinearLayout layout = new LinearLayout(this);
             layout.setOrientation(LinearLayout.VERTICAL);
@@ -2623,6 +2467,8 @@ public class MainActivity extends Activity {
             final EditText nomeInput = new EditText(this);
             nomeInput.setInputType(InputType.TYPE_CLASS_TEXT);
             nomeInput.setText(treino.getString("nome"));
+            nomeInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            nomeInput.setTextColor(Color.parseColor("#ffffff"));
             layout.addView(nomeInput);
 
             TextView diaLabel = new TextView(this);
@@ -2675,6 +2521,7 @@ public class MainActivity extends Activity {
                     treino.put("objetivo", obj.equals("Nenhum") ? JSONObject.NULL : obj);
                     salvarDados();
                     renderDados();
+                    atualizarTreinoHoje();
                 } catch (JSONException ex) {}
             });
             builder.setNegativeButton("Cancelar", null);
@@ -2684,7 +2531,7 @@ public class MainActivity extends Activity {
 
     private void mostrarAdicionarExercicio(int treinoIdx) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Adicionar Exercício");
+        builder.setTitle("🏋️ Adicionar Exercício");
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -2699,6 +2546,8 @@ public class MainActivity extends Activity {
         final EditText exInput = new EditText(this);
         exInput.setInputType(InputType.TYPE_CLASS_TEXT);
         exInput.setHint("Ex: Supino");
+        exInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        exInput.setTextColor(Color.parseColor("#ffffff"));
         layout.addView(exInput);
 
         LinearLayout row1 = new LinearLayout(this);
@@ -2706,6 +2555,7 @@ public class MainActivity extends Activity {
 
         LinearLayout setPanel = new LinearLayout(this);
         setPanel.setOrientation(LinearLayout.VERTICAL);
+        setPanel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         TextView setLabel = new TextView(this);
         setLabel.setText("Séries *");
         setLabel.setTextColor(Color.parseColor("#888888"));
@@ -2714,11 +2564,14 @@ public class MainActivity extends Activity {
         final EditText setInput = new EditText(this);
         setInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         setInput.setText("3");
+        setInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        setInput.setTextColor(Color.parseColor("#ffffff"));
         setPanel.addView(setInput);
         row1.addView(setPanel);
 
         LinearLayout repPanel = new LinearLayout(this);
         repPanel.setOrientation(LinearLayout.VERTICAL);
+        repPanel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         TextView repLabel = new TextView(this);
         repLabel.setText("Repetições *");
         repLabel.setTextColor(Color.parseColor("#888888"));
@@ -2727,11 +2580,14 @@ public class MainActivity extends Activity {
         final EditText repInput = new EditText(this);
         repInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         repInput.setText("10");
+        repInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        repInput.setTextColor(Color.parseColor("#ffffff"));
         repPanel.addView(repInput);
         row1.addView(repPanel);
 
         LinearLayout loadPanel = new LinearLayout(this);
         loadPanel.setOrientation(LinearLayout.VERTICAL);
+        loadPanel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         TextView loadLabel = new TextView(this);
         loadLabel.setText("Carga (kg) *");
         loadLabel.setTextColor(Color.parseColor("#888888"));
@@ -2740,6 +2596,8 @@ public class MainActivity extends Activity {
         final EditText loadInput = new EditText(this);
         loadInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         loadInput.setText("20");
+        loadInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        loadInput.setTextColor(Color.parseColor("#ffffff"));
         loadPanel.addView(loadInput);
         row1.addView(loadPanel);
 
@@ -2754,6 +2612,8 @@ public class MainActivity extends Activity {
         final EditText metaInput = new EditText(this);
         metaInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         metaInput.setHint("Ex: 30");
+        metaInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        metaInput.setTextColor(Color.parseColor("#ffffff"));
         layout.addView(metaInput);
 
         TextView descLabel = new TextView(this);
@@ -2767,6 +2627,8 @@ public class MainActivity extends Activity {
         final EditText descMinInput = new EditText(this);
         descMinInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         descMinInput.setHint("Min");
+        descMinInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        descMinInput.setTextColor(Color.parseColor("#ffffff"));
         descMinInput.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(50), ViewGroup.LayoutParams.WRAP_CONTENT));
         descPanel.addView(descMinInput);
 
@@ -2778,13 +2640,15 @@ public class MainActivity extends Activity {
         final EditText descSecInput = new EditText(this);
         descSecInput.setInputType(InputType.TYPE_CLASS_NUMBER);
         descSecInput.setHint("Seg");
+        descSecInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        descSecInput.setTextColor(Color.parseColor("#ffffff"));
         descSecInput.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(50), ViewGroup.LayoutParams.WRAP_CONTENT));
         descPanel.addView(descSecInput);
 
         layout.addView(descPanel);
 
         final CheckBox warmupCheck = new CheckBox(this);
-        warmupCheck.setText("Série de aquecimento");
+        warmupCheck.setText("🔥 Série de aquecimento");
         warmupCheck.setTextColor(Color.parseColor("#aaaaaa"));
         layout.addView(warmupCheck);
 
@@ -2839,7 +2703,7 @@ public class MainActivity extends Activity {
             JSONObject ex = treino.getJSONArray("exercicios").getJSONObject(exIdx);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Editar Exercício");
+            builder.setTitle("✏️ Editar Exercício");
 
             LinearLayout layout = new LinearLayout(this);
             layout.setOrientation(LinearLayout.VERTICAL);
@@ -2854,6 +2718,8 @@ public class MainActivity extends Activity {
             final EditText exInput = new EditText(this);
             exInput.setInputType(InputType.TYPE_CLASS_TEXT);
             exInput.setText(ex.getString("exercise"));
+            exInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            exInput.setTextColor(Color.parseColor("#ffffff"));
             layout.addView(exInput);
 
             LinearLayout row1 = new LinearLayout(this);
@@ -2861,6 +2727,7 @@ public class MainActivity extends Activity {
 
             LinearLayout setPanel = new LinearLayout(this);
             setPanel.setOrientation(LinearLayout.VERTICAL);
+            setPanel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
             TextView setLabel = new TextView(this);
             setLabel.setText("Séries *");
             setLabel.setTextColor(Color.parseColor("#888888"));
@@ -2869,11 +2736,14 @@ public class MainActivity extends Activity {
             final EditText setInput = new EditText(this);
             setInput.setInputType(InputType.TYPE_CLASS_NUMBER);
             setInput.setText(String.valueOf(ex.getInt("sets")));
+            setInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            setInput.setTextColor(Color.parseColor("#ffffff"));
             setPanel.addView(setInput);
             row1.addView(setPanel);
 
             LinearLayout repPanel = new LinearLayout(this);
             repPanel.setOrientation(LinearLayout.VERTICAL);
+            repPanel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
             TextView repLabel = new TextView(this);
             repLabel.setText("Repetições *");
             repLabel.setTextColor(Color.parseColor("#888888"));
@@ -2882,11 +2752,14 @@ public class MainActivity extends Activity {
             final EditText repInput = new EditText(this);
             repInput.setInputType(InputType.TYPE_CLASS_NUMBER);
             repInput.setText(String.valueOf(ex.getInt("reps")));
+            repInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            repInput.setTextColor(Color.parseColor("#ffffff"));
             repPanel.addView(repInput);
             row1.addView(repPanel);
 
             LinearLayout loadPanel = new LinearLayout(this);
             loadPanel.setOrientation(LinearLayout.VERTICAL);
+            loadPanel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
             TextView loadLabel = new TextView(this);
             loadLabel.setText("Carga (kg) *");
             loadLabel.setTextColor(Color.parseColor("#888888"));
@@ -2895,6 +2768,8 @@ public class MainActivity extends Activity {
             final EditText loadInput = new EditText(this);
             loadInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
             loadInput.setText(String.valueOf(ex.getDouble("load")));
+            loadInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            loadInput.setTextColor(Color.parseColor("#ffffff"));
             loadPanel.addView(loadInput);
             row1.addView(loadPanel);
 
@@ -2909,6 +2784,8 @@ public class MainActivity extends Activity {
             final EditText metaInput = new EditText(this);
             metaInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
             metaInput.setText(ex.has("metaCarga") && !ex.isNull("metaCarga") ? String.valueOf(ex.getDouble("metaCarga")) : "");
+            metaInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            metaInput.setTextColor(Color.parseColor("#ffffff"));
             layout.addView(metaInput);
 
             TextView descLabel = new TextView(this);
@@ -2924,6 +2801,8 @@ public class MainActivity extends Activity {
             descMinInput.setInputType(InputType.TYPE_CLASS_NUMBER);
             descMinInput.setText(String.valueOf(descanso / 60));
             descMinInput.setHint("Min");
+            descMinInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            descMinInput.setTextColor(Color.parseColor("#ffffff"));
             descMinInput.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(50), ViewGroup.LayoutParams.WRAP_CONTENT));
             descPanel.addView(descMinInput);
 
@@ -2936,19 +2815,21 @@ public class MainActivity extends Activity {
             descSecInput.setInputType(InputType.TYPE_CLASS_NUMBER);
             descSecInput.setText(String.valueOf(descanso % 60));
             descSecInput.setHint("Seg");
+            descSecInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            descSecInput.setTextColor(Color.parseColor("#ffffff"));
             descSecInput.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(50), ViewGroup.LayoutParams.WRAP_CONTENT));
             descPanel.addView(descSecInput);
 
             layout.addView(descPanel);
 
             final CheckBox warmupCheck = new CheckBox(this);
-            warmupCheck.setText("Série de aquecimento");
+            warmupCheck.setText("🔥 Série de aquecimento");
             warmupCheck.setChecked(ex.has("warmup") && ex.getBoolean("warmup"));
             warmupCheck.setTextColor(Color.parseColor("#aaaaaa"));
             layout.addView(warmupCheck);
 
             Button histBtn = new Button(this);
-            histBtn.setText("Editar Histórico de Carga");
+            histBtn.setText("📊 Editar Histórico de Carga");
             histBtn.setBackgroundColor(Color.parseColor("#2a2a2a"));
             histBtn.setTextColor(Color.parseColor("#cccccc"));
             histBtn.setOnClickListener(v -> {
@@ -3006,7 +2887,7 @@ public class MainActivity extends Activity {
             JSONObject ex = treino.getJSONArray("exercicios").getJSONObject(exIdx);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Histórico de Carga - " + ex.getString("exercise"));
+            builder.setTitle("📊 Histórico de Carga - " + ex.getString("exercise"));
 
             LinearLayout layout = new LinearLayout(this);
             layout.setOrientation(LinearLayout.VERTICAL);
@@ -3024,14 +2905,15 @@ public class MainActivity extends Activity {
                     JSONObject item = history.getJSONObject(i);
                     LinearLayout entry = new LinearLayout(this);
                     entry.setOrientation(LinearLayout.HORIZONTAL);
-                    entry.setPadding(0, dpToPx(3), 0, dpToPx(3));
+                    entry.setPadding(0, dpToPx(4), 0, dpToPx(4));
 
-                    String info = item.getDouble("load") + "kg x " + item.getInt("reps") + " reps";
+                    String info = "📦 " + item.getDouble("load") + "kg × " + item.getInt("reps") + " reps";
                     if (item.has("date")) info += " (" + item.getString("date") + ")";
                     TextView infoLabel = new TextView(this);
                     infoLabel.setText(info);
                     infoLabel.setTextColor(Color.parseColor("#bbbbbb"));
                     infoLabel.setTextSize(12);
+                    infoLabel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                     entry.addView(infoLabel);
 
                     final int idx = i;
@@ -3065,7 +2947,7 @@ public class MainActivity extends Activity {
         String label = categoria.equals("camisas") ? "Camisa" : categoria.equals("calcas") ? "Calça" : "Tênis";
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Nova " + label);
+        builder.setTitle("👔 Nova " + label);
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -3074,10 +2956,12 @@ public class MainActivity extends Activity {
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_TEXT);
         input.setHint("Nome da " + label.toLowerCase());
+        input.setBackgroundColor(Color.parseColor("#0d0d0d"));
+        input.setTextColor(Color.parseColor("#ffffff"));
         layout.addView(input);
 
         final CheckBox sweatCheck = new CheckBox(this);
-        sweatCheck.setText("Marca suor");
+        sweatCheck.setText("💦 Marca suor");
         sweatCheck.setTextColor(Color.parseColor("#aaaaaa"));
         layout.addView(sweatCheck);
 
@@ -3108,7 +2992,7 @@ public class MainActivity extends Activity {
             String cleanName = item.replace(" (suor)", "");
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Editar Roupa");
+            builder.setTitle("✏️ Editar Roupa");
 
             LinearLayout layout = new LinearLayout(this);
             layout.setOrientation(LinearLayout.VERTICAL);
@@ -3117,10 +3001,12 @@ public class MainActivity extends Activity {
             final EditText input = new EditText(this);
             input.setInputType(InputType.TYPE_CLASS_TEXT);
             input.setText(cleanName);
+            input.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            input.setTextColor(Color.parseColor("#ffffff"));
             layout.addView(input);
 
             final CheckBox sweatCheck = new CheckBox(this);
-            sweatCheck.setText("Marca suor");
+            sweatCheck.setText("💦 Marca suor");
             sweatCheck.setChecked(isSweat);
             sweatCheck.setTextColor(Color.parseColor("#aaaaaa"));
             layout.addView(sweatCheck);
