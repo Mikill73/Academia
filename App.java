@@ -284,13 +284,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    private int getTodayNumber() {
+    private int getTodayNum() {
         Calendar cal = Calendar.getInstance();
         return cal.get(Calendar.DAY_OF_WEEK) - 1;
-    }
-
-    private String getTodayName() {
-        return DIAS_SEMANA[getTodayNumber()];
     }
 
     private String getTodayKey() {
@@ -300,13 +296,13 @@ public class MainActivity extends Activity {
 
     private JSONArray getTodayTreinos() {
         try {
-            int hojeNum = getTodayNumber();
+            int hoje = getTodayNum();
             JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
             JSONArray result = new JSONArray();
             for (int i = 0; i < treinos.length(); i++) {
                 JSONObject treino = treinos.getJSONObject(i);
-                int diaTreino = treino.getInt("diaNum");
-                if (diaTreino == hojeNum) {
+                int diaTreino = treino.getInt("dia");
+                if (diaTreino == hoje) {
                     result.put(treino);
                 }
             }
@@ -662,9 +658,7 @@ public class MainActivity extends Activity {
                     if (aguardandoTimer) return;
                     try {
                         JSONObject serieAtual = series.getJSONObject(serieAtualIndex);
-                        if (serieAtual.getBoolean("_done")) return;
                         serieAtual.put("_done", true);
-
                         if (!(ex.has("warmup") && ex.getBoolean("warmup"))) {
                             mostrarEvolucaoDialog(exercicioAtualIndex, serieAtualIndex);
                             return;
@@ -698,7 +692,8 @@ public class MainActivity extends Activity {
             int total = series.length();
             int done = 0;
             for (int i = 0; i < total; i++) {
-                if (series.getJSONObject(i).getBoolean("_done")) done++;
+                JSONObject s = series.getJSONObject(i);
+                if (s.has("_done") && s.getBoolean("_done")) done++;
             }
             int pct = total > 0 ? (done * 100) / total : 0;
             progressBar.setProgress(pct);
@@ -806,7 +801,7 @@ public class MainActivity extends Activity {
             for (int i = 0; i < treinos.length(); i++) {
                 JSONObject t = treinos.getJSONObject(i);
                 if (t.getString("nome").equals(treinoAtual.getString("nome")) &&
-                    t.getInt("diaNum") == treinoAtual.getInt("diaNum")) {
+                    t.getInt("dia") == treinoAtual.getInt("dia")) {
                     if (t.has("exercicios")) {
                         JSONArray exs = t.getJSONArray("exercicios");
                         JSONObject exOriginal = treinoAtual.getJSONArray("exercicios").getJSONObject(exIdx);
@@ -844,7 +839,7 @@ public class MainActivity extends Activity {
             int proximaSerie = -1;
             for (int i = serieIdx + 1; i < series.length(); i++) {
                 JSONObject s = series.getJSONObject(i);
-                if (!s.getBoolean("_done")) {
+                if (!(s.has("_done") && s.getBoolean("_done"))) {
                     proximaSerie = i;
                     break;
                 }
@@ -952,7 +947,7 @@ public class MainActivity extends Activity {
                             JSONArray series = e.getJSONArray("series");
                             for (int j = 0; j < series.length(); j++) {
                                 JSONObject s = series.getJSONObject(j);
-                                if (!s.getBoolean("_done")) {
+                                if (!(s.has("_done") && s.getBoolean("_done"))) {
                                     tudoConcluido = false;
                                     exercicioAtualIndex = i;
                                     serieAtualIndex = j;
@@ -1047,7 +1042,7 @@ public class MainActivity extends Activity {
                         if (e.has("series")) {
                             JSONArray series = e.getJSONArray("series");
                             for (int j = 0; j < series.length(); j++) {
-                                if (series.getJSONObject(j).getBoolean("_done")) {
+                                if (series.getJSONObject(j).has("_done") && series.getJSONObject(j).getBoolean("_done")) {
                                     algumFeito = true;
                                     break;
                                 }
@@ -1127,7 +1122,7 @@ public class MainActivity extends Activity {
                             JSONArray series = e.getJSONArray("series");
                             for (int j = 0; j < series.length(); j++) {
                                 JSONObject s = series.getJSONObject(j);
-                                if (!s.getBoolean("_done")) {
+                                if (!(s.has("_done") && s.getBoolean("_done"))) {
                                     todosConcluidos = false;
                                     break;
                                 }
@@ -1157,7 +1152,7 @@ public class MainActivity extends Activity {
                                 JSONArray series = e.getJSONArray("series");
                                 for (int j = 0; j < series.length(); j++) {
                                     JSONObject s = series.getJSONObject(j);
-                                    if (!s.getBoolean("_done")) {
+                                    if (!(s.has("_done") && s.getBoolean("_done"))) {
                                         exercicioAtualIndex = i;
                                         serieAtualIndex = j;
                                         break;
@@ -1740,9 +1735,9 @@ public class MainActivity extends Activity {
                 headerPanel.addView(actions);
                 treinoPanel.addView(headerPanel);
 
+                int diaNum = treino.getInt("dia");
                 TextView diaLabel = new TextView(this);
-                String diaNome = DIAS_SEMANA[treino.getInt("diaNum")];
-                diaLabel.setText("📅 " + diaNome);
+                diaLabel.setText("📅 " + DIAS_SEMANA[diaNum]);
                 diaLabel.setTextColor(Color.parseColor("#888888"));
                 diaLabel.setTextSize(12);
                 treinoPanel.addView(diaLabel);
@@ -2156,17 +2151,18 @@ public class MainActivity extends Activity {
                         serieRow.setOrientation(LinearLayout.HORIZONTAL);
                         serieRow.setPadding(dpToPx(12), dpToPx(2), 0, dpToPx(2));
 
+                        String status = "";
+                        if (s.has("_done") && s.getBoolean("_done")) {
+                            status = " ✅";
+                        }
                         TextView serieInfo = new TextView(this);
-                        String txt = "  #" + (j + 1) + " • " + s.getInt("reps") + " reps • " + s.getDouble("load") + "kg";
+                        String txt = "  #" + (j + 1) + " • " + s.getInt("reps") + " reps • " + s.getDouble("load") + "kg" + status;
                         if (s.has("descanso") && !s.isNull("descanso")) {
                             int desc = s.getInt("descanso");
                             txt += " • ⏱ " + (desc/60) + ":" + String.format("%02d", desc%60);
                         }
-                        if (s.getBoolean("_done")) {
-                            txt += " ✅";
-                        }
                         serieInfo.setText(txt);
-                        serieInfo.setTextColor(s.getBoolean("_done") ? Color.parseColor("#8bc34a") : Color.parseColor("#888888"));
+                        serieInfo.setTextColor(s.has("_done") && s.getBoolean("_done") ? Color.parseColor("#8bc34a") : Color.parseColor("#888888"));
                         serieInfo.setTextSize(11);
                         serieInfo.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                         serieRow.addView(serieInfo);
@@ -2338,7 +2334,6 @@ public class MainActivity extends Activity {
 
         final EditText pesoInput = new EditText(this);
         pesoInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        pesoInput.setHint("Ex: 75.5");
         pesoInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
         pesoInput.setTextColor(Color.parseColor("#ffffff"));
         layout.addView(pesoInput);
@@ -2573,23 +2568,16 @@ public class MainActivity extends Activity {
         builder.setView(layout);
         builder.setPositiveButton("Salvar", (dialog, which) -> {
             String nome = nomeInput.getText().toString().trim();
-            String dia = diaSpinner.getSelectedItem().toString();
+            int dia = diaSpinner.getSelectedItemPosition() - 1;
             String obj = objSpinner.getSelectedItem().toString();
-            if (nome.isEmpty() || dia.equals("Selecione um dia")) {
+            if (nome.isEmpty() || dia < 0) {
                 Toast.makeText(this, "Nome e dia são obrigatórios.", Toast.LENGTH_SHORT).show();
                 return;
             }
             try {
-                int diaNum = 0;
-                for (int i = 0; i < DIAS_SEMANA.length; i++) {
-                    if (DIAS_SEMANA[i].equals(dia)) {
-                        diaNum = i;
-                        break;
-                    }
-                }
                 JSONObject treino = new JSONObject();
                 treino.put("nome", nome);
-                treino.put("diaNum", diaNum);
+                treino.put("dia", dia);
                 treino.put("objetivo", obj.equals("Nenhum") ? JSONObject.NULL : obj);
                 treino.put("exercicios", new JSONArray());
                 configData.getJSONObject("academia").getJSONArray("treinos").put(treino);
@@ -2639,8 +2627,7 @@ public class MainActivity extends Activity {
             diaAdapter.add("Selecione um dia");
             for (String d : DIAS_SEMANA) diaAdapter.add(d);
             diaSpinner.setAdapter(diaAdapter);
-            int currentDia = treino.getInt("diaNum");
-            diaSpinner.setSelection(diaAdapter.getPosition(DIAS_SEMANA[currentDia]));
+            diaSpinner.setSelection(treino.getInt("dia") + 1);
             layout.addView(diaSpinner);
 
             TextView objLabel = new TextView(this);
@@ -2666,22 +2653,15 @@ public class MainActivity extends Activity {
             builder.setView(layout);
             builder.setPositiveButton("Salvar", (dialog, which) -> {
                 String nome = nomeInput.getText().toString().trim();
-                String dia = diaSpinner.getSelectedItem().toString();
+                int dia = diaSpinner.getSelectedItemPosition() - 1;
                 String obj = objSpinner.getSelectedItem().toString();
-                if (nome.isEmpty() || dia.equals("Selecione um dia")) {
+                if (nome.isEmpty() || dia < 0) {
                     Toast.makeText(this, "Nome e dia são obrigatórios.", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 try {
-                    int diaNum = 0;
-                    for (int i = 0; i < DIAS_SEMANA.length; i++) {
-                        if (DIAS_SEMANA[i].equals(dia)) {
-                            diaNum = i;
-                            break;
-                        }
-                    }
                     treino.put("nome", nome);
-                    treino.put("diaNum", diaNum);
+                    treino.put("dia", dia);
                     treino.put("objetivo", obj.equals("Nenhum") ? JSONObject.NULL : obj);
                     salvarDados();
                     renderDados();
@@ -2786,7 +2766,7 @@ public class MainActivity extends Activity {
             layout.addView(loadInput);
 
             TextView descLabel = new TextView(this);
-            descLabel.setText("Descanso (segundos, opcional)");
+            descLabel.setText("Descanso entre séries (segundos, opcional)");
             descLabel.setTextColor(Color.parseColor("#888888"));
             descLabel.setTextSize(12);
             layout.addView(descLabel);
@@ -2954,7 +2934,7 @@ public class MainActivity extends Activity {
             layout.addView(loadInput);
 
             TextView descLabel = new TextView(this);
-            descLabel.setText("Descanso (segundos, opcional)");
+            descLabel.setText("Descanso entre séries (segundos, opcional)");
             descLabel.setTextColor(Color.parseColor("#888888"));
             descLabel.setTextSize(12);
             layout.addView(descLabel);
