@@ -286,7 +286,12 @@ public class MainActivity extends Activity {
 
     private int getTodayNum() {
         Calendar cal = Calendar.getInstance();
-        return cal.get(Calendar.DAY_OF_WEEK) - 1;
+        int dia = cal.get(Calendar.DAY_OF_WEEK) - 1;
+        return dia;
+    }
+
+    private String getTodayName() {
+        return DIAS_SEMANA[getTodayNum()];
     }
 
     private String getTodayKey() {
@@ -327,7 +332,7 @@ public class MainActivity extends Activity {
                     btnIniciarTreino.setEnabled(false);
                 }
             } else {
-                treinoHojeNome.setText("Nenhum treino programado");
+                treinoHojeNome.setText("Nenhum treino programado para " + getTodayName());
                 btnIniciarTreino.setEnabled(false);
                 btnIniciarTreino.setBackgroundColor(Color.parseColor("#444444"));
             }
@@ -904,7 +909,7 @@ public class MainActivity extends Activity {
     private void iniciarTreino() {
         JSONArray treinos = getTodayTreinos();
         if (treinos.length() == 0) {
-            mostrarConfirmacaoUnico("Aviso", "Nenhum treino programado para hoje.");
+            mostrarConfirmacaoUnico("Aviso", "Nenhum treino programado para " + getTodayName() + ".");
             return;
         }
 
@@ -1084,7 +1089,7 @@ public class MainActivity extends Activity {
         } else {
             JSONArray treinos = getTodayTreinos();
             if (treinos.length() == 0) {
-                mostrarConfirmacaoUnico("Aviso", "Nenhum treino programado para hoje.");
+                mostrarConfirmacaoUnico("Aviso", "Nenhum treino programado para " + getTodayName() + ".");
                 return;
             }
             iniciarTreino();
