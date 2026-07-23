@@ -289,10 +289,6 @@ public class MainActivity extends Activity {
         return cal.get(Calendar.DAY_OF_WEEK) - 1;
     }
 
-    private String getTodayName() {
-        return DIAS_SEMANA[getTodayNum()];
-    }
-
     private String getTodayKey() {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         return sdf.format(new Date());
