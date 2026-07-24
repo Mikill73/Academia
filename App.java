@@ -2300,7 +2300,8 @@ public class MainActivity extends Activity {
                     entry.setPadding(0, dpToPx(4), 0, dpToPx(4));
 
                     TextView info = new TextView(this);
-                    info.setText("📊 " + item.getDouble("peso") + " kg (" + item.getString("data") + ")");
+                    String texto = "📊 " + item.getDouble("peso") + " kg (" + item.getString("data") + ")";
+                    info.setText(texto);
                     info.setTextColor(Color.parseColor("#bbbbbb"));
                     info.setTextSize(12);
                     info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -2801,9 +2802,11 @@ public class MainActivity extends Activity {
                     entry.setOrientation(LinearLayout.HORIZONTAL);
                     entry.setPadding(0, dpToPx(4), 0, dpToPx(4));
 
+                    String texto = "📦 " + item.getDouble("load") + "kg × " + item.getInt("reps") + " reps";
+                    if (item.has("date")) texto += " (" + item.getString("date") + ")";
+                    
                     TextView info = new TextView(this);
-                    info.setText("📦 " + item.getDouble("load") + "kg × " + item.getInt("reps") + " reps");
-                    if (item.has("date")) info += " (" + item.getString("date") + ")";
+                    info.setText(texto);
                     info.setTextColor(Color.parseColor("#bbbbbb"));
                     info.setTextSize(12);
                     info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -2944,4 +2947,4 @@ public class MainActivity extends Activity {
         renderDados();
     }
 }
-EOF 
+EOF
