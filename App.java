@@ -7,8 +7,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Vibrator;
-import android.os.VibrationEffect;
 import android.Manifest;
 import android.view.View;
 import android.widget.*;
@@ -19,6 +17,7 @@ import android.widget.LinearLayout;
 import android.text.InputType;
 import android.app.AlertDialog;
 import android.os.Handler;
+import android.os.Vibrator;
 import java.io.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -74,19 +73,6 @@ public class MainActivity extends Activity {
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
             }
-            if (checkSelfPermission(Manifest.permission.VIBRATE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{Manifest.permission.VIBRATE}, 2);
-            }
-        }
-    }
-
-    private void vibrar() {
-        if (vibrator != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
-            } else {
-                vibrator.vibrate(1500);
-            }
         }
     }
 
@@ -102,7 +88,7 @@ public class MainActivity extends Activity {
         topPanel.setPadding(0, 0, 0, dpToPx(16));
 
         TextView appTitle = new TextView(this);
-        appTitle.setText("ACADEMIA");
+        appTitle.setText("Academia");
         appTitle.setTextColor(Color.parseColor("#ffffff"));
         appTitle.setTextSize(22);
         appTitle.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -162,14 +148,14 @@ public class MainActivity extends Activity {
 
         cardTreinoPanel = new LinearLayout(this);
         cardTreinoPanel.setOrientation(LinearLayout.VERTICAL);
-        cardTreinoPanel.setBackgroundColor(Color.parseColor("#0d0d0d"));
-        cardTreinoPanel.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+        cardTreinoPanel.setBackgroundColor(Color.parseColor("#0a0a0a"));
+        cardTreinoPanel.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
         cardTreinoPanel.setVisibility(View.GONE);
         cardTreinoPanel.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         LinearLayout treinoHeader = new LinearLayout(this);
         treinoHeader.setOrientation(LinearLayout.HORIZONTAL);
-        treinoHeader.setPadding(0, 0, 0, dpToPx(12));
+        treinoHeader.setPadding(0, 0, 0, dpToPx(16));
 
         cardTitle = new TextView(this);
         cardTitle.setText("TREINO EM ANDAMENTO");
@@ -181,35 +167,29 @@ public class MainActivity extends Activity {
 
         Button btnParar = new Button(this);
         btnParar.setText("PARAR");
-        btnParar.setBackground(null);
-        btnParar.setTextColor(Color.parseColor("#ff6b6b"));
-        btnParar.setTextSize(12);
+        btnParar.setBackgroundColor(Color.parseColor("#ff3333"));
+        btnParar.setTextColor(Color.parseColor("#ffffff"));
         btnParar.setTypeface(null, android.graphics.Typeface.BOLD);
+        btnParar.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
         btnParar.setOnClickListener(v -> toggleTreino());
         treinoHeader.addView(btnParar);
 
         cardTreinoPanel.addView(treinoHeader);
 
-        View divider = new View(this);
-        divider.setBackgroundColor(Color.parseColor("#2a2a2a"));
-        divider.setMinimumHeight(1);
-        divider.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
-        cardTreinoPanel.addView(divider);
-
         exerciciosContainer = new LinearLayout(this);
         exerciciosContainer.setOrientation(LinearLayout.VERTICAL);
-        exerciciosContainer.setPadding(0, dpToPx(12), 0, 0);
+        exerciciosContainer.setPadding(0, dpToPx(8), 0, 0);
+        exerciciosContainer.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         cardTreinoPanel.addView(exerciciosContainer);
 
         timerPanel = new LinearLayout(this);
         timerPanel.setOrientation(LinearLayout.VERTICAL);
         timerPanel.setVisibility(View.GONE);
-        timerPanel.setPadding(0, dpToPx(12), 0, 0);
         cardTreinoPanel.addView(timerPanel);
 
         LinearLayout progressPanel = new LinearLayout(this);
         progressPanel.setOrientation(LinearLayout.VERTICAL);
-        progressPanel.setPadding(0, dpToPx(16), 0, 0);
+        progressPanel.setPadding(0, dpToPx(12), 0, 0);
 
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setMax(100);
@@ -220,7 +200,7 @@ public class MainActivity extends Activity {
         progressText = new TextView(this);
         progressText.setText("0/0 concluidos");
         progressText.setTextColor(Color.parseColor("#888888"));
-        progressText.setTextSize(11);
+        progressText.setTextSize(12);
         progressText.setGravity(android.view.Gravity.CENTER);
         progressPanel.addView(progressText);
 
@@ -499,7 +479,7 @@ public class MainActivity extends Activity {
         display.setBackgroundColor(Color.parseColor("#0d0d0d"));
         display.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
         GradientDrawable border = new GradientDrawable();
-        border.setStroke(2, Color.parseColor("#2a4a2a"));
+        border.setStroke(2, Color.parseColor("#ffaa00"));
         border.setColor(Color.parseColor("#0d0d0d"));
         display.setBackground(border);
 
@@ -527,8 +507,10 @@ public class MainActivity extends Activity {
             public void run() {
                 timerRestante--;
                 if (timerRestante <= 0) {
-                    vibrar();
                     limparTimer();
+                    if (vibrator != null && vibrator.hasVibrator()) {
+                        vibrator.vibrate(1500);
+                    }
                     if (callback != null) callback.run();
                 } else {
                     timerLabel.setText(String.format("%02d:%02d", timerRestante/60, timerRestante%60));
@@ -542,7 +524,6 @@ public class MainActivity extends Activity {
     private void renderTreinoCard() {
         if (treinoAtual == null) {
             exerciciosContainer.removeAllViews();
-            cardTreinoPanel.setVisibility(View.GONE);
             return;
         }
 
@@ -564,16 +545,16 @@ public class MainActivity extends Activity {
                 TextView done = new TextView(this);
                 done.setText("TREINO CONCLUIDO!");
                 done.setTextColor(Color.parseColor("#8bc34a"));
-                done.setTextSize(18);
+                done.setTextSize(20);
                 done.setTypeface(null, android.graphics.Typeface.BOLD);
                 done.setGravity(android.view.Gravity.CENTER);
-                done.setPadding(0, dpToPx(20), 0, dpToPx(20));
+                done.setPadding(0, dpToPx(40), 0, dpToPx(40));
                 exerciciosContainer.addView(done);
                 return;
             }
 
             JSONObject ex = exercicios.getJSONObject(exercicioAtualIndex);
-            JSONArray series = ex.getJSONArray("series");
+            JSONArray series = ex.has("series") ? ex.getJSONArray("series") : new JSONArray();
             
             if (series.length() == 0) {
                 exerciciosContainer.removeAllViews();
@@ -587,214 +568,263 @@ public class MainActivity extends Activity {
             }
 
             if (serieAtualIndex >= series.length()) {
-                exercicioAtualIndex++;
                 serieAtualIndex = 0;
+                exercicioAtualIndex++;
                 renderTreinoCard();
                 return;
             }
 
             JSONObject serie = series.getJSONObject(serieAtualIndex);
-            int totalSeries = series.length();
             int seriesFeitas = serie.has("_feita") && serie.getBoolean("_feita") ? 1 : 0;
             boolean isDone = seriesFeitas >= 1;
-            String warmupText = serie.has("warmup") && serie.getBoolean("warmup") ? "AQUECIMENTO" : "";
 
             exerciciosContainer.removeAllViews();
+
+            TextView exercicioNome = new TextView(this);
+            exercicioNome.setText(ex.getString("exercise"));
+            exercicioNome.setTextColor(Color.parseColor("#ffffff"));
+            exercicioNome.setTextSize(20);
+            exercicioNome.setTypeface(null, android.graphics.Typeface.BOLD);
+            exercicioNome.setGravity(android.view.Gravity.CENTER);
+            exerciciosContainer.addView(exercicioNome);
+
+            TextView serieInfo = new TextView(this);
+            String warmupText = serie.has("warmup") && serie.getBoolean("warmup") ? " [AQUECIMENTO]" : "";
+            serieInfo.setText("Serie " + (serieAtualIndex + 1) + "/" + series.length() + warmupText);
+            serieInfo.setTextColor(Color.parseColor("#aaaaaa"));
+            serieInfo.setTextSize(14);
+            serieInfo.setGravity(android.view.Gravity.CENTER);
+            exerciciosContainer.addView(serieInfo);
+
+            View separator = new View(this);
+            separator.setBackgroundColor(Color.parseColor("#2a2a2a"));
+            separator.setMinimumHeight(1);
+            separator.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            separator.setPadding(0, dpToPx(12), 0, dpToPx(12));
+            exerciciosContainer.addView(separator);
+
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
-            card.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            card.setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14));
+            card.setBackgroundColor(Color.parseColor("#1a1a1a"));
+            card.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
             GradientDrawable border = new GradientDrawable();
             border.setStroke(1, Color.parseColor("#2a2a2a"));
-            border.setColor(Color.parseColor("#0d0d0d"));
+            border.setColor(Color.parseColor("#1a1a1a"));
             card.setBackground(border);
 
-            LinearLayout topRow = new LinearLayout(this);
-            topRow.setOrientation(LinearLayout.HORIZONTAL);
-            
-            TextView nameLabel = new TextView(this);
-            String nomeEx = ex.getString("exercise");
-            if (series.length() > 1) {
-                nomeEx += " (" + (serieAtualIndex + 1) + "/" + series.length() + ")";
-            }
-            nameLabel.setText(nomeEx);
-            nameLabel.setTextColor(Color.parseColor("#ffffff"));
-            nameLabel.setTextSize(18);
-            nameLabel.setTypeface(null, android.graphics.Typeface.BOLD);
-            nameLabel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-            topRow.addView(nameLabel);
+            TextView detalhes = new TextView(this);
+            detalhes.setText(serie.getInt("reps") + " repeticoes");
+            detalhes.setTextColor(Color.parseColor("#eeeeee"));
+            detalhes.setTextSize(18);
+            detalhes.setGravity(android.view.Gravity.CENTER);
+            card.addView(detalhes);
 
-            if (!warmupText.isEmpty()) {
-                TextView warmupTag = new TextView(this);
-                warmupTag.setText(warmupText);
-                warmupTag.setTextColor(Color.parseColor("#ffaa00"));
-                warmupTag.setTextSize(10);
-                warmupTag.setBackgroundColor(Color.parseColor("#2a2a00"));
-                warmupTag.setPadding(dpToPx(8), dpToPx(2), dpToPx(8), dpToPx(2));
-                GradientDrawable tagBorder = new GradientDrawable();
-                tagBorder.setStroke(1, Color.parseColor("#443300"));
-                tagBorder.setColor(Color.parseColor("#2a2a00"));
-                warmupTag.setBackground(tagBorder);
-                topRow.addView(warmupTag);
-            }
-            card.addView(topRow);
-
-            TextView details = new TextView(this);
-            details.setText(serie.getInt("reps") + " repeticoes x " + serie.getDouble("load") + " kg");
-            details.setTextColor(Color.parseColor("#aaaaaa"));
-            details.setTextSize(14);
-            details.setPadding(0, dpToPx(4), 0, 0);
-            card.addView(details);
+            TextView loadLabel = new TextView(this);
+            loadLabel.setText(serie.getDouble("load") + " kg");
+            loadLabel.setTextColor(Color.parseColor("#8bc34a"));
+            loadLabel.setTextSize(16);
+            loadLabel.setTypeface(null, android.graphics.Typeface.BOLD);
+            loadLabel.setGravity(android.view.Gravity.CENTER);
+            card.addView(loadLabel);
 
             if (serie.has("metaCarga") && !serie.isNull("metaCarga")) {
                 TextView metaLabel = new TextView(this);
                 metaLabel.setText("Meta: " + serie.getDouble("metaCarga") + " kg");
                 metaLabel.setTextColor(Color.parseColor("#ffaa00"));
-                metaLabel.setTextSize(13);
+                metaLabel.setTextSize(14);
+                metaLabel.setGravity(android.view.Gravity.CENTER);
                 card.addView(metaLabel);
             }
 
-            if (serie.has("descanso") && !serie.isNull("descanso")) {
-                TextView descLabel = new TextView(this);
-                int desc = serie.getInt("descanso");
-                descLabel.setText("Descanso: " + desc + "s");
-                descLabel.setTextColor(Color.parseColor("#666666"));
-                descLabel.setTextSize(12);
-                card.addView(descLabel);
-            }
-
-            View sep = new View(this);
-            sep.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            sep.setMinimumHeight(1);
-            sep.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
-            sep.setPadding(0, dpToPx(8), 0, dpToPx(8));
-            card.addView(sep);
-
-            LinearLayout statusRow = new LinearLayout(this);
-            statusRow.setOrientation(LinearLayout.HORIZONTAL);
-            statusRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-
-            TextView statusLabel = new TextView(this);
-            if (isDone) {
-                statusLabel.setText("CONCLUIDO");
-                statusLabel.setTextColor(Color.parseColor("#8bc34a"));
-            } else {
-                statusLabel.setText("PENDENTE");
-                statusLabel.setTextColor(Color.parseColor("#ffaa00"));
-            }
-            statusLabel.setTextSize(13);
-            statusLabel.setTypeface(null, android.graphics.Typeface.BOLD);
-            statusLabel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-            statusRow.addView(statusLabel);
-
             if (!isDone && !aguardandoTimer) {
                 Button btnPronto = new Button(this);
-                btnPronto.setText("CONCLUIR");
+                btnPronto.setText("PRONTO");
                 btnPronto.setBackgroundColor(Color.parseColor("#1a3a1a"));
                 btnPronto.setTextColor(Color.parseColor("#8bc34a"));
                 btnPronto.setTypeface(null, android.graphics.Typeface.BOLD);
-                btnPronto.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8));
+                btnPronto.setPadding(dpToPx(20), dpToPx(12), dpToPx(20), dpToPx(12));
                 btnPronto.setOnClickListener(v -> {
                     if (aguardandoTimer) return;
                     try {
-                        JSONObject serieAtual = ex.getJSONArray("series").getJSONObject(serieAtualIndex);
+                        JSONObject serieAtual = series.getJSONObject(serieAtualIndex);
                         serieAtual.put("_feita", true);
-                        
-                        boolean allDone = true;
-                        JSONArray allSeries = ex.getJSONArray("series");
-                        for (int i = 0; i < allSeries.length(); i++) {
-                            if (!allSeries.getJSONObject(i).has("_feita") || !allSeries.getJSONObject(i).getBoolean("_feita")) {
-                                allDone = false;
+
+                        boolean todasFeitas = true;
+                        for (int i = 0; i < series.length(); i++) {
+                            if (!series.getJSONObject(i).has("_feita") || !series.getJSONObject(i).getBoolean("_feita")) {
+                                todasFeitas = false;
                                 break;
                             }
                         }
-                        
-                        if (allDone) {
-                            ex.put("_done", true);
-                            int descanso = 0;
-                            if (serieAtual.has("descanso") && !serieAtual.isNull("descanso")) {
-                                descanso = serieAtual.getInt("descanso");
+
+                        if (todasFeitas) {
+                            if (!serieAtual.has("warmup") || !serieAtual.getBoolean("warmup")) {
+                                mostrarEvolucaoDialog(exercicioAtualIndex, serieAtualIndex);
+                            } else {
+                                salvarProgressoEAtualizar(exercicioAtualIndex);
                             }
+                        } else {
+                            int descanso = serieAtual.has("descanso") && !serieAtual.isNull("descanso") ? serieAtual.getInt("descanso") : 0;
                             if (descanso > 0) {
                                 aguardandoTimer = true;
                                 renderTreinoCard();
                                 iniciarTimer(descanso, () -> {
                                     aguardandoTimer = false;
                                     serieAtualIndex++;
-                                    if (serieAtualIndex >= series.length()) {
-                                        exercicioAtualIndex++;
-                                        serieAtualIndex = 0;
-                                    }
-                                    salvarProgressoEAtualizar();
+                                    renderTreinoCard();
                                 });
                             } else {
                                 serieAtualIndex++;
-                                if (serieAtualIndex >= series.length()) {
-                                    exercicioAtualIndex++;
-                                    serieAtualIndex = 0;
-                                }
-                                salvarProgressoEAtualizar();
-                            }
-                        } else {
-                            int nextSerie = serieAtualIndex + 1;
-                            JSONObject proxSerie = allSeries.getJSONObject(nextSerie);
-                            int descanso = 0;
-                            if (proxSerie.has("descanso") && !proxSerie.isNull("descanso")) {
-                                descanso = proxSerie.getInt("descanso");
-                            }
-                            if (descanso > 0) {
-                                aguardandoTimer = true;
-                                serieAtualIndex = nextSerie;
                                 renderTreinoCard();
-                                iniciarTimer(descanso, () -> {
-                                    aguardandoTimer = false;
-                                    salvarProgressoEAtualizar();
-                                });
-                            } else {
-                                serieAtualIndex = nextSerie;
-                                salvarProgressoEAtualizar();
                             }
+                            salvarDados();
                         }
                     } catch (JSONException ex2) {
                         ex2.printStackTrace();
                     }
                 });
-                statusRow.addView(btnPronto);
+                card.addView(btnPronto);
             } else if (isDone) {
                 TextView doneLabel = new TextView(this);
                 doneLabel.setText("CONCLUIDO");
                 doneLabel.setTextColor(Color.parseColor("#8bc34a"));
-                doneLabel.setTextSize(13);
+                doneLabel.setTextSize(16);
                 doneLabel.setTypeface(null, android.graphics.Typeface.BOLD);
-                statusRow.addView(doneLabel);
+                doneLabel.setGravity(android.view.Gravity.CENTER);
+                card.addView(doneLabel);
             } else if (aguardandoTimer) {
                 TextView waitLabel = new TextView(this);
-                waitLabel.setText("AGUARDANDO...");
+                waitLabel.setText("Aguardando descanso...");
                 waitLabel.setTextColor(Color.parseColor("#ffaa00"));
-                waitLabel.setTextSize(13);
-                waitLabel.setTypeface(null, android.graphics.Typeface.BOLD);
-                statusRow.addView(waitLabel);
+                waitLabel.setTextSize(14);
+                waitLabel.setGravity(android.view.Gravity.CENTER);
+                card.addView(waitLabel);
             }
-
-            card.addView(statusRow);
 
             exerciciosContainer.addView(card);
 
-            int totalEx = exercicios.length();
-            int doneEx = 0;
-            for (int i = 0; i < totalEx; i++) {
-                JSONObject e = exercicios.getJSONObject(i);
-                if (e.has("_done") && e.getBoolean("_done")) doneEx++;
+            int totalSeries = series.length();
+            int doneSeries = 0;
+            for (int i = 0; i < series.length(); i++) {
+                if (series.getJSONObject(i).has("_feita") && series.getJSONObject(i).getBoolean("_feita")) {
+                    doneSeries++;
+                }
             }
-            int pct = totalEx > 0 ? (doneEx * 100) / totalEx : 0;
+            int total = exercicios.length();
+            int done = 0;
+            for (int i = 0; i < total; i++) {
+                JSONObject e = exercicios.getJSONObject(i);
+                if (e.has("series")) {
+                    JSONArray s = e.getJSONArray("series");
+                    boolean allDone = true;
+                    for (int j = 0; j < s.length(); j++) {
+                        if (!s.getJSONObject(j).has("_feita") || !s.getJSONObject(j).getBoolean("_feita")) {
+                            allDone = false;
+                            break;
+                        }
+                    }
+                    if (allDone) done++;
+                }
+            }
+            int pct = total > 0 ? (done * 100) / total : 0;
             progressBar.setProgress(pct);
-            progressText.setText(doneEx + "/" + totalEx + " exercicios concluidos");
+            progressText.setText(done + "/" + total + " exercicios concluidos");
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
-    private void salvarProgressoEAtualizar() {
+    private void mostrarEvolucaoDialog(int exIdx, int serieIdx) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Evolucao de Carga");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+
+        try {
+            JSONObject ex = treinoAtual.getJSONArray("exercicios").getJSONObject(exIdx);
+            JSONArray series = ex.getJSONArray("series");
+            JSONObject serie = series.getJSONObject(serieIdx);
+            
+            TextView exName = new TextView(this);
+            exName.setText("Registre a evolucao para " + ex.getString("exercise"));
+            exName.setTextColor(Color.parseColor("#aaaaaa"));
+            exName.setTextSize(13);
+            layout.addView(exName);
+
+            TextView loadLabel = new TextView(this);
+            loadLabel.setText("Carga atual (kg)");
+            loadLabel.setTextColor(Color.parseColor("#888888"));
+            loadLabel.setTextSize(12);
+            layout.addView(loadLabel);
+
+            final EditText loadField = new EditText(this);
+            loadField.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            loadField.setText(String.valueOf(serie.getDouble("load")));
+            loadField.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            loadField.setTextColor(Color.parseColor("#ffffff"));
+            layout.addView(loadField);
+
+            TextView repsLabel = new TextView(this);
+            repsLabel.setText("Repeticoes atuais");
+            repsLabel.setTextColor(Color.parseColor("#888888"));
+            repsLabel.setTextSize(12);
+            layout.addView(repsLabel);
+
+            final EditText repsField = new EditText(this);
+            repsField.setInputType(InputType.TYPE_CLASS_NUMBER);
+            repsField.setText(String.valueOf(serie.getInt("reps")));
+            repsField.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            repsField.setTextColor(Color.parseColor("#ffffff"));
+            layout.addView(repsField);
+
+            TextView note = new TextView(this);
+            note.setText("Deixe em branco se nao houve evolucao");
+            note.setTextColor(Color.parseColor("#666666"));
+            note.setTextSize(10);
+            layout.addView(note);
+
+            builder.setView(layout);
+
+            builder.setPositiveButton("Registrar", (dialog, which) -> {
+                try {
+                    double load = Double.parseDouble(loadField.getText().toString());
+                    int reps = Integer.parseInt(repsField.getText().toString());
+                    if (load <= 0 || reps < 1) throw new NumberFormatException();
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                    String hoje = sdf.format(new Date());
+                    JSONArray history;
+                    if (serie.has("loadHistory")) {
+                        history = serie.getJSONArray("loadHistory");
+                    } else {
+                        history = new JSONArray();
+                        serie.put("loadHistory", history);
+                    }
+                    JSONObject novo = new JSONObject();
+                    novo.put("load", load);
+                    novo.put("reps", reps);
+                    novo.put("date", hoje);
+                    history.put(novo);
+                    serie.put("load", load);
+                    serie.put("reps", reps);
+                    salvarProgressoEAtualizar(exIdx);
+                } catch (Exception ex2) {
+                    Toast.makeText(this, "Valores invalidos.", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            builder.setNegativeButton("Pular", (dialog, which) -> {
+                salvarProgressoEAtualizar(exIdx);
+            });
+
+            builder.show();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void salvarProgressoEAtualizar(int idx) {
         try {
             String hojeKey = getTodayKey();
             configData.getJSONObject("academia").put("treino_" + hojeKey, treinoAtual);
@@ -805,171 +835,29 @@ public class MainActivity extends Activity {
                 JSONObject t = treinos.getJSONObject(i);
                 if (t.getString("nome").equals(treinoAtual.getString("nome")) &&
                     t.getString("dia").equals(treinoAtual.getString("dia"))) {
-                    t.put("exercicios", treinoAtual.getJSONArray("exercicios"));
+                    if (t.has("exercicios")) {
+                        JSONArray exs = t.getJSONArray("exercicios");
+                        JSONObject exOriginal = treinoAtual.getJSONArray("exercicios").getJSONObject(idx);
+                        for (int j = 0; j < exs.length(); j++) {
+                            JSONObject e = exs.getJSONObject(j);
+                            if (e.getString("exercise").equals(exOriginal.getString("exercise"))) {
+                                if (exOriginal.has("series")) {
+                                    e.put("series", exOriginal.getJSONArray("series"));
+                                }
+                                break;
+                            }
+                        }
+                    }
                     break;
                 }
             }
             salvarDados();
+            serieAtualIndex = 0;
+            exercicioAtualIndex = idx + 1;
             renderTreinoCard();
         } catch (JSONException e) {
             e.printStackTrace();
         }
-    }
-
-    private void mostrarEvolucaoDialog(int exercicioIdx) {
-        try {
-            JSONObject ex = treinoAtual.getJSONArray("exercicios").getJSONObject(exercicioIdx);
-            
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Evolucao de Carga - " + ex.getString("exercise"));
-
-            LinearLayout layout = new LinearLayout(this);
-            layout.setOrientation(LinearLayout.VERTICAL);
-            layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
-
-            JSONArray series = ex.getJSONArray("series");
-            for (int i = 0; i < series.length(); i++) {
-                JSONObject serie = series.getJSONObject(i);
-                if (!serie.has("warmup") || !serie.getBoolean("warmup")) {
-                    LinearLayout serieLayout = new LinearLayout(this);
-                    serieLayout.setOrientation(LinearLayout.HORIZONTAL);
-                    serieLayout.setPadding(0, dpToPx(4), 0, dpToPx(4));
-                    
-                    TextView info = new TextView(this);
-                    info.setText("Serie " + (i+1) + ": " + serie.getInt("reps") + "x" + serie.getDouble("load") + "kg");
-                    info.setTextColor(Color.parseColor("#cccccc"));
-                    info.setTextSize(13);
-                    info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-                    serieLayout.addView(info);
-
-                    final int serieIdx = i;
-                    Button editBtn = new Button(this);
-                    editBtn.setText("✎");
-                    editBtn.setTextColor(Color.parseColor("#88aaff"));
-                    editBtn.setBackground(null);
-                    editBtn.setOnClickListener(v -> {
-                        mostrarEditarSerie(exercicioIdx, serieIdx);
-                    });
-                    serieLayout.addView(editBtn);
-
-                    layout.addView(serieLayout);
-                }
-            }
-
-            builder.setView(layout);
-            builder.setPositiveButton("Fechar", null);
-            builder.show();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void mostrarEditarSerie(int exercicioIdx, int serieIdx) {
-        try {
-            JSONObject ex = treinoAtual.getJSONArray("exercicios").getJSONObject(exercicioIdx);
-            JSONObject serie = ex.getJSONArray("series").getJSONObject(serieIdx);
-
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Editar Serie - " + ex.getString("exercise"));
-
-            LinearLayout layout = new LinearLayout(this);
-            layout.setOrientation(LinearLayout.VERTICAL);
-            layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
-
-            TextView repsLabel = new TextView(this);
-            repsLabel.setText("Repeticoes");
-            repsLabel.setTextColor(Color.parseColor("#888888"));
-            repsLabel.setTextSize(12);
-            layout.addView(repsLabel);
-
-            final EditText repsInput = new EditText(this);
-            repsInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-            repsInput.setText(String.valueOf(serie.getInt("reps")));
-            repsInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            repsInput.setTextColor(Color.parseColor("#ffffff"));
-            layout.addView(repsInput);
-
-            TextView loadLabel = new TextView(this);
-            loadLabel.setText("Carga (kg)");
-            loadLabel.setTextColor(Color.parseColor("#888888"));
-            loadLabel.setTextSize(12);
-            layout.addView(loadLabel);
-
-            final EditText loadInput = new EditText(this);
-            loadInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-            loadInput.setText(String.valueOf(serie.getDouble("load")));
-            loadInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            loadInput.setTextColor(Color.parseColor("#ffffff"));
-            layout.addView(loadInput);
-
-            TextView metaLabel = new TextView(this);
-            metaLabel.setText("Meta de Carga (kg, opcional)");
-            metaLabel.setTextColor(Color.parseColor("#888888"));
-            metaLabel.setTextSize(12);
-            layout.addView(metaLabel);
-
-            final EditText metaInput = new EditText(this);
-            metaInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-            metaInput.setText(serie.has("metaCarga") && !serie.isNull("metaCarga") ? String.valueOf(serie.getDouble("metaCarga")) : "");
-            metaInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            metaInput.setTextColor(Color.parseColor("#ffffff"));
-            layout.addView(metaInput);
-
-            TextView descLabel = new TextView(this);
-            descLabel.setText("Descanso (segundos)");
-            descLabel.setTextColor(Color.parseColor("#888888"));
-            descLabel.setTextSize(12);
-            layout.addView(descLabel);
-
-            final EditText descInput = new EditText(this);
-            descInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-            descInput.setText(serie.has("descanso") && !serie.isNull("descanso") ? String.valueOf(serie.getInt("descanso")) : "60");
-            descInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            descInput.setTextColor(Color.parseColor("#ffffff"));
-            layout.addView(descInput);
-
-            final CheckBox warmupCheck = new CheckBox(this);
-            warmupCheck.setText("Serie de aquecimento");
-            warmupCheck.setChecked(serie.has("warmup") && serie.getBoolean("warmup"));
-            warmupCheck.setTextColor(Color.parseColor("#aaaaaa"));
-            layout.addView(warmupCheck);
-
-            builder.setView(layout);
-            builder.setPositiveButton("Salvar", (dialog, which) -> {
-                try {
-                    int reps = Integer.parseInt(repsInput.getText().toString().trim());
-                    double load = Double.parseDouble(loadInput.getText().toString().trim());
-                    if (reps < 1 || load <= 0) throw new NumberFormatException();
-                    
-                    serie.put("reps", reps);
-                    serie.put("load", load);
-                    serie.put("warmup", warmupCheck.isChecked());
-
-                    int descanso = 0;
-                    if (!descInput.getText().toString().trim().isEmpty()) {
-                        descanso = Integer.parseInt(descInput.getText().toString().trim());
-                    }
-                    if (descanso > 0) serie.put("descanso", descanso);
-                    else serie.remove("descanso");
-
-                    String metaStr = metaInput.getText().toString().trim();
-                    if (!metaStr.isEmpty()) {
-                        double meta = Double.parseDouble(metaStr);
-                        if (meta > 0) serie.put("metaCarga", meta);
-                        else serie.remove("metaCarga");
-                    } else {
-                        serie.remove("metaCarga");
-                    }
-
-                    salvarDados();
-                    renderDados();
-                } catch (Exception ex2) {
-                    Toast.makeText(this, "Valores invalidos.", Toast.LENGTH_SHORT).show();
-                }
-            });
-            builder.setNegativeButton("Cancelar", null);
-            builder.show();
-        } catch (JSONException e) {}
     }
 
     private void iniciarTreino() {
@@ -983,7 +871,7 @@ public class MainActivity extends Activity {
             String hojeKey = getTodayKey();
             JSONObject treinoConcluido = configData.getJSONObject("academia").getJSONObject("treinoConcluido");
             if (treinoConcluido.has(hojeKey) && treinoConcluido.getBoolean(hojeKey)) {
-                mostrarConfirmacao("Treino Concluido", "Voce ja concluiu o treino de hoje. Deseja refazelo?", () -> {
+                mostrarConfirmacao("Treino Concluido", "Voce ja concluiu o treino de hoje. Deseja refaze-lo?", () -> {
                     try {
                         treinoConcluido.put(hojeKey, false);
                         salvarDados();
@@ -1002,44 +890,51 @@ public class MainActivity extends Activity {
                     JSONArray exs = treinoAtual.getJSONArray("exercicios");
                     for (int i = 0; i < exs.length(); i++) {
                         JSONObject e = exs.getJSONObject(i);
-                        if (!e.has("_done")) e.put("_done", false);
                         if (e.has("series")) {
                             JSONArray series = e.getJSONArray("series");
                             for (int j = 0; j < series.length(); j++) {
                                 JSONObject s = series.getJSONObject(j);
                                 if (!s.has("_feita")) s.put("_feita", false);
+                                if (!s.has("loadHistory")) s.put("loadHistory", new JSONArray());
                             }
                         }
                     }
-                    boolean tudoConcluido = true;
+                    boolean algumNaoConcluido = false;
                     for (int i = 0; i < exs.length(); i++) {
                         JSONObject e = exs.getJSONObject(i);
-                        if (!e.has("_done") || !e.getBoolean("_done")) {
-                            tudoConcluido = false;
-                            exercicioAtualIndex = i;
-                            break;
+                        if (e.has("series")) {
+                            JSONArray series = e.getJSONArray("series");
+                            boolean allDone = true;
+                            for (int j = 0; j < series.length(); j++) {
+                                if (!series.getJSONObject(j).getBoolean("_feita")) {
+                                    allDone = false;
+                                    break;
+                                }
+                            }
+                            if (!allDone) {
+                                exercicioAtualIndex = i;
+                                algumNaoConcluido = true;
+                                break;
+                            }
                         }
                     }
-                    if (tudoConcluido) {
+                    if (!algumNaoConcluido) {
                         treinoConcluido.put(hojeKey, true);
                         configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
                         configData.getJSONObject("academia").put("botaoAtivo", false);
                         salvarDados();
                         isActive = false;
-                        cardTreinoPanel.setVisibility(View.GONE);
                         treinoAtual = null;
-                        limparTimer();
                         atualizarTreinoHoje();
-                        treinoHojePanel.setVisibility(View.VISIBLE);
                         return;
                     }
                 }
-                cardTreinoPanel.setVisibility(View.VISIBLE);
                 isActive = true;
                 configData.getJSONObject("academia").put("botaoAtivo", true);
                 salvarDados();
                 treinoHojePanel.setVisibility(View.GONE);
                 dadosContainer.setVisibility(View.GONE);
+                cardTreinoPanel.setVisibility(View.VISIBLE);
                 renderTreinoCard();
                 if (verificarPeso()) mostrarAvisoPeso();
                 return;
@@ -1061,23 +956,23 @@ public class MainActivity extends Activity {
                 JSONArray exs = treinoAtual.getJSONArray("exercicios");
                 for (int i = 0; i < exs.length(); i++) {
                     JSONObject e = exs.getJSONObject(i);
-                    e.put("_done", false);
                     if (e.has("series")) {
                         JSONArray series = e.getJSONArray("series");
                         for (int j = 0; j < series.length(); j++) {
                             JSONObject s = series.getJSONObject(j);
                             s.put("_feita", false);
+                            if (!s.has("loadHistory")) s.put("loadHistory", new JSONArray());
                         }
                     }
                 }
             }
             exercicioAtualIndex = 0;
             serieAtualIndex = 0;
-            cardTreinoPanel.setVisibility(View.VISIBLE);
             isActive = true;
             configData.getJSONObject("academia").put("botaoAtivo", true);
             treinoHojePanel.setVisibility(View.GONE);
             dadosContainer.setVisibility(View.GONE);
+            cardTreinoPanel.setVisibility(View.VISIBLE);
             renderTreinoCard();
 
             String hojeKey = getTodayKey();
@@ -1092,60 +987,22 @@ public class MainActivity extends Activity {
 
     private void toggleTreino() {
         if (isActive) {
-            if (treinoAtual != null && treinoAtual.has("exercicios")) {
+            mostrarConfirmacao("Parar Treino", "Deseja realmente parar o treino?", () -> {
+                isActive = false;
+                cardTreinoPanel.setVisibility(View.GONE);
+                treinoAtual = null;
+                limparTimer();
+                String hojeKey = getTodayKey();
                 try {
-                    JSONArray exs = treinoAtual.getJSONArray("exercicios");
-                    boolean algumFeito = false;
-                    for (int i = 0; i < exs.length(); i++) {
-                        JSONObject e = exs.getJSONObject(i);
-                        if (e.has("_done") && e.getBoolean("_done")) {
-                            algumFeito = true;
-                            break;
-                        }
-                        if (e.has("series")) {
-                            JSONArray series = e.getJSONArray("series");
-                            for (int j = 0; j < series.length(); j++) {
-                                JSONObject s = series.getJSONObject(j);
-                                if (s.has("_feita") && s.getBoolean("_feita")) {
-                                    algumFeito = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (algumFeito) {
-                        mostrarConfirmacao("Parar Treino", "Voce ja fez alguns exercicios. Deseja realmente parar?", () -> {
-                            isActive = false;
-                            cardTreinoPanel.setVisibility(View.GONE);
-                            treinoAtual = null;
-                            limparTimer();
-                            String hojeKey = getTodayKey();
-                            try {
-                                configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
-                                configData.getJSONObject("academia").put("botaoAtivo", false);
-                            } catch (JSONException e) {}
-                            salvarDados();
-                            atualizarTreinoHoje();
-                            treinoHojePanel.setVisibility(View.VISIBLE);
-                            dadosContainer.setVisibility(View.VISIBLE);
-                            renderDados();
-                        });
-                        return;
-                    }
+                    configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
+                    configData.getJSONObject("academia").put("botaoAtivo", false);
                 } catch (JSONException e) {}
-            }
-            isActive = false;
-            cardTreinoPanel.setVisibility(View.GONE);
-            treinoAtual = null;
-            limparTimer();
-            try {
-                configData.getJSONObject("academia").put("botaoAtivo", false);
-            } catch (JSONException e) {}
-            salvarDados();
-            atualizarTreinoHoje();
-            treinoHojePanel.setVisibility(View.VISIBLE);
-            dadosContainer.setVisibility(View.VISIBLE);
-            renderDados();
+                salvarDados();
+                atualizarTreinoHoje();
+                treinoHojePanel.setVisibility(View.VISIBLE);
+                dadosContainer.setVisibility(View.VISIBLE);
+                renderDados();
+            });
         } else {
             JSONArray treinos = getTodayTreinos();
             if (treinos.length() == 0) {
@@ -1166,27 +1023,33 @@ public class MainActivity extends Activity {
             boolean botaoAtivo = configData.getJSONObject("academia").getBoolean("botaoAtivo");
 
             if (temTreinoSalvo && !treinoConcluidoHoje && botaoAtivo) {
-                JSONObject treino = configData.getJSONObject("academia").getJSONObject("treino_" + hojeKey);
-                if (treino.has("exercicios")) {
-                    JSONArray exs = treino.getJSONArray("exercicios");
+                treinoAtual = configData.getJSONObject("academia").getJSONObject("treino_" + hojeKey);
+                if (treinoAtual.has("exercicios")) {
+                    JSONArray exs = treinoAtual.getJSONArray("exercicios");
                     for (int i = 0; i < exs.length(); i++) {
                         JSONObject e = exs.getJSONObject(i);
-                        if (!e.has("_done")) e.put("_done", false);
                         if (e.has("series")) {
                             JSONArray series = e.getJSONArray("series");
                             for (int j = 0; j < series.length(); j++) {
                                 JSONObject s = series.getJSONObject(j);
                                 if (!s.has("_feita")) s.put("_feita", false);
+                                if (!s.has("loadHistory")) s.put("loadHistory", new JSONArray());
                             }
                         }
                     }
                     boolean todosConcluidos = true;
                     for (int i = 0; i < exs.length(); i++) {
                         JSONObject e = exs.getJSONObject(i);
-                        if (!e.has("_done") || !e.getBoolean("_done")) {
-                            todosConcluidos = false;
-                            break;
+                        if (e.has("series")) {
+                            JSONArray series = e.getJSONArray("series");
+                            for (int j = 0; j < series.length(); j++) {
+                                if (!series.getJSONObject(j).getBoolean("_feita")) {
+                                    todosConcluidos = false;
+                                    break;
+                                }
+                            }
                         }
+                        if (!todosConcluidos) break;
                     }
                     if (todosConcluidos) {
                         isActive = false;
@@ -1201,28 +1064,10 @@ public class MainActivity extends Activity {
                     } else {
                         isActive = true;
                         cardTreinoPanel.setVisibility(View.VISIBLE);
-                        treinoAtual = treino;
                         treinoHojePanel.setVisibility(View.GONE);
                         dadosContainer.setVisibility(View.GONE);
                         exercicioAtualIndex = 0;
                         serieAtualIndex = 0;
-                        for (int i = 0; i < exs.length(); i++) {
-                            JSONObject e = exs.getJSONObject(i);
-                            if (!e.has("_done") || !e.getBoolean("_done")) {
-                                exercicioAtualIndex = i;
-                                if (e.has("series")) {
-                                    JSONArray series = e.getJSONArray("series");
-                                    for (int j = 0; j < series.length(); j++) {
-                                        JSONObject s = series.getJSONObject(j);
-                                        if (!s.has("_feita") || !s.getBoolean("_feita")) {
-                                            serieAtualIndex = j;
-                                            break;
-                                        }
-                                    }
-                                }
-                                break;
-                            }
-                        }
                         renderTreinoCard();
                     }
                     return;
@@ -1273,7 +1118,7 @@ public class MainActivity extends Activity {
         header.setWeightSum(2);
 
         TextView title = new TextView(this);
-        title.setText("DADOS DA ACADEMIA");
+        title.setText("Dados da Academia");
         title.setTextColor(Color.parseColor("#aaaaaa"));
         title.setTextSize(14);
         title.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -1282,7 +1127,7 @@ public class MainActivity extends Activity {
         header.addView(title);
 
         Button configBtn2 = new Button(this);
-        configBtn2.setText(modoConfig ? "PRONTO" : "CONFIGURAR");
+        configBtn2.setText(modoConfig ? "Pronto" : "Configurar");
         configBtn2.setBackgroundColor(modoConfig ? Color.parseColor("#1a3a1a") : Color.parseColor("#2a2a2a"));
         configBtn2.setTextColor(modoConfig ? Color.parseColor("#8bc34a") : Color.parseColor("#cccccc"));
         configBtn2.setPadding(dpToPx(12), dpToPx(5), dpToPx(12), dpToPx(5));
@@ -1331,7 +1176,7 @@ public class MainActivity extends Activity {
                 double ultimo = hist.getJSONObject(hist.length() - 1).getDouble("peso");
                 double diff = ultimo - primeiro;
                 double pct = primeiro != 0 ? (diff / primeiro) * 100 : 0;
-                evolucaoTexto = " (" + (diff > 0 ? "+" : "") + String.format("%.1f", diff) + "kg, " + (pct > 0 ? "+" : "") + String.format("%.1f", pct) + "%)";
+                evolucaoTexto = " (" + (diff > 0 ? "+" : "") + String.format("%.1f", diff) + "kg | " + (pct > 0 ? "+" : "") + String.format("%.1f", pct) + "%)";
                 evolucaoCor = diff > 0 ? "#8bc34a" : (diff < 0 ? "#ff6b6b" : "#aaaaaa");
             }
             addInfoRow(infoGrid, "Peso Atual", pesoAtual + evolucaoTexto, evolucaoCor);
@@ -1357,12 +1202,11 @@ public class MainActivity extends Activity {
                             for (int k = 0; k < series.length(); k++) {
                                 JSONObject s = series.getJSONObject(k);
                                 if (!(s.has("warmup") && s.getBoolean("warmup"))) {
-                                    JSONObject clone = new JSONObject();
-                                    clone.put("exercise", e.getString("exercise"));
-                                    clone.put("loadHistory", s.has("loadHistory") ? s.getJSONArray("loadHistory") : new JSONArray());
-                                    clone.put("load", s.getDouble("load"));
-                                    clone.put("reps", s.getInt("reps"));
-                                    todosExercicios.put(clone);
+                                    JSONObject exCopy = new JSONObject();
+                                    exCopy.put("exercise", e.getString("exercise") + " (Serie " + (k+1) + ")");
+                                    if (!s.has("loadHistory")) s.put("loadHistory", new JSONArray());
+                                    exCopy.put("loadHistory", s.getJSONArray("loadHistory"));
+                                    todosExercicios.put(exCopy);
                                 }
                             }
                         }
@@ -1380,7 +1224,7 @@ public class MainActivity extends Activity {
                 subSection.addView(line2);
 
                 TextView subTitle = new TextView(this);
-                subTitle.setText("EVOLUCAO DE CARGA");
+                subTitle.setText("Evolucao de Carga");
                 subTitle.setTextColor(Color.parseColor("#999999"));
                 subTitle.setTextSize(13);
                 subTitle.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -1447,7 +1291,7 @@ public class MainActivity extends Activity {
             subSection.addView(line3);
 
             TextView subTitle2 = new TextView(this);
-            subTitle2.setText("OBJETIVOS");
+            subTitle2.setText("Objetivos");
             subTitle2.setTextColor(Color.parseColor("#999999"));
             subTitle2.setTextSize(13);
             subTitle2.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -1466,7 +1310,7 @@ public class MainActivity extends Activity {
                     border3.setColor(Color.parseColor("#0d0d0d"));
                     item.setBackground(border3);
                     TextView lbl = new TextView(this);
-                    lbl.setText("- " + objetivos.getString(i));
+                    lbl.setText("• " + objetivos.getString(i));
                     lbl.setTextColor(Color.parseColor("#eeeeee"));
                     lbl.setTextSize(13);
                     item.addView(lbl);
@@ -1495,7 +1339,7 @@ public class MainActivity extends Activity {
             subSectionRoupas.addView(line4);
 
             TextView subTitle3 = new TextView(this);
-            subTitle3.setText("ROUPAS");
+            subTitle3.setText("Roupas");
             subTitle3.setTextColor(Color.parseColor("#999999"));
             subTitle3.setTextSize(13);
             subTitle3.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -1521,7 +1365,7 @@ public class MainActivity extends Activity {
                         item.setBackgroundColor(Color.parseColor("#0d0d0d"));
                         item.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3));
                         TextView lbl = new TextView(this);
-                        lbl.setText("- " + items.getString(i));
+                        lbl.setText("• " + items.getString(i));
                         lbl.setTextColor(Color.parseColor("#cccccc"));
                         lbl.setTextSize(12);
                         item.addView(lbl);
@@ -1605,7 +1449,7 @@ public class MainActivity extends Activity {
             subSection2.addView(line);
 
             TextView subTitle = new TextView(this);
-            subTitle.setText("DIAS DE DESCANSO");
+            subTitle.setText("Dias de Descanso");
             subTitle.setTextColor(Color.parseColor("#999999"));
             subTitle.setTextSize(13);
             subTitle.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -1667,7 +1511,7 @@ public class MainActivity extends Activity {
             subSection3.addView(line2);
 
             TextView subTitle2 = new TextView(this);
-            subTitle2.setText("OBJETIVOS");
+            subTitle2.setText("Objetivos");
             subTitle2.setTextColor(Color.parseColor("#999999"));
             subTitle2.setTextSize(13);
             subTitle2.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -1686,7 +1530,7 @@ public class MainActivity extends Activity {
                 item.setBackground(border);
 
                 TextView lbl = new TextView(this);
-                lbl.setText("- " + objetivos.getString(i));
+                lbl.setText("• " + objetivos.getString(i));
                 lbl.setTextColor(Color.parseColor("#eeeeee"));
                 lbl.setTextSize(13);
                 lbl.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -1741,7 +1585,7 @@ public class MainActivity extends Activity {
             subSection4.addView(line3);
 
             TextView subTitle3 = new TextView(this);
-            subTitle3.setText("TREINOS");
+            subTitle3.setText("Treinos");
             subTitle3.setTextColor(Color.parseColor("#999999"));
             subTitle3.setTextSize(13);
             subTitle3.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -1801,14 +1645,14 @@ public class MainActivity extends Activity {
                 treinoPanel.addView(headerPanel);
 
                 TextView diaLabel = new TextView(this);
-                diaLabel.setText(treino.getString("dia"));
+                diaLabel.setText("Dia: " + treino.getString("dia"));
                 diaLabel.setTextColor(Color.parseColor("#888888"));
                 diaLabel.setTextSize(12);
                 treinoPanel.addView(diaLabel);
 
                 if (treino.has("objetivo") && !treino.isNull("objetivo") && !treino.getString("objetivo").isEmpty()) {
                     TextView objLabel = new TextView(this);
-                    objLabel.setText(treino.getString("objetivo"));
+                    objLabel.setText("Objetivo: " + treino.getString("objetivo"));
                     objLabel.setTextColor(Color.parseColor("#888888"));
                     objLabel.setTextSize(12);
                     treinoPanel.addView(objLabel);
@@ -1850,7 +1694,7 @@ public class MainActivity extends Activity {
             subSection5.addView(line4);
 
             TextView subTitle4 = new TextView(this);
-            subTitle4.setText("ROUPAS");
+            subTitle4.setText("Roupas");
             subTitle4.setTextColor(Color.parseColor("#999999"));
             subTitle4.setTextSize(13);
             subTitle4.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -1879,7 +1723,7 @@ public class MainActivity extends Activity {
                     item.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3));
 
                     TextView lbl = new TextView(this);
-                    lbl.setText("- " + items.getString(i));
+                    lbl.setText("• " + items.getString(i));
                     lbl.setTextColor(Color.parseColor("#cccccc"));
                     lbl.setTextSize(12);
                     lbl.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -1937,7 +1781,7 @@ public class MainActivity extends Activity {
             subSection6.addView(line5);
 
             TextView subTitle5 = new TextView(this);
-            subTitle5.setText("COMBINACOES POR DIA");
+            subTitle5.setText("Combinacoes por Dia");
             subTitle5.setTextColor(Color.parseColor("#999999"));
             subTitle5.setTextSize(13);
             subTitle5.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -1984,7 +1828,7 @@ public class MainActivity extends Activity {
                         comboItem.setPadding(0, dpToPx(2), 0, dpToPx(2));
 
                         TextView comboText = new TextView(this);
-                        comboText.setText("- " + combos2.getString(j));
+                        comboText.setText("• " + combos2.getString(j));
                         comboText.setTextColor(Color.parseColor("#cccccc"));
                         comboText.setTextSize(12);
                         comboText.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -2155,42 +1999,25 @@ public class MainActivity extends Activity {
             for (int i = 0; i < exercicios.length(); i++) {
                 JSONObject ex = exercicios.getJSONObject(i);
                 LinearLayout exItem = new LinearLayout(this);
-                exItem.setOrientation(LinearLayout.HORIZONTAL);
+                exItem.setOrientation(LinearLayout.VERTICAL);
                 exItem.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                exItem.setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4));
+                exItem.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
                 GradientDrawable border = new GradientDrawable();
                 border.setStroke(1, Color.parseColor("#1a1a1a"));
                 border.setColor(Color.parseColor("#0d0d0d"));
                 exItem.setBackground(border);
 
-                LinearLayout infoLayout = new LinearLayout(this);
-                infoLayout.setOrientation(LinearLayout.VERTICAL);
-                infoLayout.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                LinearLayout headerLayout = new LinearLayout(this);
+                headerLayout.setOrientation(LinearLayout.HORIZONTAL);
+                headerLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                 TextView nomeEx = new TextView(this);
                 nomeEx.setText(ex.getString("exercise"));
                 nomeEx.setTextColor(Color.parseColor("#ffffff"));
-                nomeEx.setTextSize(13);
+                nomeEx.setTextSize(14);
                 nomeEx.setTypeface(null, android.graphics.Typeface.BOLD);
-                infoLayout.addView(nomeEx);
-
-                if (ex.has("series") && ex.getJSONArray("series").length() > 0) {
-                    JSONArray series = ex.getJSONArray("series");
-                    TextView detalhes = new TextView(this);
-                    int qtd = series.length();
-                    detalhes.setText(qtd + " serie(s)");
-                    detalhes.setTextColor(Color.parseColor("#888888"));
-                    detalhes.setTextSize(11);
-                    infoLayout.addView(detalhes);
-                } else {
-                    TextView semSerie = new TextView(this);
-                    semSerie.setText("Sem serie definida");
-                    semSerie.setTextColor(Color.parseColor("#ff6b6b"));
-                    semSerie.setTextSize(11);
-                    infoLayout.addView(semSerie);
-                }
-
-                exItem.addView(infoLayout);
+                nomeEx.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                headerLayout.addView(nomeEx);
 
                 LinearLayout actions = new LinearLayout(this);
                 actions.setOrientation(LinearLayout.HORIZONTAL);
@@ -2227,7 +2054,51 @@ public class MainActivity extends Activity {
                 });
                 actions.addView(delExBtn);
 
-                exItem.addView(actions);
+                headerLayout.addView(actions);
+                exItem.addView(headerLayout);
+
+                LinearLayout seriesContainer = new LinearLayout(this);
+                seriesContainer.setOrientation(LinearLayout.VERTICAL);
+                seriesContainer.setPadding(dpToPx(8), dpToPx(4), 0, dpToPx(4));
+
+                if (ex.has("series")) {
+                    JSONArray series = ex.getJSONArray("series");
+                    for (int j = 0; j < series.length(); j++) {
+                        JSONObject s = series.getJSONObject(j);
+                        LinearLayout serieItem = new LinearLayout(this);
+                        serieItem.setOrientation(LinearLayout.HORIZONTAL);
+                        serieItem.setPadding(dpToPx(4), dpToPx(2), dpToPx(4), dpToPx(2));
+                        serieItem.setBackgroundColor(Color.parseColor("#0a0a0a"));
+
+                        TextView serieText = new TextView(this);
+                        String warmup = s.has("warmup") && s.getBoolean("warmup") ? " [AQUECIMENTO]" : "";
+                        serieText.setText("Serie " + (j+1) + ": " + s.getInt("reps") + "x " + s.getDouble("load") + "kg" + warmup);
+                        serieText.setTextColor(Color.parseColor("#aaaaaa"));
+                        serieText.setTextSize(11);
+                        serieText.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                        serieItem.addView(serieText);
+
+                        Button delSerieBtn = new Button(this);
+                        delSerieBtn.setText("✕");
+                        delSerieBtn.setTextColor(Color.parseColor("#ff6666"));
+                        delSerieBtn.setBackground(null);
+                        delSerieBtn.setOnClickListener(v -> {
+                            mostrarConfirmacao("Excluir Serie", "Tem certeza que deseja excluir esta serie?", () -> {
+                                try {
+                                    JSONArray sArray = ex.getJSONArray("series");
+                                    sArray.remove(j);
+                                    salvarDados();
+                                    renderDados();
+                                } catch (JSONException exc) {}
+                            });
+                        });
+                        serieItem.addView(delSerieBtn);
+
+                        seriesContainer.addView(serieItem);
+                    }
+                }
+
+                exItem.addView(seriesContainer);
                 container.addView(exItem);
             }
         } catch (JSONException e) {
@@ -2459,7 +2330,6 @@ public class MainActivity extends Activity {
                                     configData.getJSONObject("academia").getJSONObject("peso").put("atual", JSONObject.NULL);
                                 }
                                 salvarDados();
-                                renderDados();
                                 mostrarHistoricoPeso();
                             } catch (JSONException ex) {}
                         });
@@ -2728,7 +2598,6 @@ public class MainActivity extends Activity {
                 JSONObject exercicio = new JSONObject();
                 exercicio.put("exercise", exercise);
                 exercicio.put("series", new JSONArray());
-                exercicio.put("_done", false);
 
                 JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
                 JSONObject treino = treinos.getJSONObject(treinoIdx);
@@ -2841,12 +2710,12 @@ public class MainActivity extends Activity {
                         if (meta > 0) serie.put("metaCarga", meta);
                     }
 
-                    JSONArray series = ex.getJSONArray("series");
-                    series.put(serie);
+                    if (!ex.has("series")) ex.put("series", new JSONArray());
+                    ex.getJSONArray("series").put(serie);
                     salvarDados();
                     renderDados();
                 } catch (Exception ex2) {
-                    Toast.makeText(this, "Valores invalidos.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Valores invalidos. Verifique os campos.", Toast.LENGTH_SHORT).show();
                 }
             });
             builder.setNegativeButton("Cancelar", null);
@@ -2880,26 +2749,6 @@ public class MainActivity extends Activity {
             nomeInput.setTextColor(Color.parseColor("#ffffff"));
             layout.addView(nomeInput);
 
-            Button verSeriesBtn = new Button(this);
-            verSeriesBtn.setText("Ver/Editar Series");
-            verSeriesBtn.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            verSeriesBtn.setTextColor(Color.parseColor("#cccccc"));
-            verSeriesBtn.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
-            verSeriesBtn.setOnClickListener(v -> {
-                mostrarEvolucaoDialog(treinoIdx, exIdx);
-            });
-            layout.addView(verSeriesBtn);
-
-            Button histBtn = new Button(this);
-            histBtn.setText("Historico de Carga");
-            histBtn.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            histBtn.setTextColor(Color.parseColor("#cccccc"));
-            histBtn.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
-            histBtn.setOnClickListener(v -> {
-                mostrarHistoricoCarga(treinoIdx, exIdx);
-            });
-            layout.addView(histBtn);
-
             builder.setView(layout);
             builder.setPositiveButton("Salvar", (dialog, which) -> {
                 try {
@@ -2920,251 +2769,53 @@ public class MainActivity extends Activity {
         } catch (JSONException e) {}
     }
 
-    private void mostrarEvolucaoDialog(int treinoIdx, int exIdx) {
+    private void mostrarHistoricoCarga() {
         try {
-            JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
-            JSONObject treino = treinos.getJSONObject(treinoIdx);
-            JSONObject ex = treino.getJSONArray("exercicios").getJSONObject(exIdx);
-
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Series - " + ex.getString("exercise"));
+            builder.setTitle("Historico de Carga");
 
             LinearLayout layout = new LinearLayout(this);
             layout.setOrientation(LinearLayout.VERTICAL);
             layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
 
-            JSONArray series = ex.getJSONArray("series");
-            if (series.length() == 0) {
-                TextView empty = new TextView(this);
-                empty.setText("Nenhuma serie definida.");
-                empty.setTextColor(Color.parseColor("#666666"));
-                empty.setTextSize(11);
-                layout.addView(empty);
-            } else {
-                for (int i = 0; i < series.length(); i++) {
-                    JSONObject serie = series.getJSONObject(i);
-                    LinearLayout entry = new LinearLayout(this);
-                    entry.setOrientation(LinearLayout.HORIZONTAL);
-                    entry.setPadding(0, dpToPx(4), 0, dpToPx(4));
+            JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
+            for (int i = 0; i < treinos.length(); i++) {
+                JSONObject treino = treinos.getJSONObject(i);
+                if (treino.has("exercicios")) {
+                    JSONArray exs = treino.getJSONArray("exercicios");
+                    for (int j = 0; j < exs.length(); j++) {
+                        JSONObject ex = exs.getJSONObject(j);
+                        if (ex.has("series")) {
+                            JSONArray series = ex.getJSONArray("series");
+                            for (int k = 0; k < series.length(); k++) {
+                                JSONObject s = series.getJSONObject(k);
+                                if (s.has("loadHistory") && s.getJSONArray("loadHistory").length() > 0) {
+                                    JSONArray history = s.getJSONArray("loadHistory");
+                                    for (int h = 0; h < history.length(); h++) {
+                                        JSONObject item = history.getJSONObject(h);
+                                        LinearLayout entry = new LinearLayout(this);
+                                        entry.setOrientation(LinearLayout.HORIZONTAL);
+                                        entry.setPadding(0, dpToPx(4), 0, dpToPx(4));
 
-                    String texto = "Serie " + (i+1) + ": " + serie.getInt("reps") + "x" + serie.getDouble("load") + "kg";
-                    if (serie.has("warmup") && serie.getBoolean("warmup")) texto += " (aquecimento)";
-                    
-                    TextView info = new TextView(this);
-                    info.setText(texto);
-                    info.setTextColor(Color.parseColor("#cccccc"));
-                    info.setTextSize(13);
-                    info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-                    entry.addView(info);
+                                        TextView info = new TextView(this);
+                                        info.setText(ex.getString("exercise") + " (S" + (k+1) + "): " + item.getDouble("load") + "kg × " + item.getInt("reps") + " reps (" + item.getString("date") + ")");
+                                        info.setTextColor(Color.parseColor("#bbbbbb"));
+                                        info.setTextSize(12);
+                                        info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                                        entry.addView(info);
 
-                    final int serieIdx = i;
-                    Button editBtn = new Button(this);
-                    editBtn.setText("✎");
-                    editBtn.setTextColor(Color.parseColor("#88aaff"));
-                    editBtn.setBackground(null);
-                    editBtn.setOnClickListener(v -> {
-                        mostrarEditarSerieDialog(treinoIdx, exIdx, serieIdx);
-                    });
-                    entry.addView(editBtn);
-
-                    Button delBtn = new Button(this);
-                    delBtn.setText("✕");
-                    delBtn.setTextColor(Color.parseColor("#ff6666"));
-                    delBtn.setBackground(null);
-                    delBtn.setOnClickListener(v -> {
-                        mostrarConfirmacao("Excluir Serie", "Tem certeza que deseja excluir esta serie?", () -> {
-                            try {
-                                series.remove(serieIdx);
-                                salvarDados();
-                                renderDados();
-                                mostrarEvolucaoDialog(treinoIdx, exIdx);
-                            } catch (JSONException ex) {}
-                        });
-                    });
-                    entry.addView(delBtn);
-
-                    layout.addView(entry);
+                                        layout.addView(entry);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
             builder.setView(layout);
             builder.setPositiveButton("Fechar", null);
             builder.show();
-        } catch (JSONException e) {}
-    }
-
-    private void mostrarEditarSerieDialog(int treinoIdx, int exIdx, int serieIdx) {
-        try {
-            JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
-            JSONObject treino = treinos.getJSONObject(treinoIdx);
-            JSONObject ex = treino.getJSONArray("exercicios").getJSONObject(exIdx);
-            JSONObject serie = ex.getJSONArray("series").getJSONObject(serieIdx);
-
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Editar Serie");
-
-            LinearLayout layout = new LinearLayout(this);
-            layout.setOrientation(LinearLayout.VERTICAL);
-            layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
-
-            TextView repsLabel = new TextView(this);
-            repsLabel.setText("Repeticoes");
-            repsLabel.setTextColor(Color.parseColor("#888888"));
-            repsLabel.setTextSize(12);
-            layout.addView(repsLabel);
-
-            final EditText repsInput = new EditText(this);
-            repsInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-            repsInput.setText(String.valueOf(serie.getInt("reps")));
-            repsInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            repsInput.setTextColor(Color.parseColor("#ffffff"));
-            layout.addView(repsInput);
-
-            TextView loadLabel = new TextView(this);
-            loadLabel.setText("Carga (kg)");
-            loadLabel.setTextColor(Color.parseColor("#888888"));
-            loadLabel.setTextSize(12);
-            layout.addView(loadLabel);
-
-            final EditText loadInput = new EditText(this);
-            loadInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-            loadInput.setText(String.valueOf(serie.getDouble("load")));
-            loadInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            loadInput.setTextColor(Color.parseColor("#ffffff"));
-            layout.addView(loadInput);
-
-            TextView metaLabel = new TextView(this);
-            metaLabel.setText("Meta de Carga (kg, opcional)");
-            metaLabel.setTextColor(Color.parseColor("#888888"));
-            metaLabel.setTextSize(12);
-            layout.addView(metaLabel);
-
-            final EditText metaInput = new EditText(this);
-            metaInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-            metaInput.setText(serie.has("metaCarga") && !serie.isNull("metaCarga") ? String.valueOf(serie.getDouble("metaCarga")) : "");
-            metaInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            metaInput.setTextColor(Color.parseColor("#ffffff"));
-            layout.addView(metaInput);
-
-            TextView descLabel = new TextView(this);
-            descLabel.setText("Descanso (segundos)");
-            descLabel.setTextColor(Color.parseColor("#888888"));
-            descLabel.setTextSize(12);
-            layout.addView(descLabel);
-
-            final EditText descInput = new EditText(this);
-            descInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-            descInput.setText(serie.has("descanso") && !serie.isNull("descanso") ? String.valueOf(serie.getInt("descanso")) : "60");
-            descInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            descInput.setTextColor(Color.parseColor("#ffffff"));
-            layout.addView(descInput);
-
-            final CheckBox warmupCheck = new CheckBox(this);
-            warmupCheck.setText("Serie de aquecimento");
-            warmupCheck.setChecked(serie.has("warmup") && serie.getBoolean("warmup"));
-            warmupCheck.setTextColor(Color.parseColor("#aaaaaa"));
-            layout.addView(warmupCheck);
-
-            builder.setView(layout);
-            builder.setPositiveButton("Salvar", (dialog, which) -> {
-                try {
-                    int reps = Integer.parseInt(repsInput.getText().toString().trim());
-                    double load = Double.parseDouble(loadInput.getText().toString().trim());
-                    if (reps < 1 || load <= 0) throw new NumberFormatException();
-                    
-                    serie.put("reps", reps);
-                    serie.put("load", load);
-                    serie.put("warmup", warmupCheck.isChecked());
-
-                    int descanso = 0;
-                    if (!descInput.getText().toString().trim().isEmpty()) {
-                        descanso = Integer.parseInt(descInput.getText().toString().trim());
-                    }
-                    if (descanso > 0) serie.put("descanso", descanso);
-                    else serie.remove("descanso");
-
-                    String metaStr = metaInput.getText().toString().trim();
-                    if (!metaStr.isEmpty()) {
-                        double meta = Double.parseDouble(metaStr);
-                        if (meta > 0) serie.put("metaCarga", meta);
-                        else serie.remove("metaCarga");
-                    } else {
-                        serie.remove("metaCarga");
-                    }
-
-                    salvarDados();
-                    renderDados();
-                    mostrarEvolucaoDialog(treinoIdx, exIdx);
-                } catch (Exception ex2) {
-                    Toast.makeText(this, "Valores invalidos.", Toast.LENGTH_SHORT).show();
-                }
-            });
-            builder.setNegativeButton("Cancelar", null);
-            builder.show();
-        } catch (JSONException e) {}
-    }
-
-    private void mostrarHistoricoCarga(int treinoIdx, int exIdx) {
-        try {
-            JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
-            JSONObject treino = treinos.getJSONObject(treinoIdx);
-            JSONObject ex = treino.getJSONArray("exercicios").getJSONObject(exIdx);
-
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Historico de Carga - " + ex.getString("exercise"));
-
-            LinearLayout layout = new LinearLayout(this);
-            layout.setOrientation(LinearLayout.VERTICAL);
-            layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
-
-            JSONArray allHistory = new JSONArray();
-            JSONArray series = ex.getJSONArray("series");
-            for (int i = 0; i < series.length(); i++) {
-                JSONObject serie = series.getJSONObject(i);
-                if (serie.has("loadHistory")) {
-                    JSONArray hist = serie.getJSONArray("loadHistory");
-                    for (int j = 0; j < hist.length(); j++) {
-                        JSONObject item = hist.getJSONObject(j);
-                        JSONObject clone = new JSONObject();
-                        clone.put("load", item.getDouble("load"));
-                        clone.put("reps", item.getInt("reps"));
-                        clone.put("date", item.has("date") ? item.getString("date") : "");
-                        clone.put("serie", i + 1);
-                        allHistory.put(clone);
-                    }
-                }
-            }
-
-            if (allHistory.length() == 0) {
-                TextView empty = new TextView(this);
-                empty.setText("Nenhum registro.");
-                empty.setTextColor(Color.parseColor("#666666"));
-                empty.setTextSize(11);
-                layout.addView(empty);
-            } else {
-                for (int i = 0; i < allHistory.length(); i++) {
-                    JSONObject item = allHistory.getJSONObject(i);
-                    LinearLayout entry = new LinearLayout(this);
-                    entry.setOrientation(LinearLayout.HORIZONTAL);
-                    entry.setPadding(0, dpToPx(4), 0, dpToPx(4));
-
-                    String texto = "Serie " + item.getInt("serie") + ": " + item.getDouble("load") + "kg x " + item.getInt("reps") + " reps";
-                    if (item.has("date") && !item.isNull("date") && !item.getString("date").isEmpty()) {
-                        texto += " (" + item.getString("date") + ")";
-                    }
-                    TextView info = new TextView(this);
-                    info.setText(texto);
-                    info.setTextColor(Color.parseColor("#bbbbbb"));
-                    info.setTextSize(12);
-                    info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-                    entry.addView(info);
-
-                    builder.setView(layout);
-                    builder.setPositiveButton("Fechar", null);
-                    builder.show();
-                    return;
-                }
-            }
         } catch (JSONException e) {}
     }
 
