@@ -2300,8 +2300,7 @@ public class MainActivity extends Activity {
                     entry.setPadding(0, dpToPx(4), 0, dpToPx(4));
 
                     TextView info = new TextView(this);
-                    String texto = "📊 " + item.getDouble("peso") + " kg (" + item.getString("data") + ")";
-                    info.setText(texto);
+                    info.setText("📊 " + item.getDouble("peso") + " kg (" + item.getString("data") + ")");
                     info.setTextColor(Color.parseColor("#bbbbbb"));
                     info.setTextSize(12);
                     info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -2802,11 +2801,13 @@ public class MainActivity extends Activity {
                     entry.setOrientation(LinearLayout.HORIZONTAL);
                     entry.setPadding(0, dpToPx(4), 0, dpToPx(4));
 
-                    String texto = "📦 " + item.getDouble("load") + "kg × " + item.getInt("reps") + " reps";
-                    if (item.has("date")) texto += " (" + item.getString("date") + ")";
-                    
+                    StringBuilder infoText = new StringBuilder();
+                    infoText.append("📦 ").append(item.getDouble("load")).append("kg × ").append(item.getInt("reps")).append(" reps");
+                    if (item.has("date") && !item.isNull("date")) {
+                        infoText.append(" (").append(item.getString("date")).append(")");
+                    }
                     TextView info = new TextView(this);
-                    info.setText(texto);
+                    info.setText(infoText.toString());
                     info.setTextColor(Color.parseColor("#bbbbbb"));
                     info.setTextSize(12);
                     info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
