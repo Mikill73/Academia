@@ -2078,21 +2078,22 @@ public class MainActivity extends Activity {
                         serieText.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                         serieItem.addView(serieText);
 
-                        Button delSerieBtn = new Button(this);
-                        delSerieBtn.setText("✕");
-                        delSerieBtn.setTextColor(Color.parseColor("#ff6666"));
-                        delSerieBtn.setBackground(null);
-                        delSerieBtn.setOnClickListener(v -> {
-                            mostrarConfirmacao("Excluir Serie", "Tem certeza que deseja excluir esta serie?", () -> {
-                                try {
-                                    JSONArray sArray = ex.getJSONArray("series");
-                                    sArray.remove(j);
-                                    salvarDados();
-                                    renderDados();
-                                } catch (JSONException exc) {}
-                            });
-                        });
-                        serieItem.addView(delSerieBtn);
+final int serieIdx = j;
+Button delSerieBtn = new Button(this);
+delSerieBtn.setText("✕");
+delSerieBtn.setTextColor(Color.parseColor("#ff6666"));
+delSerieBtn.setBackground(null);
+delSerieBtn.setOnClickListener(v -> {
+    mostrarConfirmacao("Excluir Serie", "Tem certeza que deseja excluir esta serie?", () -> {
+        try {
+            JSONArray sArray = ex.getJSONArray("series");
+            sArray.remove(serieIdx);
+            salvarDados();
+            renderDados();
+        } catch (JSONException exc) {}
+    });
+});
+serieItem.addView(delSerieBtn);
 
                         seriesContainer.addView(serieItem);
                     }
