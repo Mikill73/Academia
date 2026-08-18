@@ -28,6 +28,7 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     private LinearLayout mainLayout;
     private LinearLayout treinoHojePanel;
+    private TextView treinoHojeDia;
     private TextView treinoHojeNome;
     private Button btnIniciarTreino;
     private LinearLayout cardTreinoPanel;
@@ -117,11 +118,21 @@ public class MainActivity extends Activity {
         treinoHojePanel.setBackground(border);
         treinoHojePanel.setVisibility(View.VISIBLE);
 
+        SimpleDateFormat sdf = new SimpleDateFormat("EEEE, dd/MM/yyyy", new Locale("pt", "BR"));
+        String hojeCompleto = sdf.format(new Date());
+        treinoHojeDia = new TextView(this);
+        treinoHojeDia.setText(hojeCompleto.substring(0, 1).toUpperCase() + hojeCompleto.substring(1));
+        treinoHojeDia.setTextColor(Color.parseColor("#888888"));
+        treinoHojeDia.setTextSize(12);
+        treinoHojeDia.setGravity(android.view.Gravity.CENTER);
+        treinoHojePanel.addView(treinoHojeDia);
+
         TextView hojeLabel = new TextView(this);
         hojeLabel.setText("TREINO DE HOJE");
         hojeLabel.setTextColor(Color.parseColor("#666666"));
         hojeLabel.setTextSize(11);
         hojeLabel.setGravity(android.view.Gravity.CENTER);
+        hojeLabel.setPadding(0, dpToPx(4), 0, 0);
         treinoHojePanel.addView(hojeLabel);
 
         treinoHojeNome = new TextView(this);
@@ -263,12 +274,6 @@ public class MainActivity extends Activity {
             academia.put("peso", peso);
             academia.put("diasDescanso", new JSONArray());
             academia.put("objetivos", new JSONArray());
-            JSONObject roupas = new JSONObject();
-            roupas.put("camisas", new JSONArray());
-            roupas.put("calcas", new JSONArray());
-            roupas.put("tenis", new JSONArray());
-            academia.put("roupas", roupas);
-            academia.put("combinacoes", new JSONObject());
             academia.put("treinos", new JSONArray());
             academia.put("treinoConcluido", new JSONObject());
             academia.put("botaoAtivo", false);
@@ -559,7 +564,6 @@ public class MainActivity extends Activity {
             int totalSeries = ex.getInt("sets");
             int seriesFeitas = ex.has("_seriesFeitas") ? ex.getInt("_seriesFeitas") : 0;
             boolean isDone = seriesFeitas >= totalSeries;
-            String warmupText = ex.has("warmup") && ex.getBoolean("warmup") ? "Aquecimento" : "";
 
             exerciciosContainer.removeAllViews();
             LinearLayout card = new LinearLayout(this);
@@ -590,9 +594,9 @@ public class MainActivity extends Activity {
             nameLabel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
             topRow.addView(nameLabel);
 
-            if (!warmupText.isEmpty()) {
+            if (ex.has("warmup") && ex.getBoolean("warmup")) {
                 TextView warmupTag = new TextView(this);
-                warmupTag.setText(warmupText);
+                warmupTag.setText("Aquecimento");
                 warmupTag.setTextColor(Color.parseColor("#ffaa00"));
                 warmupTag.setTextSize(11);
                 warmupTag.setBackgroundColor(Color.parseColor("#2a2a00"));
@@ -1281,62 +1285,6 @@ public class MainActivity extends Activity {
 
             parent.addView(subSection);
 
-            JSONObject roupas = academia.getJSONObject("roupas");
-            String[] cats = {"camisas", "calcas", "tenis"};
-            String[] catLabels = {"Camisas", "Calcas", "Tenis"};
-            LinearLayout subSectionRoupas = new LinearLayout(this);
-            subSectionRoupas.setOrientation(LinearLayout.VERTICAL);
-            subSectionRoupas.setPadding(0, dpToPx(12), 0, dpToPx(8));
-            View line4 = new View(this);
-            line4.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line4.setMinimumHeight(1);
-            subSectionRoupas.addView(line4);
-
-            TextView subTitle3 = new TextView(this);
-            subTitle3.setText("Roupas");
-            subTitle3.setTextColor(Color.parseColor("#999999"));
-            subTitle3.setTextSize(13);
-            subTitle3.setTypeface(null, android.graphics.Typeface.BOLD);
-            subTitle3.setPadding(0, dpToPx(8), 0, dpToPx(8));
-            subSectionRoupas.addView(subTitle3);
-
-            for (int c = 0; c < cats.length; c++) {
-                LinearLayout catLayout = new LinearLayout(this);
-                catLayout.setOrientation(LinearLayout.VERTICAL);
-                catLayout.setPadding(0, dpToPx(4), 0, dpToPx(4));
-                
-                TextView catLabel = new TextView(this);
-                catLabel.setText(catLabels[c]);
-                catLabel.setTextColor(Color.parseColor("#888888"));
-                catLabel.setTextSize(11);
-                catLayout.addView(catLabel);
-                
-                JSONArray items = roupas.getJSONArray(cats[c]);
-                if (items.length() > 0) {
-                    for (int i = 0; i < items.length(); i++) {
-                        LinearLayout item = new LinearLayout(this);
-                        item.setOrientation(LinearLayout.HORIZONTAL);
-                        item.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                        item.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3));
-                        TextView lbl = new TextView(this);
-                        lbl.setText("- " + items.getString(i));
-                        lbl.setTextColor(Color.parseColor("#cccccc"));
-                        lbl.setTextSize(12);
-                        item.addView(lbl);
-                        catLayout.addView(item);
-                    }
-                } else {
-                    TextView empty = new TextView(this);
-                    empty.setText("Nenhuma " + catLabels[c].toLowerCase());
-                    empty.setTextColor(Color.parseColor("#666666"));
-                    empty.setTextSize(11);
-                    empty.setPadding(dpToPx(8), dpToPx(3), 0, dpToPx(3));
-                    catLayout.addView(empty);
-                }
-                subSectionRoupas.addView(catLayout);
-            }
-            parent.addView(subSectionRoupas);
-
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -1639,262 +1587,6 @@ public class MainActivity extends Activity {
 
             parent.addView(subSection4);
 
-            LinearLayout subSection5 = new LinearLayout(this);
-            subSection5.setOrientation(LinearLayout.VERTICAL);
-            subSection5.setPadding(0, dpToPx(12), 0, dpToPx(8));
-            View line4 = new View(this);
-            line4.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line4.setMinimumHeight(1);
-            subSection5.addView(line4);
-
-            TextView subTitle4 = new TextView(this);
-            subTitle4.setText("Roupas");
-            subTitle4.setTextColor(Color.parseColor("#999999"));
-            subTitle4.setTextSize(13);
-            subTitle4.setTypeface(null, android.graphics.Typeface.BOLD);
-            subTitle4.setPadding(0, dpToPx(8), 0, dpToPx(8));
-            subSection5.addView(subTitle4);
-
-            JSONObject roupas = academia.getJSONObject("roupas");
-            String[] cats = {"camisas", "calcas", "tenis"};
-            String[] catLabels = {"Camisas", "Calcas", "Tenis"};
-            for (int c = 0; c < cats.length; c++) {
-                LinearLayout catLayout = new LinearLayout(this);
-                catLayout.setOrientation(LinearLayout.VERTICAL);
-                catLayout.setPadding(0, dpToPx(4), 0, dpToPx(4));
-                
-                TextView catLabel = new TextView(this);
-                catLabel.setText(catLabels[c]);
-                catLabel.setTextColor(Color.parseColor("#888888"));
-                catLabel.setTextSize(11);
-                catLayout.addView(catLabel);
-
-                JSONArray items = roupas.getJSONArray(cats[c]);
-                for (int i = 0; i < items.length(); i++) {
-                    LinearLayout item = new LinearLayout(this);
-                    item.setOrientation(LinearLayout.HORIZONTAL);
-                    item.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                    item.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3));
-
-                    TextView lbl = new TextView(this);
-                    lbl.setText("- " + items.getString(i));
-                    lbl.setTextColor(Color.parseColor("#cccccc"));
-                    lbl.setTextSize(12);
-                    lbl.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-                    item.addView(lbl);
-
-                    LinearLayout actions2 = new LinearLayout(this);
-                    actions2.setOrientation(LinearLayout.HORIZONTAL);
-                    final int roupaIdx = i;
-                    String catFinal = cats[c];
-                    Button editRoupa = new Button(this);
-                    editRoupa.setText("E");
-                    editRoupa.setTextColor(Color.parseColor("#88aaff"));
-                    editRoupa.setBackground(null);
-                    editRoupa.setOnClickListener(v -> mostrarEditarRoupa(catFinal, roupaIdx));
-                    actions2.addView(editRoupa);
-
-                    Button delRoupa = new Button(this);
-                    delRoupa.setText("X");
-                    delRoupa.setTextColor(Color.parseColor("#ff6666"));
-                    delRoupa.setBackground(null);
-                    delRoupa.setOnClickListener(v -> {
-                        mostrarConfirmacao("Excluir Roupa", "Tem certeza que deseja excluir esta roupa?", () -> {
-                            try {
-                                JSONObject r = configData.getJSONObject("academia").getJSONObject("roupas");
-                                r.getJSONArray(catFinal).remove(roupaIdx);
-                                salvarDados();
-                                renderDados();
-                            } catch (JSONException ex) {}
-                        });
-                    });
-                    actions2.addView(delRoupa);
-
-                    item.addView(actions2);
-                    catLayout.addView(item);
-                }
-
-                Button addRoupaBtn = new Button(this);
-                addRoupaBtn.setText("+ Adicionar " + catLabels[c].toLowerCase());
-                addRoupaBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
-                addRoupaBtn.setTextColor(Color.parseColor("#8bc34a"));
-                addRoupaBtn.setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4));
-                String catFinal2 = cats[c];
-                addRoupaBtn.setOnClickListener(v -> mostrarAdicionarRoupa(catFinal2));
-                catLayout.addView(addRoupaBtn);
-                subSection5.addView(catLayout);
-            }
-            parent.addView(subSection5);
-
-            LinearLayout subSection6 = new LinearLayout(this);
-            subSection6.setOrientation(LinearLayout.VERTICAL);
-            subSection6.setPadding(0, dpToPx(12), 0, dpToPx(8));
-            View line5 = new View(this);
-            line5.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line5.setMinimumHeight(1);
-            subSection6.addView(line5);
-
-            TextView subTitle5 = new TextView(this);
-            subTitle5.setText("Combinacoes por Dia");
-            subTitle5.setTextColor(Color.parseColor("#999999"));
-            subTitle5.setTextSize(13);
-            subTitle5.setTypeface(null, android.graphics.Typeface.BOLD);
-            subTitle5.setPadding(0, dpToPx(8), 0, dpToPx(8));
-            subSection6.addView(subTitle5);
-
-            JSONObject combinacoes2 = academia.getJSONObject("combinacoes");
-            JSONArray diasDescanso2 = academia.getJSONArray("diasDescanso");
-            JSONArray workingDays2 = new JSONArray();
-            for (String d : DIAS_SEMANA) {
-                boolean isDescanso = false;
-                for (int i = 0; i < diasDescanso2.length(); i++) {
-                    if (diasDescanso2.getString(i).equals(d)) {
-                        isDescanso = true;
-                        break;
-                    }
-                }
-                if (!isDescanso) workingDays2.put(d);
-            }
-
-            if (workingDays2.length() > 0) {
-                for (int i = 0; i < workingDays2.length(); i++) {
-                    String day = workingDays2.getString(i);
-                    LinearLayout dayPanel = new LinearLayout(this);
-                    dayPanel.setOrientation(LinearLayout.VERTICAL);
-                    dayPanel.setBackgroundColor(Color.parseColor("#0d0d0d"));
-                    dayPanel.setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6));
-                    GradientDrawable border3 = new GradientDrawable();
-                    border3.setStroke(1, Color.parseColor("#1a1a1a"));
-                    border3.setColor(Color.parseColor("#0d0d0d"));
-                    dayPanel.setBackground(border3);
-
-                    TextView dayTitle = new TextView(this);
-                    dayTitle.setText("Dia: " + day);
-                    dayTitle.setTextColor(Color.parseColor("#aaaaaa"));
-                    dayTitle.setTextSize(12);
-                    dayTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-                    dayPanel.addView(dayTitle);
-
-                    JSONArray combos2 = combinacoes2.has(day) ? combinacoes2.getJSONArray(day) : new JSONArray();
-                    for (int j = 0; j < combos2.length(); j++) {
-                        LinearLayout comboItem = new LinearLayout(this);
-                        comboItem.setOrientation(LinearLayout.HORIZONTAL);
-                        comboItem.setPadding(0, dpToPx(2), 0, dpToPx(2));
-
-                        TextView comboText = new TextView(this);
-                        comboText.setText("- " + combos2.getString(j));
-                        comboText.setTextColor(Color.parseColor("#cccccc"));
-                        comboText.setTextSize(12);
-                        comboText.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-                        comboItem.addView(comboText);
-
-                        final int comboIdx = j;
-                        String dayFinal = day;
-                        Button delCombo = new Button(this);
-                        delCombo.setText("X");
-                        delCombo.setTextColor(Color.parseColor("#ff6666"));
-                        delCombo.setBackground(null);
-                        delCombo.setOnClickListener(v -> {
-                            mostrarConfirmacao("Excluir Combinacao", "Tem certeza que deseja excluir esta combinacao?", () -> {
-                                try {
-                                    JSONObject comb = configData.getJSONObject("academia").getJSONObject("combinacoes");
-                                    if (comb.has(dayFinal)) {
-                                        JSONArray cArray = comb.getJSONArray(dayFinal);
-                                        cArray.remove(comboIdx);
-                                        if (cArray.length() == 0) comb.remove(dayFinal);
-                                        salvarDados();
-                                        renderDados();
-                                    }
-                                } catch (JSONException ex) {}
-                            });
-                        });
-                        comboItem.addView(delCombo);
-                        dayPanel.addView(comboItem);
-                    }
-
-                    JSONObject roupas2 = academia.getJSONObject("roupas");
-                    LinearLayout comboSelects = new LinearLayout(this);
-                    comboSelects.setOrientation(LinearLayout.HORIZONTAL);
-                    comboSelects.setPadding(0, dpToPx(4), 0, 0);
-
-                    Spinner camisaSpinner = new Spinner(this);
-                    ArrayAdapter<String> camisaAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
-                    camisaAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    camisaAdapter.add("");
-                    JSONArray camisas = roupas2.getJSONArray("camisas");
-                    for (int j = 0; j < camisas.length(); j++) camisaAdapter.add(camisas.getString(j));
-                    camisaSpinner.setAdapter(camisaAdapter);
-                    camisaSpinner.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-
-                    Spinner calcaSpinner = new Spinner(this);
-                    ArrayAdapter<String> calcaAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
-                    calcaAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    calcaAdapter.add("");
-                    JSONArray calcas = roupas2.getJSONArray("calcas");
-                    for (int j = 0; j < calcas.length(); j++) calcaAdapter.add(calcas.getString(j));
-                    calcaSpinner.setAdapter(calcaAdapter);
-                    calcaSpinner.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-
-                    Spinner tenisSpinner = new Spinner(this);
-                    ArrayAdapter<String> tenisAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
-                    tenisAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    tenisAdapter.add("");
-                    JSONArray tenis = roupas2.getJSONArray("tenis");
-                    for (int j = 0; j < tenis.length(); j++) tenisAdapter.add(tenis.getString(j));
-                    tenisSpinner.setAdapter(tenisAdapter);
-                    tenisSpinner.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-
-                    comboSelects.addView(camisaSpinner);
-                    comboSelects.addView(calcaSpinner);
-                    comboSelects.addView(tenisSpinner);
-
-                    Button addComboBtn = new Button(this);
-                    addComboBtn.setText("+");
-                    addComboBtn.setBackgroundColor(Color.parseColor("#1a3a1a"));
-                    addComboBtn.setTextColor(Color.parseColor("#8bc34a"));
-                    addComboBtn.setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4));
-                    String dayFinal2 = day;
-                    addComboBtn.setOnClickListener(v -> {
-                        try {
-                            String cam = camisaSpinner.getSelectedItem().toString();
-                            String cal = calcaSpinner.getSelectedItem().toString();
-                            String ten = tenisSpinner.getSelectedItem().toString();
-                            String comboText = "";
-                            if (!cam.isEmpty()) comboText += cam;
-                            if (!cal.isEmpty()) {
-                                if (!comboText.isEmpty()) comboText += ", ";
-                                comboText += cal;
-                            }
-                            if (!ten.isEmpty()) {
-                                if (!comboText.isEmpty()) comboText += ", ";
-                                comboText += ten;
-                            }
-                            if (comboText.isEmpty()) {
-                                Toast.makeText(this, "Selecione pelo menos uma peca.", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                            JSONObject comb = configData.getJSONObject("academia").getJSONObject("combinacoes");
-                            if (!comb.has(dayFinal2)) comb.put(dayFinal2, new JSONArray());
-                            comb.getJSONArray(dayFinal2).put(comboText);
-                            salvarDados();
-                            renderDados();
-                        } catch (JSONException ex) {}
-                    });
-                    comboSelects.addView(addComboBtn);
-
-                    dayPanel.addView(comboSelects);
-                    subSection6.addView(dayPanel);
-                }
-            } else {
-                TextView empty = new TextView(this);
-                empty.setText("Nenhum dia disponivel. Defina os dias de descanso primeiro.");
-                empty.setTextColor(Color.parseColor("#666666"));
-                empty.setTextSize(11);
-                empty.setPadding(dpToPx(10), dpToPx(6), 0, dpToPx(6));
-                subSection6.addView(empty);
-            }
-
-            parent.addView(subSection6);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -2613,19 +2305,6 @@ public class MainActivity extends Activity {
             loadInput.setTextColor(Color.parseColor("#ffffff"));
             layout.addView(loadInput);
 
-            TextView metaLabel = new TextView(this);
-            metaLabel.setText("Meta de Carga (kg, opcional)");
-            metaLabel.setTextColor(Color.parseColor("#888888"));
-            metaLabel.setTextSize(12);
-            layout.addView(metaLabel);
-
-            final EditText metaInput = new EditText(this);
-            metaInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-            metaInput.setHint("Ex: 30");
-            metaInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            metaInput.setTextColor(Color.parseColor("#ffffff"));
-            layout.addView(metaInput);
-
             TextView descLabel = new TextView(this);
             descLabel.setText("Descanso (segundos)");
             descLabel.setTextColor(Color.parseColor("#888888"));
@@ -2652,24 +2331,18 @@ public class MainActivity extends Activity {
                     if (reps < 1 || load <= 0) {
                         throw new NumberFormatException();
                     }
-                    ex.put("reps", reps);
-                    ex.put("load", load);
-                    ex.put("warmup", warmupCheck.isChecked());
                     
                     int setsAtuais = ex.has("sets") ? ex.getInt("sets") : 0;
                     ex.put("sets", setsAtuais + 1);
+                    ex.put("reps", reps);
+                    ex.put("load", load);
+                    ex.put("warmup", warmupCheck.isChecked());
 
                     int descanso = 0;
                     if (!descInput.getText().toString().trim().isEmpty()) {
                         descanso = Integer.parseInt(descInput.getText().toString().trim());
                     }
                     if (descanso > 0) ex.put("descanso", descanso);
-
-                    String metaStr = metaInput.getText().toString().trim();
-                    if (!metaStr.isEmpty()) {
-                        double meta = Double.parseDouble(metaStr);
-                        if (meta > 0) ex.put("metaCarga", meta);
-                    }
 
                     salvarDados();
                     renderDados();
@@ -2822,94 +2495,6 @@ public class MainActivity extends Activity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-    }
-
-    private void mostrarAdicionarRoupa(String categoria) {
-        String label = categoria.equals("camisas") ? "Camisa" : categoria.equals("calcas") ? "Calca" : "Tenis";
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Nova " + label);
-
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
-
-        final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        input.setHint("Nome da " + label.toLowerCase());
-        input.setBackgroundColor(Color.parseColor("#0d0d0d"));
-        input.setTextColor(Color.parseColor("#ffffff"));
-        layout.addView(input);
-
-        final CheckBox sweatCheck = new CheckBox(this);
-        sweatCheck.setText("Marca suor");
-        sweatCheck.setTextColor(Color.parseColor("#aaaaaa"));
-        layout.addView(sweatCheck);
-
-        builder.setView(layout);
-        builder.setPositiveButton("Salvar", (dialog, which) -> {
-            String val = input.getText().toString().trim();
-            if (val.isEmpty()) {
-                Toast.makeText(this, "Nome e obrigatorio.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (sweatCheck.isChecked()) val += " (suor)";
-            try {
-                JSONObject roupas = configData.getJSONObject("academia").getJSONObject("roupas");
-                roupas.getJSONArray(categoria).put(val);
-                salvarDados();
-                renderDados();
-            } catch (JSONException ex) {}
-        });
-        builder.setNegativeButton("Cancelar", null);
-        builder.show();
-    }
-
-    private void mostrarEditarRoupa(String categoria, int idx) {
-        try {
-            JSONObject roupas = configData.getJSONObject("academia").getJSONObject("roupas");
-            String item = roupas.getJSONArray(categoria).getString(idx);
-            boolean isSweat = item.contains("(suor)");
-            String cleanName = item.replace(" (suor)", "");
-
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Editar Roupa");
-
-            LinearLayout layout = new LinearLayout(this);
-            layout.setOrientation(LinearLayout.VERTICAL);
-            layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
-
-            final EditText input = new EditText(this);
-            input.setInputType(InputType.TYPE_CLASS_TEXT);
-            input.setText(cleanName);
-            input.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            input.setTextColor(Color.parseColor("#ffffff"));
-            layout.addView(input);
-
-            final CheckBox sweatCheck = new CheckBox(this);
-            sweatCheck.setText("Marca suor");
-            sweatCheck.setChecked(isSweat);
-            sweatCheck.setTextColor(Color.parseColor("#aaaaaa"));
-            layout.addView(sweatCheck);
-
-            builder.setView(layout);
-            builder.setPositiveButton("Salvar", (dialog, which) -> {
-                String val = input.getText().toString().trim();
-                if (val.isEmpty()) {
-                    Toast.makeText(this, "Nome e obrigatorio.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                if (sweatCheck.isChecked()) val += " (suor)";
-                try {
-                    JSONObject r = configData.getJSONObject("academia").getJSONObject("roupas");
-                    r.getJSONArray(categoria).put(idx, val);
-                    salvarDados();
-                    renderDados();
-                } catch (JSONException ex) {}
-            });
-            builder.setNegativeButton("Cancelar", null);
-            builder.show();
-        } catch (JSONException e) {}
     }
 
     @Override
