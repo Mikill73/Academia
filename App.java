@@ -49,7 +49,6 @@ public class MainActivity extends Activity {
     private JSONObject configData;
     private JSONObject treinoAtual;
     private int exercicioAtualIndex = 0;
-    private int serieAtualIndex = 0;
     private static final String ARQUIVO_DADOS = "academia_dados.json";
     private String[] DIAS_SEMANA = {"Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado", "Domingo"};
     private Context context;
@@ -151,7 +150,9 @@ public class MainActivity extends Activity {
         btnIniciarTreino.setTypeface(null, android.graphics.Typeface.BOLD);
         btnIniciarTreino.setPadding(dpToPx(20), dpToPx(12), dpToPx(20), dpToPx(12));
         btnIniciarTreino.setEnabled(false);
-        btnIniciarTreino.setOnClickListener(v -> toggleTreino());
+        btnIniciarTreino.setOnClickListener(v -> {
+            toggleTreino();
+        });
         treinoHojePanel.addView(btnIniciarTreino);
 
         mainLayout.addView(treinoHojePanel);
@@ -1703,25 +1704,72 @@ public class MainActivity extends Activity {
                 exItem.addView(topRow);
 
                 if (ex.has("sets") && ex.getInt("sets") > 0) {
-                    LinearLayout detalhesRow = new LinearLayout(this);
-                    detalhesRow.setOrientation(LinearLayout.HORIZONTAL);
-                    detalhesRow.setPadding(0, dpToPx(4), 0, 0);
+                    LinearLayout seriesContainer = new LinearLayout(this);
+                    seriesContainer.setOrientation(LinearLayout.VERTICAL);
+                    seriesContainer.setPadding(0, dpToPx(4), 0, 0);
                     
-                    TextView detalhes = new TextView(this);
-                    detalhes.setText(ex.getInt("sets") + "x" + ex.getInt("reps") + "  " + ex.getDouble("load") + "kg");
-                    detalhes.setTextColor(Color.parseColor("#888888"));
-                    detalhes.setTextSize(12);
-                    detalhesRow.addView(detalhes);
-                    
-                    if (ex.has("warmup") && ex.getBoolean("warmup")) {
-                        TextView warmupTag = new TextView(this);
-                        warmupTag.setText(" Aquecimento");
-                        warmupTag.setTextColor(Color.parseColor("#ffaa00"));
-                        warmupTag.setTextSize(11);
-                        detalhesRow.addView(warmupTag);
+                    JSONArray seriesList = new JSONArray();
+                    for (int s = 0; s < ex.getInt("sets"); s++) {
+                        JSONObject serie = new JSONObject();
+                        serie.put("reps", ex.getInt("reps"));
+                        serie.put("load", ex.getDouble("load"));
+                        serie.put("warmup", ex.has("warmup") && ex.getBoolean("warmup"));
+                        serie.put("descanso", ex.has("descanso") && !ex.isNull("descanso") ? ex.getInt("descanso") : 0);
+                        seriesList.put(serie);
                     }
                     
-                    exItem.addView(detalhesRow);
+                    for (int s = 0; s < seriesList.length(); s++) {
+                        JSONObject serie = seriesList.getJSONObject(s);
+                        LinearLayout serieRow = new LinearLayout(this);
+                        serieRow.setOrientation(LinearLayout.HORIZONTAL);
+                        serieRow.setBackgroundColor(Color.parseColor("#0d0d0d"));
+                        serieRow.setPadding(dpToPx(4), dpToPx(2), dpToPx(4), dpToPx(2));
+                        GradientDrawable borderSerie = new GradientDrawable();
+                        borderSerie.setStroke(1, Color.parseColor("#1a1a1a"));
+                        borderSerie.setColor(Color.parseColor("#0d0d0d"));
+                        serieRow.setBackground(borderSerie);
+                        
+                        TextView serieInfo = new TextView(this);
+                        String textoSerie = (s + 1) + "x " + serie.getInt("reps") + " reps  " + serie.getDouble("load") + "kg";
+                        if (serie.getBoolean("warmup")) textoSerie += " (Aquecimento)";
+                        if (serie.getInt("descanso") > 0) textoSerie += " | Descanso: " + serie.getInt("descanso") + "s";
+                        serieInfo.setText(textoSerie);
+                        serieInfo.setTextColor(Color.parseColor("#aaaaaa"));
+                        serieInfo.setTextSize(11);
+                        serieInfo.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                        serieRow.addView(serieInfo);
+                        
+                        Button editSerieBtn = new Button(this);
+                        editSerieBtn.setText("E");
+                        editSerieBtn.setTextColor(Color.parseColor("#88aaff"));
+                        editSerieBtn.setBackground(null);
+                        final int serieIdx = s;
+                        editSerieBtn.setOnClickListener(v -> mostrarEditarSerie(treinoIdx, exIdx, serieIdx));
+                        serieRow.addView(editSerieBtn);
+                        
+                        Button delSerieBtn = new Button(this);
+                        delSerieBtn.setText("X");
+                        delSerieBtn.setTextColor(Color.parseColor("#ff6666"));
+                        delSerieBtn.setBackground(null);
+                        delSerieBtn.setOnClickListener(v -> {
+                            mostrarConfirmacao("Excluir Serie", "Tem certeza que deseja excluir esta serie?", () -> {
+                                try {
+                                    int setsAtuais = ex.getInt("sets");
+                                    if (setsAtuais > 1) {
+                                        ex.put("sets", setsAtuais - 1);
+                                        salvarDados();
+                                        renderDados();
+                                    } else {
+                                        Toast.makeText(this, "Nao e possivel excluir a unica serie.", Toast.LENGTH_SHORT).show();
+                                    }
+                                } catch (JSONException ex2) {}
+                            });
+                        });
+                        serieRow.addView(delSerieBtn);
+                        
+                        seriesContainer.addView(serieRow);
+                    }
+                    exItem.addView(seriesContainer);
                 } else {
                     TextView semSerie = new TextView(this);
                     semSerie.setText("Sem serie definida");
@@ -1736,6 +1784,94 @@ public class MainActivity extends Activity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    private void mostrarEditarSerie(int treinoIdx, int exIdx, int serieIdx) {
+        try {
+            JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
+            JSONObject treino = treinos.getJSONObject(treinoIdx);
+            JSONObject ex = treino.getJSONArray("exercicios").getJSONObject(exIdx);
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Editar Serie - " + ex.getString("exercise"));
+
+            LinearLayout layout = new LinearLayout(this);
+            layout.setOrientation(LinearLayout.VERTICAL);
+            layout.setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20));
+
+            TextView repsLabel = new TextView(this);
+            repsLabel.setText("Repeticoes *");
+            repsLabel.setTextColor(Color.parseColor("#888888"));
+            repsLabel.setTextSize(12);
+            layout.addView(repsLabel);
+
+            final EditText repsInput = new EditText(this);
+            repsInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+            repsInput.setText(String.valueOf(ex.getInt("reps")));
+            repsInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            repsInput.setTextColor(Color.parseColor("#ffffff"));
+            layout.addView(repsInput);
+
+            TextView loadLabel = new TextView(this);
+            loadLabel.setText("Carga (kg) *");
+            loadLabel.setTextColor(Color.parseColor("#888888"));
+            loadLabel.setTextSize(12);
+            layout.addView(loadLabel);
+
+            final EditText loadInput = new EditText(this);
+            loadInput.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            loadInput.setText(String.valueOf(ex.getDouble("load")));
+            loadInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            loadInput.setTextColor(Color.parseColor("#ffffff"));
+            layout.addView(loadInput);
+
+            TextView descLabel = new TextView(this);
+            descLabel.setText("Descanso (segundos)");
+            descLabel.setTextColor(Color.parseColor("#888888"));
+            descLabel.setTextSize(12);
+            layout.addView(descLabel);
+
+            final EditText descInput = new EditText(this);
+            descInput.setInputType(InputType.TYPE_CLASS_NUMBER);
+            descInput.setText(ex.has("descanso") && !ex.isNull("descanso") ? String.valueOf(ex.getInt("descanso")) : "60");
+            descInput.setBackgroundColor(Color.parseColor("#0d0d0d"));
+            descInput.setTextColor(Color.parseColor("#ffffff"));
+            layout.addView(descInput);
+
+            final CheckBox warmupCheck = new CheckBox(this);
+            warmupCheck.setText("Serie de aquecimento");
+            warmupCheck.setChecked(ex.has("warmup") && ex.getBoolean("warmup"));
+            warmupCheck.setTextColor(Color.parseColor("#aaaaaa"));
+            layout.addView(warmupCheck);
+
+            builder.setView(layout);
+            builder.setPositiveButton("Salvar", (dialog, which) -> {
+                try {
+                    int reps = Integer.parseInt(repsInput.getText().toString().trim());
+                    double load = Double.parseDouble(loadInput.getText().toString().trim());
+                    if (reps < 1 || load <= 0) {
+                        throw new NumberFormatException();
+                    }
+                    ex.put("reps", reps);
+                    ex.put("load", load);
+                    ex.put("warmup", warmupCheck.isChecked());
+
+                    int descanso = 0;
+                    if (!descInput.getText().toString().trim().isEmpty()) {
+                        descanso = Integer.parseInt(descInput.getText().toString().trim());
+                    }
+                    if (descanso > 0) ex.put("descanso", descanso);
+                    else ex.remove("descanso");
+
+                    salvarDados();
+                    renderDados();
+                } catch (Exception ex2) {
+                    Toast.makeText(this, "Valores invalidos. Verifique os campos.", Toast.LENGTH_SHORT).show();
+                }
+            });
+            builder.setNegativeButton("Cancelar", null);
+            builder.show();
+        } catch (JSONException e) {}
     }
 
     private void mostrarEditarInicio() {
