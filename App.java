@@ -50,7 +50,7 @@ public class MainActivity extends Activity {
     private JSONObject treinoAtual;
     private int exercicioAtualIndex = 0;
     private static final String ARQUIVO_DADOS = "academia_dados.json";
-    private String[] DIAS_SEMANA = {"Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado", "Domingo"};
+    private String[] DIAS_SEMANA = {"Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"};
     private Context context;
     private AlertDialog historicoPesoDialog;
     private AlertDialog historicoCargaDialog;
@@ -297,9 +297,10 @@ public class MainActivity extends Activity {
     }
 
     private String getTodayName() {
-        SimpleDateFormat sdf = new SimpleDateFormat("EEEE", new Locale("pt", "BR"));
-        String dia = sdf.format(new Date());
-        return dia.substring(0, 1).toUpperCase() + dia.substring(1).toLowerCase();
+        Calendar cal = Calendar.getInstance();
+        int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
+        String[] dias = {"Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
+        return dias[dayOfWeek - 1];
     }
 
     private String getTodayKey() {
@@ -1708,18 +1709,7 @@ public class MainActivity extends Activity {
                     seriesContainer.setOrientation(LinearLayout.VERTICAL);
                     seriesContainer.setPadding(0, dpToPx(4), 0, 0);
                     
-                    JSONArray seriesList = new JSONArray();
                     for (int s = 0; s < ex.getInt("sets"); s++) {
-                        JSONObject serie = new JSONObject();
-                        serie.put("reps", ex.getInt("reps"));
-                        serie.put("load", ex.getDouble("load"));
-                        serie.put("warmup", ex.has("warmup") && ex.getBoolean("warmup"));
-                        serie.put("descanso", ex.has("descanso") && !ex.isNull("descanso") ? ex.getInt("descanso") : 0);
-                        seriesList.put(serie);
-                    }
-                    
-                    for (int s = 0; s < seriesList.length(); s++) {
-                        JSONObject serie = seriesList.getJSONObject(s);
                         LinearLayout serieRow = new LinearLayout(this);
                         serieRow.setOrientation(LinearLayout.HORIZONTAL);
                         serieRow.setBackgroundColor(Color.parseColor("#0d0d0d"));
@@ -1729,11 +1719,11 @@ public class MainActivity extends Activity {
                         borderSerie.setColor(Color.parseColor("#0d0d0d"));
                         serieRow.setBackground(borderSerie);
                         
+                        String warmupText = (ex.has("warmup") && ex.getBoolean("warmup")) ? " (Aquecimento)" : "";
+                        String descansoText = (ex.has("descanso") && !ex.isNull("descanso") && ex.getInt("descanso") > 0) ? " | Descanso: " + ex.getInt("descanso") + "s" : "";
+                        
                         TextView serieInfo = new TextView(this);
-                        String textoSerie = (s + 1) + "x " + serie.getInt("reps") + " reps  " + serie.getDouble("load") + "kg";
-                        if (serie.getBoolean("warmup")) textoSerie += " (Aquecimento)";
-                        if (serie.getInt("descanso") > 0) textoSerie += " | Descanso: " + serie.getInt("descanso") + "s";
-                        serieInfo.setText(textoSerie);
+                        serieInfo.setText((s + 1) + "x " + ex.getInt("reps") + " reps  " + ex.getDouble("load") + "kg" + warmupText + descansoText);
                         serieInfo.setTextColor(Color.parseColor("#aaaaaa"));
                         serieInfo.setTextSize(11);
                         serieInfo.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -1760,7 +1750,7 @@ public class MainActivity extends Activity {
                                         salvarDados();
                                         renderDados();
                                     } else {
-                                        Toast.makeText(this, "Nao e possivel excluir a unica serie.", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(context, "Nao e possivel excluir a unica serie.", Toast.LENGTH_SHORT).show();
                                     }
                                 } catch (JSONException ex2) {}
                             });
@@ -1866,7 +1856,7 @@ public class MainActivity extends Activity {
                     salvarDados();
                     renderDados();
                 } catch (Exception ex2) {
-                    Toast.makeText(this, "Valores invalidos. Verifique os campos.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Valores invalidos. Verifique os campos.", Toast.LENGTH_SHORT).show();
                 }
             });
             builder.setNegativeButton("Cancelar", null);
@@ -2483,7 +2473,7 @@ public class MainActivity extends Activity {
                     salvarDados();
                     renderDados();
                 } catch (Exception ex2) {
-                    Toast.makeText(this, "Valores invalidos. Verifique os campos.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Valores invalidos. Verifique os campos.", Toast.LENGTH_SHORT).show();
                 }
             });
             builder.setNegativeButton("Cancelar", null);
@@ -2532,14 +2522,14 @@ public class MainActivity extends Activity {
                 try {
                     String novoNome = nomeInput.getText().toString().trim();
                     if (novoNome.isEmpty()) {
-                        Toast.makeText(this, "Nome nao pode estar vazio.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, "Nome nao pode estar vazio.", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     ex.put("exercise", novoNome);
                     salvarDados();
                     renderDados();
                 } catch (Exception ex2) {
-                    Toast.makeText(this, "Erro ao salvar.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Erro ao salvar.", Toast.LENGTH_SHORT).show();
                 }
             });
             builder.setNegativeButton("Cancelar", null);
