@@ -17,12 +17,14 @@ import android.widget.LinearLayout;
 import android.text.InputType;
 import android.app.AlertDialog;
 import android.os.Handler;
+import android.util.Log;
 import java.io.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 import java.util.*;
 import java.text.SimpleDateFormat;
+import java.text.Normalizer;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
@@ -54,6 +56,7 @@ public class MainActivity extends Activity {
     private Context context;
     private AlertDialog historicoPesoDialog;
     private AlertDialog historicoCargaDialog;
+    private static final String TAG = "ACADEMIA_DEBUG";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +68,33 @@ public class MainActivity extends Activity {
         carregarEstadoBotao();
         atualizarTreinoHoje();
         renderDados();
+        
+        // Log de debug
+        logarEstadoAtual();
+    }
+
+    private void logarEstadoAtual() {
+        try {
+            String hoje = getTodayName();
+            Log.d(TAG, "=== ESTADO ATUAL ===");
+            Log.d(TAG, "Hoje é: " + hoje);
+            
+            JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
+            Log.d(TAG, "Total de treinos configurados: " + treinos.length());
+            
+            for (int i = 0; i < treinos.length(); i++) {
+                JSONObject treino = treinos.getJSONObject(i);
+                Log.d(TAG, "Treino " + i + ": " + treino.getString("nome") + 
+                      " | Dia: " + treino.getString("dia") + 
+                      " | Dia normalizado: " + normalizeString(treino.getString("dia")));
+            }
+            
+            JSONArray treinosHoje = getTodayTreinos();
+            Log.d(TAG, "Treinos encontrados para hoje: " + treinosHoje.length());
+            Log.d(TAG, "=====================");
+        } catch (JSONException e) {
+            Log.e(TAG, "Erro ao logar estado: " + e.getMessage());
+        }
     }
 
     private void verificarPermissoes() {
@@ -242,6 +272,14 @@ public class MainActivity extends Activity {
         return Math.round(dp * density);
     }
 
+    private String normalizeString(String str) {
+        if (str == null) return "";
+        return Normalizer.normalize(str, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase()
+                .trim();
+    }
+
     private void carregarDados() {
         try {
             File file = new File(getFilesDir(), ARQUIVO_DADOS);
@@ -256,10 +294,13 @@ public class MainActivity extends Activity {
                 String jsonStr = sb.toString();
                 if (!jsonStr.isEmpty()) {
                     configData = new JSONObject(jsonStr);
+                    Log.d(TAG, "Dados carregados do arquivo. Treinos: " + 
+                          configData.getJSONObject("academia").getJSONArray("treinos").length());
                     return;
                 }
             }
         } catch (Exception e) {
+            Log.e(TAG, "Erro ao carregar dados: " + e.getMessage());
             e.printStackTrace();
         }
         try {
@@ -280,7 +321,9 @@ public class MainActivity extends Activity {
             academia.put("botaoAtivo", false);
             configData.put("academia", academia);
             salvarDados();
+            Log.d(TAG, "Novo arquivo de dados criado");
         } catch (JSONException e) {
+            Log.e(TAG, "Erro ao criar dados padrão: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -291,16 +334,20 @@ public class MainActivity extends Activity {
             try (FileWriter fw = new FileWriter(file)) {
                 fw.write(configData.toString(2));
             }
+            Log.d(TAG, "Dados salvos com sucesso");
         } catch (Exception e) {
+            Log.e(TAG, "Erro ao salvar dados: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     private String getTodayName() {
-        Calendar cal = Calendar.getInstance();
-        int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
-        String[] dias = {"Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"};
-        return dias[dayOfWeek - 1];
+        SimpleDateFormat sdf = new SimpleDateFormat("EEEE", new Locale("pt", "BR"));
+        String todayName = sdf.format(new Date());
+        // Capitaliza a primeira letra
+        String formatted = todayName.substring(0, 1).toUpperCase() + todayName.substring(1);
+        Log.d(TAG, "getTodayName() retornou: " + formatted);
+        return formatted;
     }
 
     private String getTodayKey() {
@@ -311,17 +358,30 @@ public class MainActivity extends Activity {
     private JSONArray getTodayTreinos() {
         try {
             String hoje = getTodayName();
+            String hojeNormalizado = normalizeString(hoje);
             JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
             JSONArray result = new JSONArray();
+            
+            Log.d(TAG, "Procurando treinos para: " + hoje + " (normalizado: " + hojeNormalizado + ")");
+            
             for (int i = 0; i < treinos.length(); i++) {
                 JSONObject treino = treinos.getJSONObject(i);
-                String diaTreino = treino.getString("dia").trim();
-                if (diaTreino.equalsIgnoreCase(hoje)) {
+                String diaTreino = treino.getString("dia");
+                String diaNormalizado = normalizeString(diaTreino);
+                
+                Log.d(TAG, "Comparando: '" + diaTreino + "' (normalizado: " + diaNormalizado + 
+                      ") com '" + hoje + "' (normalizado: " + hojeNormalizado + ")");
+                
+                if (diaNormalizado.equals(hojeNormalizado)) {
+                    Log.d(TAG, "MATCH! Treino encontrado: " + treino.getString("nome"));
                     result.put(treino);
                 }
             }
+            
+            Log.d(TAG, "Total de treinos encontrados para hoje: " + result.length());
             return result;
         } catch (JSONException e) {
+            Log.e(TAG, "Erro em getTodayTreinos: " + e.getMessage());
             return new JSONArray();
         }
     }
@@ -336,14 +396,17 @@ public class MainActivity extends Activity {
                     btnIniciarTreino.setEnabled(true);
                     btnIniciarTreino.setBackgroundColor(Color.parseColor("#00cc00"));
                     btnIniciarTreino.setText("INICIAR TREINO");
+                    Log.d(TAG, "Treino de hoje atualizado: " + treino.getString("nome"));
                 } catch (JSONException e) {
                     treinoHojeNome.setText("Erro ao carregar");
                     btnIniciarTreino.setEnabled(false);
+                    Log.e(TAG, "Erro ao atualizar treino de hoje: " + e.getMessage());
                 }
             } else {
                 treinoHojeNome.setText("Nenhum treino programado");
                 btnIniciarTreino.setEnabled(false);
                 btnIniciarTreino.setBackgroundColor(Color.parseColor("#444444"));
+                Log.d(TAG, "Nenhum treino programado para hoje");
             }
         });
     }
@@ -2250,7 +2313,10 @@ public class MainActivity extends Activity {
                 salvarDados();
                 renderDados();
                 atualizarTreinoHoje();
-            } catch (JSONException ex) {}
+                Log.d(TAG, "Treino adicionado: " + nome + " - " + dia);
+            } catch (JSONException ex) {
+                Log.e(TAG, "Erro ao adicionar treino: " + ex.getMessage());
+            }
         });
         builder.setNegativeButton("Cancelar", null);
         builder.show();
@@ -2332,11 +2398,16 @@ public class MainActivity extends Activity {
                     salvarDados();
                     renderDados();
                     atualizarTreinoHoje();
-                } catch (JSONException ex) {}
+                    Log.d(TAG, "Treino editado: " + nome + " - " + dia);
+                } catch (JSONException ex) {
+                    Log.e(TAG, "Erro ao editar treino: " + ex.getMessage());
+                }
             });
             builder.setNegativeButton("Cancelar", null);
             builder.show();
-        } catch (JSONException e) {}
+        } catch (JSONException e) {
+            Log.e(TAG, "Erro ao abrir edição de treino: " + e.getMessage());
+        }
     }
 
     private void mostrarAdicionarExercicio(int treinoIdx) {
@@ -2641,6 +2712,7 @@ public class MainActivity extends Activity {
         carregarDados();
         atualizarTreinoHoje();
         renderDados();
+        logarEstadoAtual();
     }
 }
 EOF
