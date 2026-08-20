@@ -55,10 +55,17 @@ public class MainActivity extends Activity {
     private AlertDialog historicoPesoDialog;
     private AlertDialog historicoCargaDialog;
 
-    private String removerAcentos(String texto) {
-        if (texto == null) return "";
-        String normalized = java.text.Normalizer.normalize(texto, java.text.Normalizer.Form.NFD);
-        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+    private int getDiaDaSemanaNumero() {
+        Calendar cal = Calendar.getInstance();
+        int dia = cal.get(Calendar.DAY_OF_WEEK);
+        // Converter de domingo=1 para segunda=1
+        if (dia == Calendar.SUNDAY) return 7;
+        return dia - 1;
+    }
+
+    private String getDiaDaSemanaNome() {
+        int num = getDiaDaSemanaNumero();
+        return DIAS_SEMANA[num - 1];
     }
 
     @Override
@@ -303,9 +310,11 @@ public class MainActivity extends Activity {
     }
 
     private String getTodayName() {
-        SimpleDateFormat sdf = new SimpleDateFormat("EEEE", new Locale("pt", "BR"));
-        String dia = sdf.format(new Date());
-        return dia.substring(0, 1).toUpperCase() + dia.substring(1).toLowerCase();
+        return getDiaDaSemanaNome();
+    }
+
+    private int getTodayNumber() {
+        return getDiaDaSemanaNumero();
     }
 
     private String getTodayKey() {
@@ -315,15 +324,20 @@ public class MainActivity extends Activity {
 
     private JSONArray getTodayTreinos() {
         try {
-            String hoje = getTodayName();
-            String hojeSemAcento = removerAcentos(hoje);
+            int hojeNum = getTodayNumber();
             JSONArray treinos = configData.getJSONObject("academia").getJSONArray("treinos");
             JSONArray result = new JSONArray();
             for (int i = 0; i < treinos.length(); i++) {
                 JSONObject treino = treinos.getJSONObject(i);
                 String diaTreino = treino.getString("dia").trim();
-                String diaTreinoSemAcento = removerAcentos(diaTreino);
-                if (diaTreinoSemAcento.equalsIgnoreCase(hojeSemAcento)) {
+                int diaNum = -1;
+                for (int j = 0; j < DIAS_SEMANA.length; j++) {
+                    if (DIAS_SEMANA[j].equalsIgnoreCase(diaTreino)) {
+                        diaNum = j + 1;
+                        break;
+                    }
+                }
+                if (diaNum == hojeNum) {
                     result.put(treino);
                 }
             }
