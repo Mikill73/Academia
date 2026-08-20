@@ -39,6 +39,8 @@ public class MainActivity extends Activity {
     private TextView progressText;
     private TextView timerLabel;
     private TextView cardTitle;
+    private TextView treinoNomeHeader;
+    private Button btnParar;
     private Button configBtn;
     private boolean modoConfig = false;
     private boolean isActive = false;
@@ -54,7 +56,6 @@ public class MainActivity extends Activity {
     private Context context;
     private AlertDialog historicoPesoDialog;
     private AlertDialog historicoCargaDialog;
-    private LinearLayout topPanel;
 
     private int getDiaDaSemanaNumero() {
         Calendar cal = Calendar.getInstance();
@@ -94,7 +95,7 @@ public class MainActivity extends Activity {
         mainLayout.setBackgroundColor(Color.parseColor("#0d0d0d"));
         mainLayout.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
 
-        topPanel = new LinearLayout(this);
+        LinearLayout topPanel = new LinearLayout(this);
         topPanel.setOrientation(LinearLayout.HORIZONTAL);
         topPanel.setGravity(android.view.Gravity.CENTER_VERTICAL);
         topPanel.setPadding(0, 0, 0, dpToPx(16));
@@ -163,63 +164,66 @@ public class MainActivity extends Activity {
         btnIniciarTreino.setTypeface(null, android.graphics.Typeface.BOLD);
         btnIniciarTreino.setPadding(dpToPx(20), dpToPx(12), dpToPx(20), dpToPx(12));
         btnIniciarTreino.setEnabled(false);
-        btnIniciarTreino.setOnClickListener(v -> {
-            toggleTreino();
-        });
+        btnIniciarTreino.setOnClickListener(v -> toggleTreino());
         treinoHojePanel.addView(btnIniciarTreino);
 
         mainLayout.addView(treinoHojePanel);
 
+        // Card de treino - agora ocupa a tela toda
         cardTreinoPanel = new LinearLayout(this);
         cardTreinoPanel.setOrientation(LinearLayout.VERTICAL);
         cardTreinoPanel.setBackgroundColor(Color.parseColor("#0d0d0d"));
-        cardTreinoPanel.setPadding(dpToPx(0), dpToPx(0), dpToPx(0), dpToPx(0));
+        cardTreinoPanel.setPadding(dpToPx(24), dpToPx(24), dpToPx(24), dpToPx(24));
         cardTreinoPanel.setVisibility(View.GONE);
         cardTreinoPanel.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        LinearLayout treinoHeader = new LinearLayout(this);
-        treinoHeader.setOrientation(LinearLayout.HORIZONTAL);
-        treinoHeader.setPadding(0, 0, 0, dpToPx(12));
+        // Header - botão parar no canto superior direito
+        LinearLayout headerPanel = new LinearLayout(this);
+        headerPanel.setOrientation(LinearLayout.HORIZONTAL);
+        headerPanel.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        headerPanel.setGravity(android.view.Gravity.END);
+        headerPanel.setPadding(0, 0, 0, dpToPx(16));
 
-        cardTitle = new TextView(this);
-        cardTitle.setText("TREINO EM ANDAMENTO");
-        cardTitle.setTextColor(Color.parseColor("#8bc34a"));
-        cardTitle.setTextSize(16);
-        cardTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-        cardTitle.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        treinoHeader.addView(cardTitle);
-
-        Button btnParar = new Button(this);
+        btnParar = new Button(this);
         btnParar.setText("PARAR");
-        btnParar.setBackgroundColor(Color.parseColor("#ff3333"));
-        btnParar.setTextColor(Color.parseColor("#ffffff"));
+        btnParar.setBackgroundColor(Color.parseColor("#333333"));
+        btnParar.setTextColor(Color.parseColor("#ff6b6b"));
         btnParar.setTypeface(null, android.graphics.Typeface.BOLD);
-        btnParar.setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6));
+        btnParar.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8));
+        btnParar.setBorder(null);
         btnParar.setOnClickListener(v -> toggleTreino());
-        treinoHeader.addView(btnParar);
+        headerPanel.addView(btnParar);
 
-        cardTreinoPanel.addView(treinoHeader);
+        cardTreinoPanel.addView(headerPanel);
 
-        View separator = new View(this);
-        separator.setBackgroundColor(Color.parseColor("#2a2a2a"));
-        separator.setMinimumHeight(1);
-        separator.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
-        cardTreinoPanel.addView(separator);
+        // Nome do treino
+        treinoNomeHeader = new TextView(this);
+        treinoNomeHeader.setText("");
+        treinoNomeHeader.setTextColor(Color.parseColor("#666666"));
+        treinoNomeHeader.setTextSize(14);
+        treinoNomeHeader.setGravity(android.view.Gravity.CENTER);
+        treinoNomeHeader.setPadding(0, 0, 0, dpToPx(24));
+        cardTreinoPanel.addView(treinoNomeHeader);
 
+        // Container do exercício atual
         exerciciosContainer = new LinearLayout(this);
         exerciciosContainer.setOrientation(LinearLayout.VERTICAL);
-        exerciciosContainer.setPadding(0, dpToPx(8), 0, dpToPx(8));
+        exerciciosContainer.setGravity(android.view.Gravity.CENTER);
+        exerciciosContainer.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         cardTreinoPanel.addView(exerciciosContainer);
 
+        // Timer panel
         timerPanel = new LinearLayout(this);
         timerPanel.setOrientation(LinearLayout.VERTICAL);
         timerPanel.setVisibility(View.GONE);
-        timerPanel.setPadding(0, dpToPx(8), 0, dpToPx(8));
+        timerPanel.setGravity(android.view.Gravity.CENTER);
+        timerPanel.setPadding(0, dpToPx(16), 0, dpToPx(16));
         cardTreinoPanel.addView(timerPanel);
 
+        // Progresso
         LinearLayout progressPanel = new LinearLayout(this);
         progressPanel.setOrientation(LinearLayout.VERTICAL);
-        progressPanel.setPadding(0, dpToPx(8), 0, 0);
+        progressPanel.setPadding(0, dpToPx(16), 0, dpToPx(8));
 
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setMax(100);
@@ -228,9 +232,9 @@ public class MainActivity extends Activity {
         progressPanel.addView(progressBar);
 
         progressText = new TextView(this);
-        progressText.setText("0/0 concluidos");
-        progressText.setTextColor(Color.parseColor("#888888"));
-        progressText.setTextSize(11);
+        progressText.setText("0/0");
+        progressText.setTextColor(Color.parseColor("#666666"));
+        progressText.setTextSize(12);
         progressText.setGravity(android.view.Gravity.CENTER);
         progressPanel.addView(progressText);
 
@@ -501,12 +505,11 @@ public class MainActivity extends Activity {
     }
 
     private void iniciarTimer(int segundos, Runnable callback) {
+        limparTimer();
         if (segundos <= 0) {
             if (callback != null) callback.run();
             return;
         }
-        
-        limparTimer();
         timerRestante = segundos;
         aguardandoTimer = true;
         timerPanel.setVisibility(View.VISIBLE);
@@ -514,25 +517,21 @@ public class MainActivity extends Activity {
 
         LinearLayout display = new LinearLayout(this);
         display.setOrientation(LinearLayout.VERTICAL);
+        display.setGravity(android.view.Gravity.CENTER);
         display.setBackgroundColor(Color.parseColor("#0d0d0d"));
-        display.setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12));
-        GradientDrawable border = new GradientDrawable();
-        border.setStroke(1, Color.parseColor("#2a4a2a"));
-        border.setColor(Color.parseColor("#0d0d0d"));
-        display.setBackground(border);
+        display.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
 
         TextView label = new TextView(this);
         label.setText("DESCANSANDO");
-        label.setTextColor(Color.parseColor("#ffaa00"));
+        label.setTextColor(Color.parseColor("#666666"));
         label.setTextSize(12);
-        label.setTypeface(null, android.graphics.Typeface.BOLD);
         label.setGravity(android.view.Gravity.CENTER);
         display.addView(label);
 
         timerLabel = new TextView(this);
         timerLabel.setText(String.format("%02d:%02d", segundos/60, segundos%60));
-        timerLabel.setTextColor(Color.parseColor("#8bc34a"));
-        timerLabel.setTextSize(28);
+        timerLabel.setTextColor(Color.parseColor("#ffffff"));
+        timerLabel.setTextSize(48);
         timerLabel.setTypeface(null, android.graphics.Typeface.BOLD);
         timerLabel.setGravity(android.view.Gravity.CENTER);
         display.addView(timerLabel);
@@ -570,7 +569,7 @@ public class MainActivity extends Activity {
                 empty.setText("Nenhum exercicio definido.");
                 empty.setTextColor(Color.parseColor("#666666"));
                 empty.setGravity(android.view.Gravity.CENTER);
-                empty.setPadding(0, dpToPx(20), 0, dpToPx(20));
+                empty.setTextSize(16);
                 exerciciosContainer.addView(empty);
                 return;
             }
@@ -580,10 +579,9 @@ public class MainActivity extends Activity {
                 TextView done = new TextView(this);
                 done.setText("TREINO CONCLUIDO!");
                 done.setTextColor(Color.parseColor("#8bc34a"));
-                done.setTextSize(20);
+                done.setTextSize(24);
                 done.setTypeface(null, android.graphics.Typeface.BOLD);
                 done.setGravity(android.view.Gravity.CENTER);
-                done.setPadding(0, dpToPx(30), 0, dpToPx(30));
                 exerciciosContainer.addView(done);
                 return;
             }
@@ -597,78 +595,55 @@ public class MainActivity extends Activity {
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
             card.setGravity(android.view.Gravity.CENTER);
-            card.setBackgroundColor(Color.parseColor("#0d0d0d"));
-            card.setPadding(dpToPx(0), dpToPx(0), dpToPx(0), dpToPx(0));
-            card.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            card.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-            LinearLayout content = new LinearLayout(this);
-            content.setOrientation(LinearLayout.VERTICAL);
-            content.setGravity(android.view.Gravity.CENTER);
-            content.setPadding(0, dpToPx(0), 0, dpToPx(0));
-            content.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-
-            TextView nomeTreino = new TextView(this);
-            nomeTreino.setText(treinoAtual.getString("nome"));
-            nomeTreino.setTextColor(Color.parseColor("#666666"));
-            nomeTreino.setTextSize(14);
-            nomeTreino.setGravity(android.view.Gravity.CENTER);
-            nomeTreino.setPadding(0, dpToPx(0), 0, dpToPx(8));
-            content.addView(nomeTreino);
-
-            View line = new View(this);
-            line.setBackgroundColor(Color.parseColor("#2a2a2a"));
-            line.setMinimumHeight(1);
-            line.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(200), 1));
-            line.setPadding(0, dpToPx(0), 0, dpToPx(8));
-            content.addView(line);
-
+            // Nome do exercício
             TextView nameLabel = new TextView(this);
             nameLabel.setText(ex.getString("exercise"));
             nameLabel.setTextColor(Color.parseColor("#ffffff"));
             nameLabel.setTextSize(28);
             nameLabel.setTypeface(null, android.graphics.Typeface.BOLD);
             nameLabel.setGravity(android.view.Gravity.CENTER);
-            nameLabel.setPadding(0, dpToPx(8), 0, dpToPx(16));
-            content.addView(nameLabel);
+            nameLabel.setPadding(0, 0, 0, dpToPx(16));
+            card.addView(nameLabel);
 
+            // Repetições
             TextView repsLabel = new TextView(this);
             repsLabel.setText(ex.getInt("reps") + " repeticoes");
-            repsLabel.setTextColor(Color.parseColor("#aaaaaa"));
+            repsLabel.setTextColor(Color.parseColor("#888888"));
             repsLabel.setTextSize(18);
             repsLabel.setGravity(android.view.Gravity.CENTER);
-            repsLabel.setPadding(0, dpToPx(4), 0, dpToPx(4));
-            content.addView(repsLabel);
+            repsLabel.setPadding(0, 0, 0, dpToPx(8));
+            card.addView(repsLabel);
 
+            // Carga
             TextView loadLabel = new TextView(this);
-            loadLabel.setText("Carga: " + ex.getDouble("load") + " kg");
+            loadLabel.setText(ex.getDouble("load") + " kg");
             loadLabel.setTextColor(Color.parseColor("#8bc34a"));
             loadLabel.setTextSize(18);
             loadLabel.setTypeface(null, android.graphics.Typeface.BOLD);
             loadLabel.setGravity(android.view.Gravity.CENTER);
-            loadLabel.setPadding(0, dpToPx(4), 0, dpToPx(16));
-            content.addView(loadLabel);
+            loadLabel.setPadding(0, 0, 0, dpToPx(16));
+            card.addView(loadLabel);
 
+            // Progresso das séries
             TextView seriesLabel = new TextView(this);
-            if (isDone) {
-                seriesLabel.setText("CONCLUIDO");
-                seriesLabel.setTextColor(Color.parseColor("#8bc34a"));
-            } else {
-                seriesLabel.setText(seriesFeitas + "/" + totalSeries + " series");
-                seriesLabel.setTextColor(Color.parseColor("#888888"));
-            }
-            seriesLabel.setTextSize(16);
+            seriesLabel.setText(seriesFeitas + "/" + totalSeries + " series");
+            seriesLabel.setTextColor(Color.parseColor("#666666"));
+            seriesLabel.setTextSize(14);
             seriesLabel.setGravity(android.view.Gravity.CENTER);
-            seriesLabel.setPadding(0, dpToPx(8), 0, dpToPx(16));
-            content.addView(seriesLabel);
+            seriesLabel.setPadding(0, 0, 0, dpToPx(16));
+            card.addView(seriesLabel);
 
+            // Botão PRONTO
             if (!isDone && !aguardandoTimer) {
                 Button btnPronto = new Button(this);
                 btnPronto.setText("PRONTO");
                 btnPronto.setBackgroundColor(Color.parseColor("#1a3a1a"));
                 btnPronto.setTextColor(Color.parseColor("#8bc34a"));
                 btnPronto.setTypeface(null, android.graphics.Typeface.BOLD);
-                btnPronto.setPadding(dpToPx(32), dpToPx(12), dpToPx(32), dpToPx(12));
-                btnPronto.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                btnPronto.setTextSize(16);
+                btnPronto.setPadding(dpToPx(32), dpToPx(16), dpToPx(32), dpToPx(16));
                 btnPronto.setOnClickListener(v -> {
                     if (aguardandoTimer) return;
                     try {
@@ -677,39 +652,59 @@ public class MainActivity extends Activity {
                         int feitas = exAtual.has("_seriesFeitas") ? exAtual.getInt("_seriesFeitas") : 0;
                         if (feitas >= series) return;
                         exAtual.put("_seriesFeitas", feitas + 1);
-
-                        if (exAtual.getInt("_seriesFeitas") >= series) {
+                        
+                        int novaFeitas = exAtual.getInt("_seriesFeitas");
+                        if (novaFeitas >= series) {
                             exAtual.put("_done", true);
-                            salvarProgressoEAtualizar(exercicioAtualIndex);
+                            // Verifica se tem descanso
+                            int descanso = exAtual.has("descanso") && !exAtual.isNull("descanso") ? exAtual.getInt("descanso") : 0;
+                            if (descanso > 0) {
+                                // Mostra timer de descanso antes de ir pro próximo
+                                renderTreinoCard(); // Atualiza UI
+                                iniciarTimer(descanso, () -> {
+                                    salvarProgressoEAtualizar(exercicioAtualIndex);
+                                });
+                            } else {
+                                salvarProgressoEAtualizar(exercicioAtualIndex);
+                            }
                         } else {
+                            // Mesmo exercício, próxima série - verifica descanso
+                            int descanso = exAtual.has("descanso") && !exAtual.isNull("descanso") ? exAtual.getInt("descanso") : 0;
                             salvarDados();
-                            renderTreinoCard();
+                            if (descanso > 0) {
+                                renderTreinoCard();
+                                iniciarTimer(descanso, () -> {
+                                    renderTreinoCard();
+                                });
+                            } else {
+                                renderTreinoCard();
+                            }
                         }
                     } catch (JSONException ex2) {
                         ex2.printStackTrace();
                     }
                 });
-                content.addView(btnPronto);
+                card.addView(btnPronto);
             } else if (isDone) {
                 TextView doneLabel = new TextView(this);
                 doneLabel.setText("CONCLUIDO");
                 doneLabel.setTextColor(Color.parseColor("#8bc34a"));
-                doneLabel.setTextSize(18);
+                doneLabel.setTextSize(16);
                 doneLabel.setTypeface(null, android.graphics.Typeface.BOLD);
                 doneLabel.setGravity(android.view.Gravity.CENTER);
-                content.addView(doneLabel);
+                card.addView(doneLabel);
             } else if (aguardandoTimer) {
                 TextView waitLabel = new TextView(this);
-                waitLabel.setText("Aguardando descanso...");
-                waitLabel.setTextColor(Color.parseColor("#ffaa00"));
+                waitLabel.setText("AGUARDANDO...");
+                waitLabel.setTextColor(Color.parseColor("#888888"));
                 waitLabel.setTextSize(14);
                 waitLabel.setGravity(android.view.Gravity.CENTER);
-                content.addView(waitLabel);
+                card.addView(waitLabel);
             }
 
-            card.addView(content);
             exerciciosContainer.addView(card);
 
+            // Atualiza progresso
             int total = exercicios.length();
             int done = 0;
             for (int i = 0; i < total; i++) {
@@ -720,7 +715,8 @@ public class MainActivity extends Activity {
             }
             int pct = total > 0 ? (done * 100) / total : 0;
             progressBar.setProgress(pct);
-            progressText.setText(done + "/" + total + " exercicios concluidos");
+            progressText.setText(done + "/" + total);
+
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -790,13 +786,13 @@ public class MainActivity extends Activity {
                     cardTreinoPanel.setVisibility(View.GONE);
                     treinoAtual = null;
                     limparTimer();
-                    topPanel.setVisibility(View.VISIBLE);
                     try {
                         configData.getJSONObject("academia").put("botaoAtivo", false);
                     } catch (JSONException e) {}
                     salvarDados();
                     atualizarTreinoHoje();
                     treinoHojePanel.setVisibility(View.VISIBLE);
+                    topPanel.setVisibility(View.VISIBLE);
                     dadosContainer.setVisibility(View.VISIBLE);
                     renderDados();
                 });
@@ -804,19 +800,7 @@ public class MainActivity extends Activity {
             }
 
             exercicioAtualIndex = proximoIdx;
-            JSONObject proxEx = exercicios.getJSONObject(proximoIdx);
-            int descanso = proxEx.has("descanso") && !proxEx.isNull("descanso") ? proxEx.getInt("descanso") : 0;
-
-            if (descanso > 0) {
-                aguardandoTimer = true;
-                renderTreinoCard();
-                iniciarTimer(descanso, () -> {
-                    aguardandoTimer = false;
-                    renderTreinoCard();
-                });
-            } else {
-                renderTreinoCard();
-            }
+            renderTreinoCard();
 
             String hojeKey = getTodayKey();
             configData.getJSONObject("academia").put("treino_" + hojeKey, treinoAtual);
@@ -878,20 +862,21 @@ public class MainActivity extends Activity {
                         cardTreinoPanel.setVisibility(View.GONE);
                         treinoAtual = null;
                         limparTimer();
-                        topPanel.setVisibility(View.VISIBLE);
                         atualizarTreinoHoje();
                         treinoHojePanel.setVisibility(View.VISIBLE);
+                        topPanel.setVisibility(View.VISIBLE);
                         dadosContainer.setVisibility(View.VISIBLE);
                         return;
                     }
                 }
                 cardTreinoPanel.setVisibility(View.VISIBLE);
-                topPanel.setVisibility(View.GONE);
                 treinoHojePanel.setVisibility(View.GONE);
+                topPanel.setVisibility(View.GONE);
                 dadosContainer.setVisibility(View.GONE);
                 isActive = true;
                 configData.getJSONObject("academia").put("botaoAtivo", true);
                 salvarDados();
+                treinoNomeHeader.setText(treinoAtual.getString("nome"));
                 renderTreinoCard();
                 if (verificarPeso()) mostrarAvisoPeso();
                 return;
@@ -926,11 +911,12 @@ public class MainActivity extends Activity {
             }
             exercicioAtualIndex = 0;
             cardTreinoPanel.setVisibility(View.VISIBLE);
-            topPanel.setVisibility(View.GONE);
             treinoHojePanel.setVisibility(View.GONE);
+            topPanel.setVisibility(View.GONE);
             dadosContainer.setVisibility(View.GONE);
             isActive = true;
             configData.getJSONObject("academia").put("botaoAtivo", true);
+            treinoNomeHeader.setText(treinoAtual.getString("nome"));
             renderTreinoCard();
 
             String hojeKey = getTodayKey();
@@ -961,7 +947,6 @@ public class MainActivity extends Activity {
                             cardTreinoPanel.setVisibility(View.GONE);
                             treinoAtual = null;
                             limparTimer();
-                            topPanel.setVisibility(View.VISIBLE);
                             String hojeKey = getTodayKey();
                             try {
                                 configData.getJSONObject("academia").put("treino_" + hojeKey, JSONObject.NULL);
@@ -970,6 +955,7 @@ public class MainActivity extends Activity {
                             salvarDados();
                             atualizarTreinoHoje();
                             treinoHojePanel.setVisibility(View.VISIBLE);
+                            topPanel.setVisibility(View.VISIBLE);
                             dadosContainer.setVisibility(View.VISIBLE);
                             renderDados();
                         });
@@ -981,13 +967,13 @@ public class MainActivity extends Activity {
             cardTreinoPanel.setVisibility(View.GONE);
             treinoAtual = null;
             limparTimer();
-            topPanel.setVisibility(View.VISIBLE);
             try {
                 configData.getJSONObject("academia").put("botaoAtivo", false);
             } catch (JSONException e) {}
             salvarDados();
             atualizarTreinoHoje();
             treinoHojePanel.setVisibility(View.VISIBLE);
+            topPanel.setVisibility(View.VISIBLE);
             dadosContainer.setVisibility(View.VISIBLE);
             renderDados();
         } else {
@@ -1031,18 +1017,18 @@ public class MainActivity extends Activity {
                         cardTreinoPanel.setVisibility(View.GONE);
                         treinoAtual = null;
                         limparTimer();
-                        topPanel.setVisibility(View.VISIBLE);
                         treinoConcluido.put(hojeKey, true);
                         configData.getJSONObject("academia").put("botaoAtivo", false);
                         salvarDados();
                         treinoHojePanel.setVisibility(View.VISIBLE);
+                        topPanel.setVisibility(View.VISIBLE);
                         dadosContainer.setVisibility(View.VISIBLE);
                     } else {
                         isActive = true;
                         cardTreinoPanel.setVisibility(View.VISIBLE);
-                        topPanel.setVisibility(View.GONE);
                         treinoAtual = treino;
                         treinoHojePanel.setVisibility(View.GONE);
+                        topPanel.setVisibility(View.GONE);
                         dadosContainer.setVisibility(View.GONE);
                         exercicioAtualIndex = 0;
                         for (int i = 0; i < exs.length(); i++) {
@@ -1052,6 +1038,7 @@ public class MainActivity extends Activity {
                                 break;
                             }
                         }
+                        treinoNomeHeader.setText(treinoAtual.getString("nome"));
                         renderTreinoCard();
                     }
                     return;
@@ -1062,8 +1049,8 @@ public class MainActivity extends Activity {
             cardTreinoPanel.setVisibility(View.GONE);
             treinoAtual = null;
             limparTimer();
-            topPanel.setVisibility(View.VISIBLE);
             treinoHojePanel.setVisibility(View.VISIBLE);
+            topPanel.setVisibility(View.VISIBLE);
             dadosContainer.setVisibility(View.VISIBLE);
             if (configData.getJSONObject("academia").getBoolean("botaoAtivo")) {
                 configData.getJSONObject("academia").put("botaoAtivo", false);
@@ -1074,8 +1061,8 @@ public class MainActivity extends Activity {
             cardTreinoPanel.setVisibility(View.GONE);
             treinoAtual = null;
             limparTimer();
-            topPanel.setVisibility(View.VISIBLE);
             treinoHojePanel.setVisibility(View.VISIBLE);
+            topPanel.setVisibility(View.VISIBLE);
             dadosContainer.setVisibility(View.VISIBLE);
         }
         atualizarTreinoHoje();
