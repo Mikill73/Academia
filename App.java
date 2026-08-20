@@ -32,13 +32,11 @@ public class MainActivity extends Activity {
     private TextView treinoHojeNome;
     private Button btnIniciarTreino;
     private LinearLayout cardTreinoPanel;
-    private LinearLayout exerciciosContainer;
     private LinearLayout dadosContainer;
     private LinearLayout timerPanel;
     private ProgressBar progressBar;
     private TextView progressText;
     private TextView timerLabel;
-    private TextView cardTitle;
     private TextView treinoNomeHeader;
     private TextView exercicioNomeHeader;
     private TextView repeticoesHeader;
@@ -212,14 +210,15 @@ public class MainActivity extends Activity {
         exercicioNomeHeader.setTextSize(28);
         exercicioNomeHeader.setTypeface(null, android.graphics.Typeface.BOLD);
         exercicioNomeHeader.setGravity(android.view.Gravity.CENTER);
-        exercicioNomeHeader.setPadding(0, dpToPx(8), 0, dpToPx(12));
+        exercicioNomeHeader.setPadding(0, dpToPx(8), 0, dpToPx(4));
         cardTreinoPanel.addView(exercicioNomeHeader);
 
         View separator = new View(this);
         separator.setBackgroundColor(Color.parseColor("#2a2a2a"));
-        separator.setMinimumHeight(1);
-        separator.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(200), 1));
-        separator.setPadding(0, dpToPx(8), 0, dpToPx(8));
+        separator.setMinimumHeight(2);
+        LinearLayout.LayoutParams sepParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 2);
+        sepParams.setMargins(dpToPx(60), dpToPx(8), dpToPx(60), dpToPx(12));
+        separator.setLayoutParams(sepParams);
         cardTreinoPanel.addView(separator);
 
         repeticoesHeader = new TextView(this);
@@ -227,7 +226,7 @@ public class MainActivity extends Activity {
         repeticoesHeader.setTextColor(Color.parseColor("#aaaaaa"));
         repeticoesHeader.setTextSize(20);
         repeticoesHeader.setGravity(android.view.Gravity.CENTER);
-        repeticoesHeader.setPadding(0, dpToPx(8), 0, dpToPx(4));
+        repeticoesHeader.setPadding(0, dpToPx(4), 0, dpToPx(4));
         cardTreinoPanel.addView(repeticoesHeader);
 
         cargaHeader = new TextView(this);
@@ -271,10 +270,10 @@ public class MainActivity extends Activity {
                 if (feitas >= series) return;
                 exAtual.put("_seriesFeitas", feitas + 1);
 
+                int descanso = exAtual.has("descanso") && !exAtual.isNull("descanso") ? exAtual.getInt("descanso") : 0;
+                
                 if (exAtual.getInt("_seriesFeitas") >= series) {
                     exAtual.put("_done", true);
-                    
-                    int descanso = exAtual.has("descanso") && !exAtual.isNull("descanso") ? exAtual.getInt("descanso") : 0;
                     if (descanso > 0) {
                         btnProntoHeader.setVisibility(View.GONE);
                         aguardandoTimer = true;
@@ -287,7 +286,16 @@ public class MainActivity extends Activity {
                     }
                 } else {
                     salvarDados();
-                    atualizarHeaderTreino();
+                    if (descanso > 0) {
+                        btnProntoHeader.setVisibility(View.GONE);
+                        aguardandoTimer = true;
+                        iniciarTimer(descanso, () -> {
+                            aguardandoTimer = false;
+                            atualizarHeaderTreino();
+                        });
+                    } else {
+                        atualizarHeaderTreino();
+                    }
                 }
             } catch (JSONException ex2) {
                 ex2.printStackTrace();
@@ -480,8 +488,12 @@ public class MainActivity extends Activity {
             } else {
                 seriesStatusHeader.setText(seriesFeitas + "/" + totalSeries + " series");
                 seriesStatusHeader.setTextColor(Color.parseColor("#ffaa00"));
-                btnProntoHeader.setVisibility(View.VISIBLE);
-                btnProntoHeader.setText("PRONTO");
+                if (!aguardandoTimer) {
+                    btnProntoHeader.setVisibility(View.VISIBLE);
+                    btnProntoHeader.setText("PRONTO");
+                } else {
+                    btnProntoHeader.setVisibility(View.GONE);
+                }
             }
 
             int total = exercicios.length();
@@ -741,7 +753,7 @@ public class MainActivity extends Activity {
                 configData.getJSONObject("academia").put("botaoAtivo", false);
                 salvarDados();
                 runOnUiThread(() -> {
-                    mostrarConfirmacaoUnico("Treino Concluido!", "Parabens! Voce concluiu o treino de hoje.");
+                    mostrarConfirmacaoUnico("Treino Concluido!", "Treino concluido.");
                     isActive = false;
                     cardTreinoPanel.setVisibility(View.GONE);
                     treinoAtual = null;
@@ -750,6 +762,7 @@ public class MainActivity extends Activity {
                         configData.getJSONObject("academia").put("botaoAtivo", false);
                     } catch (JSONException e) {}
                     salvarDados();
+                    topPanelVisibility(true);
                     atualizarTreinoHoje();
                     treinoHojePanel.setVisibility(View.VISIBLE);
                     dadosContainer.setVisibility(View.VISIBLE);
@@ -823,6 +836,7 @@ public class MainActivity extends Activity {
                         cardTreinoPanel.setVisibility(View.GONE);
                         treinoAtual = null;
                         limparTimer();
+                        topPanelVisibility(true);
                         atualizarTreinoHoje();
                         treinoHojePanel.setVisibility(View.VISIBLE);
                         dadosContainer.setVisibility(View.VISIBLE);
