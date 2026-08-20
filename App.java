@@ -3,10 +3,18 @@ package com.academia.app;
 
 import android.app.Activity;
 import android.app.DatePickerDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Vibrator;
 import android.Manifest;
 import android.view.View;
 import android.widget.*;
@@ -16,7 +24,10 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.text.InputType;
 import android.app.AlertDialog;
-import android.os.Handler;
+import android.app.Notification;
+import android.content.SharedPreferences;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import java.io.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -59,6 +70,11 @@ public class MainActivity extends Activity {
     private Context context;
     private AlertDialog historicoPesoDialog;
     private AlertDialog historicoCargaDialog;
+    private Vibrator vibrator;
+    private TimerService timerService;
+    private boolean timerServiceRunning = false;
+    private String notificationChannelId = "academia_timer_channel";
+    private int notificationId = 1001;
 
     private int getDiaDaSemanaNumero() {
         Calendar cal = Calendar.getInstance();
@@ -76,7 +92,9 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = this;
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         verificarPermissoes();
+        criarCanalNotificacao();
         carregarDados();
         setupUI();
         carregarEstadoBotao();
@@ -84,10 +102,38 @@ public class MainActivity extends Activity {
         renderDados();
     }
 
+    private void criarCanalNotificacao() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                notificationChannelId,
+                "Timer Academia",
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Notificacoes do timer de descanso");
+            channel.enableVibration(true);
+            channel.enableLights(true);
+            NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+    }
+
     private void verificarPermissoes() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            String[] permissoes = {
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.VIBRATE,
+                Manifest.permission.POST_NOTIFICATIONS
+            };
+            List<String> pendentes = new ArrayList<>();
+            for (String p : permissoes) {
+                if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) {
+                    pendentes.add(p);
+                }
+            }
+            if (!pendentes.isEmpty()) {
+                requestPermissions(pendentes.toArray(new String[0]), 1);
             }
         }
     }
@@ -277,7 +323,7 @@ public class MainActivity extends Activity {
                     if (descanso > 0) {
                         btnProntoHeader.setVisibility(View.GONE);
                         aguardandoTimer = true;
-                        iniciarTimer(descanso, () -> {
+                        iniciarTimerService(descanso, () -> {
                             aguardandoTimer = false;
                             salvarProgressoEAtualizar(exercicioAtualIndex);
                         });
@@ -289,7 +335,7 @@ public class MainActivity extends Activity {
                     if (descanso > 0) {
                         btnProntoHeader.setVisibility(View.GONE);
                         aguardandoTimer = true;
-                        iniciarTimer(descanso, () -> {
+                        iniciarTimerService(descanso, () -> {
                             aguardandoTimer = false;
                             atualizarHeaderTreino();
                         });
@@ -371,6 +417,7 @@ public class MainActivity extends Activity {
             peso.put("meta", JSONObject.NULL);
             peso.put("intervalo", 7);
             peso.put("ultimoRegistro", JSONObject.NULL);
+            peso.put("pesoAdiado", JSONObject.NULL);
             academia.put("peso", peso);
             academia.put("diasDescanso", new JSONArray());
             academia.put("objetivos", new JSONArray());
@@ -516,7 +563,14 @@ public class MainActivity extends Activity {
     private boolean verificarPeso() {
         try {
             JSONObject peso = configData.getJSONObject("academia").getJSONObject("peso");
-            if (peso.isNull("ultimoRegistro")) return false;
+            if (peso.isNull("ultimoRegistro")) return true;
+            if (!peso.isNull("pesoAdiado")) {
+                long adiado = peso.getLong("pesoAdiado");
+                long agora = System.currentTimeMillis();
+                if (agora - adiado < 86400000) {
+                    return false;
+                }
+            }
             String ultimoStr = peso.getString("ultimoRegistro");
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
             Date ultimo = sdf.parse(ultimoStr);
@@ -622,6 +676,7 @@ public class MainActivity extends Activity {
                 configData.getJSONObject("academia").getJSONObject("peso").put("atual", val);
                 SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                 configData.getJSONObject("academia").getJSONObject("peso").put("ultimoRegistro", sdf2.format(new Date()));
+                configData.getJSONObject("academia").getJSONObject("peso").put("pesoAdiado", JSONObject.NULL);
                 salvarDados();
                 renderDados();
                 if (treinoAtual != null) atualizarHeaderTreino();
@@ -629,7 +684,12 @@ public class MainActivity extends Activity {
                 Toast.makeText(this, "Peso invalido.", Toast.LENGTH_SHORT).show();
             }
         });
-        builder.setNegativeButton("Cancelar", null);
+        builder.setNegativeButton("Lembrar depois (1 dia)", (dialog, which) -> {
+            try {
+                configData.getJSONObject("academia").getJSONObject("peso").put("pesoAdiado", System.currentTimeMillis());
+                salvarDados();
+            } catch (JSONException e) {}
+        });
         builder.show();
     }
 
@@ -642,9 +702,10 @@ public class MainActivity extends Activity {
         timerRestante = 0;
         aguardandoTimer = false;
         timerPanel.setVisibility(View.GONE);
+        pararTimerService();
     }
 
-    private void iniciarTimer(int segundos, Runnable callback) {
+    private void iniciarTimerService(int segundos, Runnable callback) {
         limparTimer();
         timerRestante = segundos;
         aguardandoTimer = true;
@@ -685,14 +746,91 @@ public class MainActivity extends Activity {
                 timerRestante--;
                 if (timerRestante <= 0) {
                     limparTimer();
+                    vibrar();
+                    mostrarNotificacaoFimTimer();
                     if (callback != null) callback.run();
                 } else {
                     timerLabel.setText(String.format("%02d:%02d", timerRestante/60, timerRestante%60));
+                    atualizarNotificacaoTimer(timerRestante);
                     timerHandler.postDelayed(this, 1000);
                 }
             }
         };
         timerHandler.postDelayed(timerRunnable, 1000);
+        
+        iniciarNotificacaoTimer(segundos);
+    }
+
+    private void vibrar() {
+        if (vibrator != null && vibrator.hasVibrator()) {
+            long[] pattern = {0, 500, 300, 500, 300, 500};
+            vibrator.vibrate(pattern, -1);
+        }
+    }
+
+    private void iniciarNotificacaoTimer(int segundos) {
+        String titulo = "Descansando - " + String.format("%02d:%02d", segundos/60, segundos%60);
+        String texto = "Aguardando fim do descanso...";
+        
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, notificationChannelId)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setContentTitle(titulo)
+            .setContentText(texto)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOngoing(true);
+
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.notify(notificationId, builder.build());
+        }
+    }
+
+    private void atualizarNotificacaoTimer(int segundosRestantes) {
+        String titulo = "Descansando - " + String.format("%02d:%02d", segundosRestantes/60, segundosRestantes%60);
+        String texto = "Aguardando fim do descanso...";
+        
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, notificationChannelId)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setContentTitle(titulo)
+            .setContentText(texto)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOngoing(true);
+
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.notify(notificationId, builder.build());
+        }
+    }
+
+    private void mostrarNotificacaoFimTimer() {
+        String titulo = "Descanso Concluido!";
+        String texto = "O tempo de descanso acabou. Prossiga com o treino.";
+        
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, notificationChannelId)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setContentTitle(titulo)
+            .setContentText(texto)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true);
+
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.notify(notificationId + 1, builder.build());
+        }
+    }
+
+    private void pararTimerService() {
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.cancel(notificationId);
+            manager.cancel(notificationId + 1);
+        }
     }
 
     private void salvarProgressoEAtualizar(int idx) {
@@ -2004,6 +2142,7 @@ public class MainActivity extends Activity {
                 pesoObj.put("atual", peso);
                 SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                 pesoObj.put("ultimoRegistro", sdf2.format(new Date()));
+                pesoObj.put("pesoAdiado", JSONObject.NULL);
 
                 String metaStr = metaInput.getText().toString().trim();
                 if (!metaStr.isEmpty()) {
@@ -2608,6 +2747,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         salvarDados();
+        pararTimerService();
     }
 
     @Override
